@@ -9,6 +9,7 @@ import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { monthsToTarget } from "@/lib/server/engine/math";
 import { describeAiError, getClient, getModel } from "./client";
 import { VOICE_RULES } from "./plan";
+import { voiceSafe } from "./voice";
 
 const CHAT_TIMEOUT_MS = 15_000;
 const ADVISOR_LINE = "When you're ready for that, an FNB advisor can help.";
@@ -47,12 +48,6 @@ const GOAL_WORDS: [GoalId, RegExp][] = [
   ["family", /\b(family|kids?)\b/i],
 ];
 
-// Voice rule 3: "just" is dropped (meaning-safe); any other banned word falls back to the template.
-const BANNED_OTHER = /\b(only|behind|should have|can't afford|cannot afford|waste)\b/i;
-function voiceSafe(text: string): string | null {
-  const softened = text.replace(/\bjust\s+/gi, "").replace(/\s+/g, " ").trim();
-  return BANNED_OTHER.test(softened) ? null : softened;
-}
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const clean = (s: string, max: number) => s.replace(/\s+/g, " ").trim().slice(0, max);
