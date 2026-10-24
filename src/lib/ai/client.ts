@@ -25,8 +25,12 @@ export function requestOptions() {
 
 // Short, log-safe description of why an AI call failed (never includes request data).
 export function describeAiError(error: unknown): string {
-  if (error instanceof Anthropic.APIError) return `${error.constructor.name} status=${error.status ?? "n/a"}`;
-  if (error instanceof Error) return error.name;
+  // Fixed labels: class names are minified in production builds.
+  if (error instanceof Anthropic.APIConnectionTimeoutError) return "timeout";
+  if (error instanceof Anthropic.APIConnectionError) return "connection error";
+  if (error instanceof Anthropic.APIError) return `api error status=${error.status ?? "n/a"}`;
+  // Our own thrown Errors carry no request data; others (e.g. ZodError) log by name only.
+  if (error instanceof Error) return error.name === "Error" ? error.message.slice(0, 80) : error.name;
   return "unknown error";
 }
 
