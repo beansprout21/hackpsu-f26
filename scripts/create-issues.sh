@@ -5,7 +5,7 @@
 # Usage:  ETHAN_GH=<ethans-github-username> bash scripts/create-issues.sh
 set -euo pipefail
 
-: "${ETHAN_GH:?Set ETHAN_GH to Ethan's GitHub username, e.g. ETHAN_GH=ethan123 bash scripts/create-issues.sh}"
+: "${ETHAN_GH:?Set ETHAN_GH to the GitHub username of Ethan, e.g. ETHAN_GH=ethan123 bash scripts/create-issues.sh}"
 BEN_GH="${BEN_GH:-beansprout21}"
 
 if [ "$(gh issue list --state all --limit 1 --json number --jq 'length')" != "0" ]; then
