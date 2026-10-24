@@ -21,6 +21,7 @@ export type LifeStage = "student" | "new_grad" | "young_family";
 export type CreditBand = "building" | "fair" | "good" | "excellent" | "unsure";
 export type ValueTag = "freedom" | "security" | "experiences" | "family" | "growth" | "simplicity";
 export type Confidence = "high" | "medium" | "low";
+export type Stage = "now" | "next" | "later";   // starter plan -> next move -> unlocks later
 
 // ---------- intake (client -> server) ----------
 export interface GoalAnswer {
@@ -94,6 +95,8 @@ export interface ScoreBreakdown {
 export interface Match {
   productId: string;            // must exist in catalog
   goalId: GoalId;
+  stage: Stage;
+  unlockCondition?: string;     // REQUIRED when stage === "later", e.g. "3 months of expenses saved"
   score: number;                // 0..100 = sum of breakdown
   breakdown: ScoreBreakdown;
   explanation: string;          // AI: why this fits THIS user's goal and why
@@ -112,6 +115,7 @@ export type StepKind = "save" | "open" | "learn" | "talk_to_banker" | "wait";
 
 export interface PlanStep {
   order: number;
+  stage: Stage;
   kind: StepKind;
   title: string;
   detail: string;
@@ -156,7 +160,7 @@ export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string 
 ### POST /api/plan
 - Request: `{ profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers }`
 - Response data: `Plan`
-- Steps: (1) engine computes surplus, emergency fund target, allocation, scored matches, notYet, step skeleton; (2) AI writes `explanation`, step `title/detail`, `headline`, `bankerSummary`; (3) server validates every productId against catalog, drops unknown ones.
+- Steps: (1) engine computes surplus, emergency fund target, allocation, scored matches with stage + unlockCondition, notYet, step skeleton grouped by stage; (2) AI writes `explanation`, step `title/detail`, `headline`, `bankerSummary`; (3) server validates every productId against catalog, drops unknown ones.
 - Fallback: engine output + template text, `aiUsed: false`.
 - Mock: `src/data/mocks/plan.student.json`, `plan.family.json`
 

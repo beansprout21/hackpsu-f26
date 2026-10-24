@@ -27,6 +27,7 @@ Every completed plan is a **warm lead with context**: a banker sees the customer
 6. **Plan page (hero):**
    - Rich life statement (AI, in the user's own words).
    - Monthly allocation across goals with surplus math visible.
+   - **Staged roadmap:** "Start here" (now), "Next", "Unlocks later". Later items show their unlock condition, so the user sees a path, not a rejection.
    - Timeline of steps with dates.
    - Product match cards, each with the **trust layer**: why it fits your goal, terms to know, score breakdown, confidence, source link + verified date.
    - **"Not yet" card**: what the agent deliberately does NOT recommend yet and why (e.g., build emergency fund before mortgage pre-approval).
@@ -55,10 +56,11 @@ Real bank connections (Plaid is "future plans"), storing real financial data in 
 
 ## Key product rules
 1. **Never invent products, rates, or fees.** The AI may only reference product IDs from `src/data/catalog.json`. The server rejects any unknown ID. Unpublished rates display as "Check current rate with FNB".
-2. **Restraint is a feature.** The engine must produce at least one "not yet" item whenever the user lacks a 3-month emergency fund or the goal horizon is longer than the product makes sense for.
-3. **Show the math.** Monthly surplus = income minus fixed costs minus debt payments. Allocation never exceeds surplus. Displayed on the page.
-4. **Educational, not advice.** Disclaimer on snapshot and plan pages: "Educational prototype. Not financial advice. No data is stored."
-5. Credit band filters eligibility (e.g., SmartSecured card fits "building"/"unsure").
+2. **Stage everything.** Foundation first (everyday banking, emergency fund), bigger moves later with explicit unlock conditions. Method inspired by *I Will Teach You to Be Rich* (credited in Devpost; no book text or branding in the app).
+3. **Restraint is a feature.** The engine must produce at least one "not yet" item whenever the user lacks a 3-month emergency fund or the goal horizon is longer than the product makes sense for.
+4. **Show the math.** Monthly surplus = income minus fixed costs minus debt payments. Allocation never exceeds surplus. Displayed on the page.
+5. **Educational, not advice.** Disclaimer on snapshot and plan pages: "Educational prototype. Not financial advice. No data is stored."
+6. Credit band filters eligibility (e.g., SmartSecured card fits "building"/"unsure").
 
 ## Architecture
 - Next.js App Router + TypeScript strict + Tailwind + shadcn/ui, deployed on Vercel.
