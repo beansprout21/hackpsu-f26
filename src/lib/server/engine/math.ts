@@ -17,6 +17,7 @@ export interface MoneyMath {
   monthlyFixedCosts: number;
   monthlyDebtPayments: number;
   monthlySurplus: number; // may be <= 0
+  fixedShare: number; // (fixed + debt) / effective income; 0..1+ (Infinity-safe: 1 when income is 0)
   starterCushion: number; // 1 x (fixed + debt)
   fullCushion: number; // 3 x (fixed + debt) = Plan.emergencyFundTarget
 }
@@ -38,14 +39,15 @@ export function computeMath(snapshot: FinancialSnapshot): MoneyMath {
     monthlyFixedCosts: snapshot.monthlyFixedCosts,
     monthlyDebtPayments: snapshot.monthlyDebtPayments,
     monthlySurplus: round2(effectiveMonthlyIncome - monthlyCosts),
+    fixedShare: effectiveMonthlyIncome > 0 ? Math.round((monthlyCosts / effectiveMonthlyIncome) * 10000) / 10000 : 1,
     starterCushion: round2(monthlyCosts),
     fullCushion: round2(3 * monthlyCosts),
   };
 }
 
-// ceil((target - saved) / monthly); 0 when already reached. Callers only pass monthly > 0.
+// ceil((target - saved) / monthly); 0 when already reached or when monthly is 0 (contract v2.1).
 export function monthsToTarget(target: number, saved: number, monthly: number): number {
   const remaining = target - saved;
-  if (remaining <= 0) return 0;
+  if (remaining <= 0 || monthly <= 0) return 0;
   return Math.ceil(remaining / monthly);
 }

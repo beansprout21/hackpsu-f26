@@ -1,68 +1,170 @@
 {
-  "headline": "A safety net in 14 months, then the path to your first home",
-  "sproutSays": "You're already doing the hard part: steady income and a clear goal. Let's build your family's cushion first so the house never puts you at risk.",
+  "headline": "Step one this week, then $188 a month toward your goals, starting with first home",
+  "sproutSays": "You have $750 a month of breathing room, and that's a real start. $187 a month fills your cushion in 21 months, then your goals get the full amount.",
   "stepOne": {
     "order": 1,
     "stage": "now",
     "kind": "open",
-    "title": "Open FirstRate Savings and name it \"Safety net\"",
-    "detail": "$0 to open in a branch ($50 online). This week, just get the account in place.",
+    "title": "Open FNB Freestyle Checking this week",
+    "detail": "No monthly fee when you choose free online statements, and $0 to open in a branch.",
     "startMonth": 0,
-    "productId": "firstrate-savings"
+    "productId": "freestyle-checking"
   },
   "effectiveMonthlyIncome": 2400,
   "monthlySurplus": 750,
   "spendingPlan": [
-    { "bucket": "fixed_costs", "monthlyAmount": 1650, "percent": 68.75, "note": "Rent, bills, and $150 in loan payments." },
-    { "bucket": "emergency_fund", "monthlyAmount": 281, "percent": 11.71, "note": "Builds your family's 3-month cushion ($4,950)." },
-    { "bucket": "goal_savings", "monthlyAmount": 400, "percent": 16.67, "note": "Your down payment fund." },
-    { "bucket": "guilt_free", "monthlyAmount": 69, "percent": 2.87, "note": "Family nights out, no guilt." }
+    {
+      "bucket": "fixed_costs",
+      "monthlyAmount": 1650,
+      "percent": 68.75,
+      "note": "Rent, bills, and $150 in debt payments."
+    },
+    {
+      "bucket": "emergency_fund",
+      "monthlyAmount": 187,
+      "percent": 7.79,
+      "note": "Builds your cushion to $4,950 in about 21 months. After that, your goals get the full amount."
+    },
+    {
+      "bucket": "goal_savings",
+      "monthlyAmount": 188,
+      "percent": 7.83,
+      "note": "Split across first home, by priority."
+    },
+    {
+      "bucket": "guilt_free",
+      "monthlyAmount": 375,
+      "percent": 15.63,
+      "note": "Money for what you love. Spend it with zero guilt."
+    }
   ],
+  "fixedShare": 0.6875,
+  "cushionTarget": 4950,
+  "cushionFillsInMonths": 21,
+  "futureYou": {
+    "earmarkMonthly": null,
+    "handoff": "An FNB advisor can help you start.",
+    "unlockCondition": "Unlocks when fixed costs drop below 60% of income"
+  },
   "emergencyFundTarget": 4950,
   "allocation": [
-    { "goalId": "first_home", "monthlyAmount": 400, "monthsToTarget": 38 },
-    { "goalId": "emergency_fund", "monthlyAmount": 281, "monthsToTarget": 14 }
+    {
+      "goalId": "first_home",
+      "monthlyAmount": 188,
+      "monthsToTarget": 80,
+      "requiredMonthly": 250,
+      "onTrack": false,
+      "levers": [
+        {
+          "kind": "turn_up_dial",
+          "moveFromGuiltFree": 62
+        },
+        {
+          "kind": "more_time",
+          "newHorizonMonths": 80
+        },
+        {
+          "kind": "smaller_target",
+          "reachableAmount": 11280
+        }
+      ]
+    },
+    {
+      "goalId": "emergency_fund",
+      "monthlyAmount": 187,
+      "monthsToTarget": 27,
+      "requiredMonthly": 413,
+      "onTrack": false,
+      "levers": [
+        {
+          "kind": "more_time",
+          "newHorizonMonths": 27
+        },
+        {
+          "kind": "smaller_target",
+          "reachableAmount": 2244
+        }
+      ]
+    }
   ],
   "matches": [
+    {
+      "productId": "learning-center",
+      "goalId": "first_home",
+      "stage": "now",
+      "score": 90,
+      "breakdown": {
+        "goalFit": 30,
+        "eligibility": 25,
+        "affordability": 20,
+        "priority": 15
+      },
+      "explanation": "FNB Learning Center fits your first home goal, and you can start right away. Free self-paced modules.",
+      "termsToKnow": [
+        "Free",
+        "Free self-paced modules",
+        "Modules: Creating a Budget, Credit Scores & Reports, Credit Cards, Buying a Home, and more"
+      ],
+      "confidence": "high",
+      "sourceUrl": "https://www.fnb-online.com/learning-modules"
+    },
+    {
+      "productId": "freestyle-checking",
+      "goalId": "everyday_banking",
+      "stage": "now",
+      "score": 90,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 10,
+        "priority": 15
+      },
+      "explanation": "FNB Freestyle Checking fits your everyday banking goal, and you can start right away. No monthly fee when you choose free online statements.",
+      "termsToKnow": [
+        "No monthly fee when you choose free online statements",
+        "$50 to open online, $0 in a branch",
+        "No minimum balance"
+      ],
+      "confidence": "high",
+      "sourceUrl": "https://fnb-online.com/bank/personal/checking/freestyle-checking"
+    },
     {
       "productId": "firstrate-savings",
       "goalId": "emergency_fund",
       "stage": "now",
-      "score": 92,
-      "breakdown": { "goalFit": 40, "eligibility": 25, "affordability": 18, "priority": 9 },
-      "explanation": "Security matters most to you, and right now $1,200 covers less than one month of costs. A dedicated savings account is where your family's cushion grows first.",
+      "score": 87,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 10,
+        "priority": 12
+      },
+      "explanation": "FNB FirstRate Savings fits your emergency fund goal, and you can start right away. $5 monthly fee, already waived by your $500+ balance.",
       "termsToKnow": [
-        "$50 minimum to open online ($0 in branch)",
-        "$5 monthly fee, waived with a $500 average daily balance",
+        "$5 monthly fee, already waived by your $500+ balance",
+        "$50 to open online, $0 in a branch",
         "6 transfers or withdrawals a month; $15 for each one over"
       ],
       "confidence": "high",
       "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/firstrate-savings"
     },
     {
-      "productId": "savers-goal-cd",
-      "goalId": "first_home",
-      "stage": "next",
-      "score": 91,
-      "breakdown": { "goalFit": 35, "eligibility": 25, "affordability": 16, "priority": 15 },
-      "explanation": "Your home is 5 years out, so down-payment money can sit in a 12-month goal CD where it's harder to spend. Your $400 a month easily covers the $25 minimum transfer.",
-      "termsToKnow": [
-        "12-month fixed term that renews automatically",
-        "$100 minimum to open, plus at least $25 a month in transfers",
-        "Early withdrawal penalty applies"
-      ],
-      "confidence": "medium",
-      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/savers-goal-certificate-of-deposit"
-    },
-    {
       "productId": "fnb-home-ownership-program",
       "goalId": "first_home",
       "stage": "later",
       "unlockCondition": "When 3 months of expenses ($4,950) are saved",
-      "unlockTrigger": { "kind": "savings_threshold", "amount": 4950 },
-      "score": 83,
-      "breakdown": { "goalFit": 40, "eligibility": 20, "affordability": 8, "priority": 15 },
-      "explanation": "This program was built for buyers like your family: little to no down payment and up to $5,000 toward closing costs. It unlocks once your safety net is in place.",
+      "unlockTrigger": {
+        "kind": "savings_threshold",
+        "amount": 4950
+      },
+      "score": 84,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 4,
+        "priority": 15
+      },
+      "explanation": "FNB Home Ownership Program is on your path for your first home goal. It unlocks when 3 months of expenses ($4,950) are saved.",
       "termsToKnow": [
         "Little to no down payment required",
         "Up to $5,000 closing cost grant from FNB",
@@ -70,6 +172,31 @@
       ],
       "confidence": "medium",
       "sourceUrl": "https://www.fnb-online.com/personal/loans-mortgages/mortgages/buy-a-home/fnb-home-ownership-program"
+    },
+    {
+      "productId": "cd-special",
+      "goalId": "emergency_fund",
+      "stage": "later",
+      "unlockCondition": "When your cushion reaches $4,950 (check the minimum with FNB)",
+      "unlockTrigger": {
+        "kind": "savings_threshold",
+        "amount": 4950
+      },
+      "score": 69,
+      "breakdown": {
+        "goalFit": 30,
+        "eligibility": 25,
+        "affordability": 2,
+        "priority": 12
+      },
+      "explanation": "FNB Certificate of Deposit Specials is on your path for your emergency fund goal. It unlocks when your cushion reaches $4,950 (check the minimum with FNB).",
+      "termsToKnow": [
+        "Early withdrawal penalties may apply",
+        "Requires new money and an FNB checking account; one per household",
+        "Published minimums range from $2,500 to $10,000 depending on term; confirm with FNB"
+      ],
+      "confidence": "low",
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/certificate-of-deposit-specials"
     }
   ],
   "steps": [
@@ -77,82 +204,83 @@
       "order": 1,
       "stage": "now",
       "kind": "open",
-      "title": "Open FirstRate Savings and name it \"Safety net\"",
-      "detail": "$0 to open in a branch ($50 online). This week, just get the account in place.",
+      "title": "Open FNB Freestyle Checking this week",
+      "detail": "No monthly fee when you choose free online statements, and $0 to open in a branch.",
       "startMonth": 0,
-      "productId": "firstrate-savings"
+      "productId": "freestyle-checking"
     },
     {
       "order": 2,
       "stage": "now",
-      "kind": "budget",
-      "title": "Set your family's spending plan",
-      "detail": "$1,650 bills, $281 safety net, $400 home fund, $69 guilt-free.",
-      "startMonth": 0
+      "kind": "habit",
+      "title": "Automate it on payday",
+      "detail": "Move $375 to savings first: $187 to your cushion, $188 to your goals.",
+      "startMonth": 0,
+      "productId": "firstrate-savings",
+      "monthlyAmount": 375
     },
     {
       "order": 3,
       "stage": "now",
-      "kind": "save",
-      "title": "Auto-save $281 a month to reach $4,950",
-      "detail": "Together with your $1,200, that's 3 months of costs in about 14 months.",
-      "startMonth": 0,
-      "productId": "firstrate-savings",
-      "monthlyAmount": 281
+      "kind": "budget",
+      "title": "Set your spending plan",
+      "detail": "$1,650 bills, $375 savings, $375 guilt-free. Every dollar has a job.",
+      "startMonth": 0
     },
     {
       "order": 4,
-      "stage": "next",
-      "kind": "open",
-      "title": "Start a Savers Goal CD for your down payment",
-      "detail": "Open with $100 and transfer $400 a month toward your $15,000 home fund.",
-      "startMonth": 1,
-      "productId": "savers-goal-cd",
-      "monthlyAmount": 400
+      "stage": "now",
+      "kind": "budget",
+      "title": "Big Win: review your biggest fixed cost",
+      "detail": "Bills take 69% of your income. Housing, car, or phone is where one change frees the most money.",
+      "startMonth": 0
     },
     {
       "order": 5,
-      "stage": "next",
-      "kind": "habit",
-      "title": "Hold a 15-minute money check-in each month",
-      "detail": "Look at the safety net and home fund together. Celebrate every milestone.",
-      "startMonth": 1
+      "stage": "now",
+      "kind": "learn",
+      "title": "Explore FNB Learning Center",
+      "detail": "Free self-paced modules",
+      "startMonth": 0,
+      "productId": "learning-center"
     },
     {
       "order": 6,
-      "stage": "next",
-      "kind": "learn",
-      "title": "Learn the homebuying basics",
-      "detail": "Understand down payments, closing costs, and how lenders read your credit.",
-      "startMonth": 3
+      "stage": "now",
+      "kind": "open",
+      "title": "Open FNB FirstRate Savings",
+      "detail": "$5 monthly fee, already waived by your $500+ balance",
+      "startMonth": 0,
+      "productId": "firstrate-savings"
     },
     {
       "order": 7,
       "stage": "later",
-      "kind": "wait",
-      "title": "Finish your 3-month safety net",
-      "detail": "This is the checkpoint before any mortgage conversation.",
-      "startMonth": 14
+      "kind": "talk_to_banker",
+      "title": "Talk to an FNB banker about FNB Home Ownership Program",
+      "detail": "When 3 months of expenses ($4,950) are saved",
+      "startMonth": 21,
+      "productId": "fnb-home-ownership-program"
     },
     {
       "order": 8,
       "stage": "later",
-      "kind": "talk_to_banker",
-      "title": "Ask an FNB banker about the Home Ownership Program",
-      "detail": "Bring your savings progress and credit range so you can map out a pre-approval timeline.",
-      "startMonth": 14,
-      "productId": "fnb-home-ownership-program"
+      "kind": "open",
+      "title": "Unlock FNB Certificate of Deposit Specials",
+      "detail": "When your cushion reaches $4,950 (check the minimum with FNB)",
+      "startMonth": 21,
+      "productId": "cd-special"
     }
   ],
   "notYet": [
     {
-      "productId": "homeone-mortgage",
+      "productId": "fnb-home-ownership-program",
       "goalId": "first_home",
-      "reason": "Not a mortgage or pre-approval yet. Your savings cover less than one month of expenses, and HomeOne needs at least 3% down plus homebuyer education. Buying now would leave your family with no cushion.",
-      "revisitWhen": "after your $4,950 emergency fund is complete"
+      "reason": "Not a mortgage pre-approval yet. Your savings cover less than 3 months of costs, and buying now would leave no cushion.",
+      "revisitWhen": "after $4,950 (3 months of costs) is saved"
     }
   ],
-  "bankerSummary": "Jordan, young family, steady job, not yet an FNB customer. Take-home $2,400/mo, fixed costs $1,500, debt payments $150, surplus $750/mo, savings $1,200, credit range: fair. Goals: first home ($15,000 down payment + closing in 60 months, P1) and emergency fund (12 months, P2). Plan: FirstRate Savings now, Savers Goal CD for the down payment next, Home Ownership Program once the $4,950 emergency fund is complete. Good lead for a first-time homebuyer conversation.",
-  "aiUsed": true,
+  "bankerSummary": "Young family, not yet an FNB customer, steady income. Income: $2,400/mo job = about $2,400/mo effective. Fixed costs $1,500, debt payments $150 (69% of income), surplus $750/mo, savings $1,200, credit range: fair. Spending plan: $375/mo savings, $375/mo guilt-free. Goals: first home ($15,000 in 60 months, P1, $188/mo of $250/mo needed); emergency fund ($5,000 est. in 12 months, P2, $187/mo of $413/mo needed). Plan: now FNB Learning Center, FNB Freestyle Checking, FNB FirstRate Savings; next none; later FNB Home Ownership Program, FNB Certificate of Deposit Specials.",
+  "aiUsed": false,
   "disclaimer": "Educational prototype. Not financial advice. No data is stored."
 }

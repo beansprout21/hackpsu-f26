@@ -7,7 +7,18 @@ import type { GoalAnswer, GoalId, GoalProfile, IntakeAnswers, ProfiledGoal } fro
 import { GoalIdSchema, GoalProfileSchema } from "@/types/schemas";
 import { personaFromValues } from "@/data/personaTaxonomy";
 import { estimateTarget, GOAL_LABELS } from "@/lib/server/engine/defaults";
-import { describeAiError, getClient, getModel, requestOptions, SPROUT_SYSTEM } from "./client";
+import { describeAiError, getClient, requestOptions } from "./client";
+import { VOICE_RULES } from "./plan";
+
+// docs/SPROUT.md latency: profile is a short writing task, so it runs on a faster model.
+const profileModel = () => process.env.ANTHROPIC_PROFILE_MODEL || "claude-haiku-5-5";
+
+// docs/SPROUT.md Profile prompt contract.
+const PROFILE_SYSTEM = [
+  "You are Sprout, a warm, optimistic money coach for college students and young families, built as a prototype for FNB. Follow the voice rules. Never mention specific products or rates. Output JSON only.",
+  "",
+  VOICE_RULES,
+].join("\n");
 
 const RICH_LIFE_PHRASES: Record<GoalId, string> = {
   first_home: "a home of my own",
@@ -121,10 +132,10 @@ async function aiProfile(intake: IntakeAnswers): Promise<AiProfile> {
   if (!client) throw new Error("ANTHROPIC_API_KEY not set");
   const response = await client.messages.parse(
     {
-      model: getModel(),
+      model: profileModel(),
       max_tokens: 4000,
       output_config: { effort: "low", format: zodOutputFormat(AiProfileSchema) },
-      system: SPROUT_SYSTEM,
+      system: PROFILE_SYSTEM,
       messages: [{ role: "user", content: userPrompt(intake) }],
     },
     requestOptions(),

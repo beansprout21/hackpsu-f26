@@ -47,3 +47,12 @@ export function scoreProduct(p: Product, goal: Pick<ProfiledGoal, "id" | "priori
 }
 
 export const totalScore = (b: ScoreBreakdown) => b.goalFit + b.eligibility + b.affordability + b.priority;
+
+// The user's top-value goal (rule set C: its turn-up-the-dial lever is presented first).
+export function topValueGoal(ctx: EngineContext): GoalId | undefined {
+  const top = ctx.values[0];
+  if (!top) return undefined;
+  return [...ctx.profile.goals]
+    .sort((a, b) => a.priority - b.priority)
+    .find((g) => VALUE_GOALS[top].includes(g.id))?.id;
+}

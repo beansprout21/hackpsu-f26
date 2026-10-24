@@ -21,17 +21,18 @@ export function chooseStepOne(ctx: EngineContext, matches: Candidate[]): PlanSte
       kind: "open",
       productId: id,
       title: `Open ${name} this week`,
+      // Rule set D: best-fit checking, its fee and how to avoid it, $0; HUB branch for Penn State students.
       detail: ctx.isStudent
-        ? "No monthly service charge and no minimum balance, so it costs nothing to start."
-        : "No monthly fee with free online statements and no minimum balance, and $0 to open in a branch.",
+        ? "No monthly fee on Student Checking and no minimum balance, so it's $0 to start. At Penn State? The FNB branch in the HUB is at 288 Pollock Road."
+        : "No monthly fee when you choose free online statements, and $0 to open in a branch.",
     };
   }
-  if (snapshot.savingsBalance < math.starterCushion) {
+  if (snapshot.savingsBalance < ctx.cushionTarget) {
     return {
       ...base,
       kind: "habit",
-      title: "Set up an automatic transfer for the day money arrives",
-      detail: "Even a small amount, moved before you spend, starts your cushion on autopilot.",
+      title: "Automate it: set a transfer for the day money arrives",
+      detail: "Money moved before you spend builds your cushion on autopilot.",
     };
   }
   if (math.monthlySurplus <= 0) {

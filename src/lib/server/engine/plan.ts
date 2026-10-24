@@ -1,5 +1,6 @@
-// Deterministic plan: numbers, stages, triggers, Step one, and template text in Sprout's voice.
-// /api/plan (#5) sends this to the AI to reword; on any AI failure it is returned as-is.
+// Deterministic plan (docs/SPROUT.md v2): numbers, stages, triggers, levers, Step one, and
+// template text in Sprout's voice. /api/plan sends this to the AI to reword; on any AI failure
+// it is returned as-is.
 import type {
   FinancialSnapshot,
   GoalProfile,
@@ -14,8 +15,10 @@ import type {
 import { getProduct } from "@/lib/server/catalog";
 import { buildContext, usd, type EngineContext } from "./context";
 import { GOAL_LABELS } from "./defaults";
+import { feeNote, termsWithFee } from "./fees";
 import { monthsToTarget } from "./math";
 import { buildNotYet } from "./notYet";
+import { topValueGoal } from "./score";
 import { candidateFor, selectMatches, type Candidate } from "./select";
 import { buildSpending, type SpendingResult } from "./spending";
 import { isMortgageLike } from "./stage";
@@ -23,6 +26,7 @@ import { chooseStepOne } from "./stepOne";
 
 export const DISCLAIMER = "Educational prototype. Not financial advice. No data is stored.";
 const MAX_STEPS = 8;
+const ACCOUNT_CATEGORIES = ["checking", "savings", "cd", "credit_card", "small_business"];
 
 const LIFE_STAGE_LABEL: Record<LifeStage, string> = {
   student: "College student",
@@ -48,12 +52,13 @@ function explain(c: Candidate, ctx: EngineContext): string {
   const goal = ctx.profile.goals.find((g) => g.id === c.goalId);
   const label = GOAL_LABELS[c.goalId];
   const forGoal = goal?.why ? `your ${label} goal (${goal.why})` : `your ${label} goal`;
-  const term = c.product.keyTerms[0] ? ` ${c.product.keyTerms[0]}.` : "";
+  const fee = ACCOUNT_CATEGORIES.includes(c.product.category) ? feeNote(c.product, ctx) : null;
+  const tail = fee ? ` ${fee}.` : c.product.keyTerms[0] ? ` ${c.product.keyTerms[0]}.` : "";
   switch (c.staging.stage) {
     case "now":
-      return `${c.product.name} is a starting point for ${forGoal} that you can use right away.${term}`;
+      return `${c.product.name} fits ${forGoal}, and you can start right away.${tail}`;
     case "next":
-      return `Once your first account is open, ${c.product.name} is the natural next move for ${forGoal}.${term}`;
+      return `Once your first account is open, ${c.product.name} is the natural next move for ${forGoal}.${tail}`;
     case "later":
       return `${c.product.name} is on your path for ${forGoal}. It unlocks ${lowerFirst(c.staging.unlockCondition ?? "later")}.`;
   }
@@ -69,7 +74,7 @@ function toMatch(c: Candidate, ctx: EngineContext): Match {
     score: c.score,
     breakdown: c.breakdown,
     explanation: explain(c, ctx),
-    termsToKnow: c.product.keyTerms.slice(0, 3),
+    termsToKnow: termsWithFee(c.product, ctx),
     confidence: confidenceFor(c.score),
     sourceUrl: c.product.sourceUrls[0] ?? "",
   };
@@ -102,38 +107,41 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
   const allocationFor = (goalId: string) => spending.allocation.find((a) => a.goalId === goalId)?.monthlyAmount;
   const savingsMatch = matches.find((m) => m.product.category === "savings");
   const rest = matches.filter((m) => m.product.id !== stepOne.productId);
+  const room = math.monthlySurplus > 0;
 
   const now: Omit<PlanStep, "order">[] = [stepOne];
+  // Rule set E: the automate habit is always present.
+  if (stepOne.kind !== "habit") {
+    now.push({
+      stage: "now",
+      kind: "habit",
+      title: snapshot.hasSteadyIncome ? "Automate it on payday" : "Automate it the day money arrives",
+      detail: room
+        ? `Move ${usd(spending.savingsMonthly)} to savings first: ${usd(spending.emergencyMonthly)} to your cushion, ${usd(spending.goalMonthly)} to your goals.`
+        : "Once there's breathing room, a small automatic transfer does the saving for you.",
+      startMonth: 0,
+      ...(savingsMatch ? { productId: savingsMatch.product.id } : {}),
+      ...(spending.savingsMonthly > 0 ? { monthlyAmount: spending.savingsMonthly } : {}),
+    });
+  }
   if (stepOne.kind !== "budget") {
     now.push({
       stage: "now",
       kind: "budget",
       title: "Set your spending plan",
-      detail:
-        math.monthlySurplus > 0
-          ? `${usd(math.monthlyFixedCosts + math.monthlyDebtPayments)} bills, ${usd(spending.emergencyMonthly)} cushion, ${usd(spending.goalMonthly)} goals, ${usd(spending.guiltFreeMonthly)} guilt-free. Every dollar has a job.`
-          : "List every bill and expense so we can find your breathing room.",
+      detail: room
+        ? `${usd(math.monthlyFixedCosts + math.monthlyDebtPayments)} bills, ${usd(spending.savingsMonthly)} savings, ${usd(spending.guiltFreeMonthly)} guilt-free. Every dollar has a job.`
+        : "List every bill and expense so we can find your breathing room.",
       startMonth: 0,
     });
   }
-  if (!snapshot.hasSteadyIncome && math.monthlySurplus > 0) {
+  if (spending.highFixedCosts) {
     now.push({
       stage: "now",
-      kind: "habit",
-      title: "Split each deposit into your buckets the day it lands",
-      detail: "When an aid refund or family money arrives, move the cushion, goal, and fun amounts right away.",
+      kind: "budget",
+      title: "Big Win: review your biggest fixed cost",
+      detail: `Bills take ${Math.round(math.fixedShare * 100)}% of your income. Housing, car, or phone is where one change frees the most money.`,
       startMonth: 0,
-    });
-  }
-  if (spending.emergencyMonthly > 0) {
-    now.push({
-      stage: "now",
-      kind: "save",
-      title: `Auto-save ${usd(spending.emergencyMonthly)} a month to your cushion`,
-      detail: `Automate it so saving happens before spending. Target: ${usd(ctx.cushionTarget)} first.`,
-      startMonth: 0,
-      ...(savingsMatch ? { productId: savingsMatch.product.id } : {}),
-      monthlyAmount: spending.emergencyMonthly,
     });
   }
   for (const m of rest.filter((m) => m.staging.stage === "now")) {
@@ -142,7 +150,7 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
       stage: "now",
       kind: learn ? "learn" : "open",
       title: `${learn ? "Explore" : "Open"} ${m.product.name}`,
-      detail: m.product.keyTerms[0] ?? "",
+      detail: (ACCOUNT_CATEGORIES.includes(m.product.category) ? feeNote(m.product, ctx) : null) ?? m.product.keyTerms[0] ?? "",
       startMonth: 0,
       productId: m.product.id,
     });
@@ -168,9 +176,7 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
     .map((m): Omit<PlanStep, "order"> => ({
       stage: "later",
       kind: isMortgageLike(m.product) ? "talk_to_banker" : "open",
-      title: isMortgageLike(m.product)
-        ? `Talk to an FNB banker about ${m.product.name}`
-        : `Unlock ${m.product.name}`,
+      title: isMortgageLike(m.product) ? `Talk to an FNB banker about ${m.product.name}` : `Unlock ${m.product.name}`,
       detail: m.staging.unlockCondition ?? "",
       startMonth: laterStartMonth(m, ctx, spending),
       productId: m.product.id,
@@ -178,7 +184,7 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
   later.sort((a, b) => a.startMonth - b.startMonth);
 
   const nextCap = Math.min(next.length, 2);
-  const laterCap = Math.min(later.length, MAX_STEPS - Math.min(now.length, 3) - nextCap);
+  const laterCap = Math.min(later.length, 2, MAX_STEPS - Math.min(now.length, 4) - nextCap);
   const nowCap = MAX_STEPS - nextCap - laterCap;
   return [...now.slice(0, nowCap), ...next.slice(0, nextCap), ...later.slice(0, laterCap)].map((s, i) => ({
     ...s,
@@ -186,23 +192,47 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
   }));
 }
 
-function bankerSummary(ctx: EngineContext, matches: Candidate[]): string {
+function bankerSummary(ctx: EngineContext, matches: Candidate[], spending: SpendingResult): string {
   const { snapshot, math, profile, intake } = ctx;
   const income = snapshot.incomeSources.length
     ? snapshot.incomeSources.map((s) => `${usd(s.amount)}${FREQ_LABEL[s.frequency]} ${INCOME_LABEL[s.kind]}`).join(", ")
     : "no income sources listed";
   const goals = [...profile.goals]
     .sort((a, b) => a.priority - b.priority)
-    .map((g) => `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${g.horizonMonths} months, P${g.priority})`)
+    .map((g) => {
+      const a = spending.allocation.find((x) => x.goalId === g.id);
+      const status = a ? (a.onTrack ? "on track" : `${usd(a.monthlyAmount)}/mo of ${usd(a.requiredMonthly)}/mo needed`) : "";
+      return `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${g.horizonMonths} months, P${g.priority}${status ? `, ${status}` : ""})`;
+    })
     .join("; ");
   const names = (stage: string) =>
     matches.filter((m) => m.staging.stage === stage).map((m) => m.product.name).join(", ") || "none";
   return [
     `${LIFE_STAGE_LABEL[intake.lifeStage]}, ${snapshot.isFnbCustomer ? "existing FNB customer" : "not yet an FNB customer"}, ${snapshot.hasSteadyIncome ? "steady income" : "no steady income"}.`,
-    `Income: ${income} = about ${usd(math.effectiveMonthlyIncome)}/mo effective. Fixed costs ${usd(math.monthlyFixedCosts)}, debt payments ${usd(math.monthlyDebtPayments)}, surplus ${usd(math.monthlySurplus)}/mo, savings ${usd(snapshot.savingsBalance)}, credit range: ${snapshot.creditBand}.`,
+    `Income: ${income} = about ${usd(math.effectiveMonthlyIncome)}/mo effective. Fixed costs ${usd(math.monthlyFixedCosts)}, debt payments ${usd(math.monthlyDebtPayments)} (${Math.round(math.fixedShare * 100)}% of income), surplus ${usd(math.monthlySurplus)}/mo, savings ${usd(snapshot.savingsBalance)}, credit range: ${snapshot.creditBand}.`,
+    `Spending plan: ${usd(spending.savingsMonthly)}/mo savings, ${usd(spending.guiltFreeMonthly)}/mo guilt-free${spending.futureYou.earmarkMonthly ? `, ${usd(spending.futureYou.earmarkMonthly)}/mo Future You (advisor handoff)` : ""}.`,
     `Goals: ${goals}.`,
     `Plan: now ${names("now")}; next ${names("next")}; later ${names("later")}.`,
   ].join(" ");
+}
+
+function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
+  const { math } = ctx;
+  if (math.monthlySurplus <= 0) {
+    return "Right now your costs use up all of your income, and that's okay. First we find your breathing room, starting with one free step this week.";
+  }
+  // Lever wording: lead with the top-value goal's turn-up-the-dial lever when there is one.
+  const focus = topValueGoal(ctx);
+  const a = focus ? spending.allocation.find((x) => x.goalId === focus) : undefined;
+  const dial = a?.levers.find((l) => l.kind === "turn_up_dial");
+  const first =
+    dial && dial.kind === "turn_up_dial" && focus
+      ? `Your ${GOAL_LABELS[focus]} goal is ${usd(dial.moveFromGuiltFree)} a month away, and your guilt-free money can turn up that dial.`
+      : `You have ${usd(math.monthlySurplus)} a month of breathing room, and that's a real start.`;
+  const second = spending.cushionFillsInMonths
+    ? `${usd(spending.emergencyMonthly)} a month fills your cushion in ${spending.cushionFillsInMonths} months, then your goals get the full amount.`
+    : "Let's give every dollar a job, beginning with one easy step this week.";
+  return `${first} ${second}`;
 }
 
 export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers): Plan {
@@ -220,24 +250,24 @@ export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnaps
         ? `Step one this week, then ${usd(spending.goalMonthly)} a month toward your goals, starting with ${GOAL_LABELS[p1.id]}`
         : `Step one this week, then ${usd(spending.goalMonthly)} a month toward your ${p1 ? GOAL_LABELS[p1.id] : ""} goal`
       : "First, let's find your breathing room";
-  const sproutSays =
-    math.monthlySurplus > 0
-      ? `You have ${usd(math.monthlySurplus)} a month of breathing room, and that's a real start. Let's give every dollar a job, beginning with one easy step this week.`
-      : "Right now your costs use up all of your income, and that's okay. First we find your breathing room, starting with one free step this week.";
 
   return {
     headline,
-    sproutSays,
+    sproutSays: sproutSaysFor(ctx, spending),
     stepOne,
     effectiveMonthlyIncome: math.effectiveMonthlyIncome,
     monthlySurplus: math.monthlySurplus,
     spendingPlan: spending.spendingPlan,
+    fixedShare: math.fixedShare,
+    cushionTarget: ctx.cushionTarget,
+    cushionFillsInMonths: spending.cushionFillsInMonths,
+    futureYou: spending.futureYou,
     emergencyFundTarget: math.fullCushion,
     allocation: spending.allocation,
     matches: matches.map((c) => toMatch(c, ctx)),
     steps: buildSteps(stepOne, matches, ctx, spending),
     notYet: buildNotYet(ctx, matches),
-    bankerSummary: bankerSummary(ctx, matches),
+    bankerSummary: bankerSummary(ctx, matches, spending),
     aiUsed: false,
     disclaimer: DISCLAIMER,
   };

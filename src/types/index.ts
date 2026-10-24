@@ -1,4 +1,4 @@
-// Copied verbatim from docs/CONTRACTS.md (Contracts v2). Change only via a contract-change PR.
+// Copied verbatim from docs/CONTRACTS.md (Contracts v2.1). Change only via a contract-change PR.
 
 // ---------- enums ----------
 export type GoalId =
@@ -167,10 +167,24 @@ export interface SpendingBucket {
   note: string;                 // 1 line, plain words
 }
 
+export type GapLever =
+  | { kind: "turn_up_dial"; moveFromGuiltFree: number }   // only if guilt-free stays >= 10% of income
+  | { kind: "more_time"; newHorizonMonths: number }
+  | { kind: "smaller_target"; reachableAmount: number };
+
 export interface Allocation {
   goalId: GoalId;
   monthlyAmount: number;
-  monthsToTarget: number;       // ceil((target - allocated savings) / monthlyAmount)
+  monthsToTarget: number;       // ceil(target / monthlyAmount); 0 if monthlyAmount is 0
+  requiredMonthly: number;      // ceil(target / horizonMonths)
+  onTrack: boolean;
+  levers: GapLever[];           // empty when onTrack; turn_up_dial first when present
+}
+
+export interface FutureYou {    // investing shown inside our advice boundary (docs/SPROUT.md rule set F)
+  earmarkMonthly: number | null;  // ~10% for steady income with fixed share <= 60%, else null
+  handoff: string;              // "An FNB advisor can help you ..."
+  unlockCondition?: string;     // when earmarkMonthly is null
 }
 
 export type StepKind = "save" | "open" | "learn" | "habit" | "budget" | "talk_to_banker" | "wait";
@@ -200,6 +214,10 @@ export interface Plan {
   effectiveMonthlyIncome: number;
   monthlySurplus: number;       // effective income - fixed - debt (may be <= 0)
   spendingPlan: SpendingBucket[];
+  fixedShare: number;           // (fixed + debt) / effective income, 0..1+
+  cushionTarget: number;        // starter (students) or full (steady income)
+  cushionFillsInMonths: number | null;  // null when already met or no emergency allocation
+  futureYou: FutureYou;
   emergencyFundTarget: number;  // 3 x (fixed + debt)
   allocation: Allocation[];
   matches: Match[];             // max 2 per goal, sorted by score
