@@ -14,6 +14,7 @@ import type {
   Plan,
   PlanStep,
   Persona,
+  PersonaDef,
   Product,
   ProfiledGoal,
   ScoreBreakdown,
@@ -115,7 +116,23 @@ export const ProfiledGoalSchema = GoalAnswerSchema.extend({
   motivation: z.string(),
 });
 
+export const PersonaIdSchema = z.enum([
+  "freedom_seeker",
+  "experience_collector",
+  "safety_builder",
+  "family_first",
+  "future_builder",
+  "simple_saver",
+]);
+
+export const PersonaDefSchema = z.object({
+  id: PersonaIdSchema,
+  label: z.string(),
+  tagline: z.string(),
+});
+
 export const PersonaSchema = z.object({
+  id: PersonaIdSchema,
   label: z.string(),
   description: z.string(),
 });
@@ -301,6 +318,7 @@ export type SchemaChecks = [
   Assert<Same<z.infer<typeof SwipeAnswerSchema>, SwipeAnswer>>,
   Assert<Same<z.infer<typeof IncomeSourceSchema>, IncomeSource>>,
   Assert<Same<z.infer<typeof PersonaSchema>, Persona>>,
+  Assert<Same<z.infer<typeof PersonaDefSchema>, PersonaDef>>,
   Assert<Same<z.infer<typeof UnlockTriggerSchema>, UnlockTrigger>>,
   Assert<Same<z.infer<typeof SpendingBucketSchema>, SpendingBucket>>,
   Assert<Same<z.infer<typeof IntakeAnswersSchema>, IntakeAnswers>>,
