@@ -66,7 +66,7 @@ For each goal:
 
 ## Rule set E: staging
 
-- `now`: eligible, affordable, foundational (no-fee checking, starter cushion, $0 tools, education, scholarships).
+- `now`: eligible, affordable, foundational (best-fit everyday checking, starter cushion, $0 tools, education, scholarships).
 - `next`: eligible today but follows a `now` item.
 - `later`: reachable condition; MUST carry `unlockTrigger` + `unlockCondition`.
 - Student triggers: secured card → savings ≥ starter cushion + minimum deposit, or `first_paycheck`. Income-dependent products → `first_paycheck` / `internship`. Mortgages and homebuyer programs → `full_time_job` + full cushion.
