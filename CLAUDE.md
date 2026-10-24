@@ -21,6 +21,13 @@ Two people, each running their own Claude Code session on their own laptop. You 
 
 Read `docs/SPEC.md` and `docs/CONTRACTS.md` before starting any task.
 
+## Agent roles
+
+- **Lead agent:** the claude.ai Project chat "Hack PSU Fall 2026" (Ben drives it). Owns `docs/SPEC.md`, `docs/CONTRACTS.md`, the issue backlog, and re-planning. It does not write feature code.
+- **Builder agents:** Ben's and Ethan's Claude Code sessions. They implement issues, and report back ONLY through GitHub: issue comments, PR bodies, and `status:*` labels.
+- **Escalation:** if an issue is ambiguous, contradicts the spec, or needs a contract change, the builder comments on the issue with the exact question, labels it `status:blocked`, and tells its human. The human brings it to the lead chat. Builders never change the spec or contracts on their own.
+- Sub-chats in the claude.ai Project (e.g. pitch, Devpost) read the same Project docs; repo docs win if they conflict.
+
 ## Coordination protocol
 
 1. **Before every task, run `/sync`.** It shows what the teammate is doing and which files their open PRs touch.
@@ -50,8 +57,9 @@ Read `docs/SPEC.md` and `docs/CONTRACTS.md` before starting any task.
 
 | Path | Default owner |
 |---|---|
-| `src/app/api/**`, `src/lib/ai/**`, `src/lib/server/**` | Ben |
-| `src/app/(pages)`, `src/components/**`, styles | Ethan |
+| `src/app/api/**`, `src/lib/ai/**`, `src/lib/server/**` (except `auth.ts`), `src/data/catalog.json` | Ben |
+| Page routes under `src/app/`, `src/components/**`, `src/lib/client/**`, styles | Ethan |
+| Auth0: `src/middleware.ts`, `src/lib/auth0.ts`, `src/lib/server/auth.ts`, `src/components/auth/**` | Ethan |
 | `src/types/**`, `docs/CONTRACTS.md` | Shared, contract-change only |
 | `docs/DEMO.md` | Ethan |
 
