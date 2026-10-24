@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import type { GoalProfile, Plan } from "@/types";
 import { GoalsProgress } from "./GoalsProgress";
 import { Roadmap } from "./Roadmap";
 import { BankerCta, NotYetCard, SproutIntro, StepOneCard } from "./sections";
-import { scrubAll } from "./scrub";
 import { SpendingPlan } from "./SpendingPlan";
 
-export function PlanView({ plan: rawPlan, profile: rawProfile }: { plan: Plan; profile: GoalProfile }) {
-  const plan = useMemo(() => scrubAll(rawPlan), [rawPlan]);
-  const profile = useMemo(() => scrubAll(rawProfile), [rawProfile]);
+export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
 
   useEffect(() => {
     if (!plan.aiUsed) console.info("[plan] Rendering engine fallback text (aiUsed=false).");

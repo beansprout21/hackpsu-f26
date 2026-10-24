@@ -13,7 +13,7 @@ export function SiteHeader() {
           </span>
           <span className="text-lg font-semibold tracking-tight">Sprout</span>
           <span className="hidden rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground md:inline">
-            Prototype
+            Prototype built for FNB
           </span>
         </Link>
         <StepIndicator />

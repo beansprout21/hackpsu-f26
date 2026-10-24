@@ -4,7 +4,6 @@ import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { cn } from "@/lib/utils";
 import type { Confidence, Match } from "@/types";
 import { formatDate, productById, productName } from "./format";
-import { scrub } from "./scrub";
 
 const CONFIDENCE: Record<Confidence, { label: string; className: string }> = {
   high: { label: "High confidence", className: "bg-conf-high/10 text-conf-high" },
@@ -58,7 +57,7 @@ export function MatchCard({ match }: { match: Match }) {
         </div>
       )}
 
-      {product?.rateNote && <p className="text-xs text-muted-foreground">{scrub(product.rateNote)}</p>}
+      {product?.rateNote && <p className="text-xs text-muted-foreground">{product.rateNote}</p>}
 
       <details className="group rounded-xl bg-muted px-3 py-2">
         <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium [&::-webkit-details-marker]:hidden">
