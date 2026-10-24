@@ -17,7 +17,7 @@ const STAGES: Record<GenerationStage, { title: string; details: string[]; from: 
     expectMs: 6000,
   },
   plan: {
-    title: "Matching FNB products to your goals",
+    title: "Finding products that fit your goals",
     details: ["Building your spending plan", "Checking what unlocks later", "Lining up your step one", "Putting it in plain words"],
     from: 40,
     to: 95,
