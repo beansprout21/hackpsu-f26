@@ -45,7 +45,8 @@ const templateText = (p: Plan) => [
   p.futureYou.handoff,
   p.futureYou.unlockCondition ?? "",
   ...p.spendingPlan.map((b) => b.note),
-  ...p.matches.flatMap((m) => [m.explanation, m.unlockCondition ?? "", ...m.termsToKnow]),
+  // termsToKnow are FNB catalog facts (e.g. "interest-only"), not Sprout's voice, so they're not scanned.
+  ...p.matches.flatMap((m) => [m.explanation, m.unlockCondition ?? ""]),
   ...p.steps.flatMap((s) => [s.title, s.detail]),
   ...p.notYet.flatMap((n) => [n.reason, n.revisitWhen]),
 ];
@@ -112,7 +113,13 @@ check(
 check((257 - 140) / m.effectiveMonthlyIncome >= 0.1, "turn_up_dial keeps guilt-free at $117 (>= 10% of income)");
 check(m.cushionTarget === 650 && m.cushionFillsInMonths === 3, "Cushion: starter $650, fills in 3 months");
 check(m.stepOne.productId === "student-checking" && /HUB/.test(m.stepOne.detail), "Step one: Open FNB Student Checking (HUB branch)");
-check(stageOf(m, "student-checking") === "now" && stageOf(m, "learning-center") === "now", "Now includes Student Checking + Learning Center");
+const scholarshipInCatalog = isCatalogId("fnb-student-scholarship");
+check(
+  stageOf(m, "student-checking") === "now" &&
+    stageOf(m, "learning-center") === "now" &&
+    (!scholarshipInCatalog || stageOf(m, "fnb-student-scholarship") === "now"),
+  `Now includes Student Checking + Learning Center${scholarshipInCatalog ? " + FNB scholarship entry" : ""}`,
+);
 check(m.matches.some((x) => x.productId === "savers-goal-cd" && x.stage === "next" && x.goalId === "travel"), "Next: Savers Goal CD for the Japan fund");
 check(
   m.matches.some(

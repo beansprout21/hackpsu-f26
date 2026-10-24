@@ -29,6 +29,8 @@ export const isMortgageLike = (p: Product) => MORTGAGE_LIKE.includes(p.category)
 
 // Hard eligibility: failing these can't be fixed by saving, waiting, or a life event.
 export function isHardIneligible(p: Product, ctx: EngineContext): boolean {
+  // Home equity needs an owned home; the snapshot has no homeowner field, so never offer it.
+  if (p.category === "home_equity") return true;
   if (p.eligibility.studentOnly && !ctx.isStudent) return true;
   if (p.eligibility.lifeStages && !p.eligibility.lifeStages.includes(ctx.intake.lifeStage)) return true;
   const bands = p.eligibility.creditBands;
@@ -86,8 +88,8 @@ export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
   if (DEPOSIT_GATED.includes(p.category)) {
     const spare = snapshot.savingsBalance - ctx.cushionTarget;
     const deposit = p.minOpeningDeposit;
-    if (deposit === null) {
-      // Unpublished minimum (e.g. CD Specials): wait until the cushion is in place, then check with FNB.
+    if (deposit === null && p.category === "cd") {
+      // Unpublished CD minimum (e.g. CD Specials): wait until the cushion is in place, then check with FNB.
       if (spare < 0) {
         return {
           stage: "later",
@@ -95,7 +97,7 @@ export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
           unlockCondition: `When your cushion reaches ${usd(ctx.cushionTarget)} (check the minimum with FNB)`,
         };
       }
-    } else if (isSecuredCard(p) && spare < deposit) {
+    } else if (deposit !== null && isSecuredCard(p) && spare < deposit) {
       // Rule set E: secured card unlocks at savings >= target cushion + minimum deposit.
       const amount = Math.ceil(ctx.cushionTarget + deposit);
       return {

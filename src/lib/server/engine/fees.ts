@@ -26,16 +26,23 @@ const FEE_NOTES: Record<string, FeeNote> = {
   "free-small-business-checking": () => "No monthly fee",
 };
 
+const FEE_TERM = /fee|charge|penalt|waiv/i;
+
 export function feeNote(p: Product, ctx: EngineContext): string | null {
   const known = FEE_NOTES[p.id];
   if (known) return known(ctx);
   if (p.category === "education_tool") return "Free";
-  return p.keyTerms.find((t) => /fee/i.test(t)) ?? null;
+  // Any other product: its own published fee term, else say plainly that none is listed.
+  const published = p.keyTerms.find((t) => FEE_TERM.test(t));
+  if (published) return published;
+  if (p.category === "credit_card") return "No annual fee listed";
+  if (["checking", "savings", "cd", "small_business"].includes(p.category)) return "No monthly fee listed";
+  return null;
 }
 
 // Terms to know: the fee line first, then other key terms (max 3, no duplicates).
 export function termsWithFee(p: Product, ctx: EngineContext): string[] {
   const fee = feeNote(p, ctx);
-  const rest = p.keyTerms.filter((t) => !/fee/i.test(t) || !fee);
+  const rest = p.keyTerms.filter((t) => t !== fee && (!fee || !FEE_TERM.test(t)));
   return (fee ? [fee, ...rest] : rest).slice(0, 3);
 }

@@ -54,6 +54,12 @@ function explain(c: Candidate, ctx: EngineContext): string {
   const forGoal = goal?.why ? `your ${label} goal (${goal.why})` : `your ${label} goal`;
   const fee = ACCOUNT_CATEGORIES.includes(c.product.category) ? feeNote(c.product, ctx) : null;
   const tail = fee ? ` ${fee}.` : c.product.keyTerms[0] ? ` ${c.product.keyTerms[0]}.` : "";
+  if (!goal && c.staging.stage === "now") {
+    // Foundation items (Step one checking, free student tools) aren't tied to a goal the user picked.
+    if (c.product.category === "education_tool") return `${c.product.name} is a free head start you can use right away.${tail}`;
+    if (c.product.category === "savings") return `${c.product.name} is where your cushion grows, and you can start right away.${tail}`;
+    return `${c.product.name} is your everyday home base, and you can start right away.${tail}`;
+  }
   switch (c.staging.stage) {
     case "now":
       return `${c.product.name} fits ${forGoal}, and you can start right away.${tail}`;
@@ -92,6 +98,35 @@ function withStepOneMatch(matches: Candidate[], stepOne: PlanStep, ctx: EngineCo
     matches = matches.filter((m) => m !== weakest);
   }
   return [...matches, { ...c, staging: { stage: "now" } }];
+}
+
+// Rule set E: students always get the free education foundation (Learning Center, scholarship
+// entry) as `now` items when they're in the catalog and not already matched.
+const STUDENT_FOUNDATION = ["learning-center", "fnb-student-scholarship"];
+
+function withStudentFoundation(matches: Candidate[], ctx: EngineContext): Candidate[] {
+  if (!ctx.isStudent) return matches;
+  const out = [...matches];
+  for (const id of STUDENT_FOUNDATION) {
+    if (out.some((m) => m.product.id === id)) continue;
+    if (out.filter((m) => m.goalId === "education").length >= 2) break;
+    const product = getProduct(id);
+    const c = product ? candidateFor(product, { id: "education", priority: 3 }, ctx) : null;
+    if (c && c.staging.stage === "now") out.push(c);
+  }
+  return out;
+}
+
+// Rule set E: the target cushion is foundational, so while it isn't met the plan always shows
+// the account it grows in (FirstRate Savings, FNB's companion to Student Checking).
+const CUSHION_ACCOUNT = "firstrate-savings";
+
+function withCushionAccount(matches: Candidate[], ctx: EngineContext): Candidate[] {
+  if (ctx.snapshot.savingsBalance >= ctx.cushionTarget) return matches;
+  if (matches.some((m) => m.product.category === "savings")) return matches;
+  const product = getProduct(CUSHION_ACCOUNT);
+  const c = product ? candidateFor(product, { id: "emergency_fund", priority: 2 }, ctx) : null;
+  return c && c.staging.stage === "now" ? [...matches, c] : matches;
 }
 
 function laterStartMonth(c: Candidate, ctx: EngineContext, spending: SpendingResult): number {
@@ -240,7 +275,9 @@ export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnaps
   const spending = buildSpending(ctx);
   const selected = selectMatches(ctx);
   const stepOne = chooseStepOne(ctx, selected);
-  const matches = withStepOneMatch(selected, stepOne, ctx).sort((a, b) => b.score - a.score);
+  const matches = withCushionAccount(withStudentFoundation(withStepOneMatch(selected, stepOne, ctx), ctx), ctx).sort(
+    (a, b) => b.score - a.score,
+  );
   const { math } = ctx;
   const p1 = [...profile.goals].sort((a, b) => a.priority - b.priority)[0];
 
