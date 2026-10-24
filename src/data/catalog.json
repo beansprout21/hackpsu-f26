@@ -1,0 +1,375 @@
+[
+  {
+    "id": "student-checking",
+    "name": "FNB Student Checking",
+    "category": "checking",
+    "forWho": "High school, college, trade school, and graduate students. Applicants under 18 open jointly with a parent or guardian.",
+    "goalTags": ["everyday_banking", "education", "credit_building"],
+    "eligibility": { "studentOnly": true },
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "No monthly service charge or minimum balance",
+      "No overdraft fees; transactions are declined when funds are short",
+      "Refunds FNB's fee for non-FNB ATMs up to 4 times per statement cycle",
+      "One free incoming wire per statement cycle",
+      "Includes Credit Center, Zelle, CardGuard, and mobile deposit"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": [
+      "https://www.fnb-online.com/personal/checking-savings/checking/student-checking",
+      "https://www.fnb-online.com/landing/international-students"
+    ],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "estyle-checking",
+    "name": "FNB eStyle Checking",
+    "category": "checking",
+    "forWho": "Anyone with a non-expired ID. Bank On certified, checkless account.",
+    "goalTags": ["everyday_banking", "credit_building"],
+    "eligibility": {},
+    "minOpeningDeposit": 25,
+    "keyTerms": [
+      "$25 to open online, $0 in a branch",
+      "Monthly fee waived with 1+ deposit or 5+ transactions per statement cycle",
+      "No overdraft fee; transactions are declined or returned",
+      "No paper checks; free Visa debit card, Zelle, and instant payments"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://fnb-online.com/Personal/Checking-Savings/Checking/eStyle-Checking"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "freestyle-checking",
+    "name": "FNB Freestyle Checking",
+    "category": "checking",
+    "forWho": "Anyone with a non-expired ID.",
+    "goalTags": ["everyday_banking", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": 50,
+    "keyTerms": [
+      "$50 to open online, $0 in a branch",
+      "No monthly fee with free online statements",
+      "No minimum balance",
+      "Unlimited check writing and about 1,800 surcharge-free ATMs",
+      "Pairs with FirstRate Savings in one eStore application"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://fnb-online.com/bank/personal/checking/freestyle-checking"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "firstrate-savings",
+    "name": "FNB FirstRate Savings",
+    "category": "savings",
+    "forWho": "Anyone with a non-expired ID. FNB's companion savings account to Student Checking.",
+    "goalTags": ["emergency_fund", "travel", "first_home", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": 50,
+    "keyTerms": [
+      "$50 to open online, $0 in a branch",
+      "$5 monthly fee, waived with a $500 average daily balance",
+      "6 transfers or withdrawals a month; $15 for each one over",
+      "Branch and ATM transactions are unlimited",
+      "Tiered rate; interest compounds quarterly"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/checking-savings/savings/firstrate-savings"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "firstrate-money-market",
+    "name": "FNB FirstRate Money Market",
+    "category": "savings",
+    "forWho": "Anyone with a non-expired ID.",
+    "goalTags": ["emergency_fund", "first_home", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": 50,
+    "keyTerms": [
+      "$50 to open online, $0 in a branch",
+      "$10 monthly fee, waived with a $5,000 average daily balance",
+      "6 transfers or withdrawals per statement cycle; $15 for each one over",
+      "Check writing allowed",
+      "Tiered, variable rate; interest paid monthly"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/bank/personal/savings/firstrate-money-market"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "savers-goal-cd",
+    "name": "FNB Savers Goal CD",
+    "category": "cd",
+    "forWho": "Anyone with a non-expired ID saving toward a specific goal.",
+    "goalTags": ["travel", "first_home", "emergency_fund", "education", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": 100,
+    "keyTerms": [
+      "12-month fixed term that renews automatically",
+      "$100 minimum to open",
+      "At least $25 a month in transfers from an FNB checking or savings account",
+      "Add deposits any time",
+      "Early withdrawal penalty applies"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/checking-savings/savings/savers-goal-certificate-of-deposit"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "cd-special",
+    "name": "FNB Certificate of Deposit Specials",
+    "category": "cd",
+    "forWho": "Consumers in PA, OH, WV, NC, SC, VA, MD, and DC with new money and an FNB checking account.",
+    "goalTags": ["first_home", "travel", "emergency_fund"],
+    "eligibility": {},
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "Requires new money and an FNB checking account; one per household",
+      "Published minimums range from $2,500 to $10,000 depending on term; confirm with FNB",
+      "Early withdrawal penalties may apply",
+      "Renews at the base rate at maturity"
+    ],
+    "rateNote": "3.00% APY (5-month), 3.75% APY (7-month), 4.15% APY (13-month), as of Oct 1, 2026",
+    "sourceUrls": ["https://www.fnb-online.com/personal/checking-savings/savings/certificate-of-deposit-specials"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "smartsecured-card",
+    "name": "FNB SmartSecured Credit Card",
+    "category": "credit_card",
+    "forWho": "People building or rebuilding credit, including those turned down for credit in the past.",
+    "goalTags": ["credit_building"],
+    "eligibility": { "creditBands": ["building", "unsure"] },
+    "minOpeningDeposit": 500,
+    "keyTerms": [
+      "No annual fee",
+      "Credit limit equals your savings deposit, $500 to $2,000",
+      "Subject to credit approval"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/loans-mortgages/personal-loans/personal-credit-cards/smart-secured-credit-card"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "smartcash-card",
+    "name": "FNB SmartCash Credit Card",
+    "category": "credit_card",
+    "forWho": "General consumers who want simple cash back.",
+    "goalTags": ["everyday_banking", "credit_building", "family"],
+    "eligibility": { "creditBands": ["fair", "good", "excellent"] },
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "No annual fee",
+      "2% cash back on qualified purchases, no cap",
+      "Redeem to FNB checking or for gift cards",
+      "Subject to credit approval"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://fnb-online.com/Personal/Loans-Mortgages/Personal-Loans/Personal%20Credit%20Cards/Cash-Back"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "smartrewards-card",
+    "name": "FNB SmartRewards Credit Card",
+    "category": "credit_card",
+    "forWho": "General consumers who want points for travel and experiences.",
+    "goalTags": ["travel", "credit_building"],
+    "eligibility": { "creditBands": ["good", "excellent"] },
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "No annual fee",
+      "1 point per $1, double points for the first 90 days",
+      "Redeem for travel, merchandise, experiences, or gift cards",
+      "Points expire after 5 years",
+      "Subject to credit approval"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/loans-mortgages/personal-loans/personal-credit-cards/rewards-cc"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "smartrate-card",
+    "name": "FNB SmartRate Credit Card",
+    "category": "credit_card",
+    "forWho": "General consumers who want a low rate or a balance transfer.",
+    "goalTags": ["credit_building", "emergency_fund"],
+    "eligibility": { "creditBands": ["good", "excellent"] },
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "No annual fee",
+      "0% intro APR for 12 months",
+      "Then a variable APR based on creditworthiness",
+      "Subject to credit approval"
+    ],
+    "rateNote": "0% intro APR for 12 months, then 15.74% to 23.74% variable APR",
+    "sourceUrls": ["https://www.fnb-online.com/personal/loans-mortgages/personal-loans/personal-credit-cards/rates-credit-card"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "fnb-home-ownership-program",
+    "name": "FNB Home Ownership Program",
+    "category": "mortgage",
+    "forWho": "Low- to moderate-income buyers, or buyers in low- to moderate-income communities. Less-than-perfect credit is considered.",
+    "goalTags": ["first_home", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "Little to no down payment required",
+      "Up to $5,000 closing cost grant from FNB",
+      "No mortgage insurance required",
+      "Closing funds can come from a gift or grant",
+      "Subject to underwriting"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": [
+      "https://www.fnb-online.com/personal/loans-mortgages/mortgages/buy-a-home/fnb-home-ownership-program",
+      "https://www.fnb-online.com/personal/loans-mortgages/mortgages/affordable-mortgage"
+    ],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "homeone-mortgage",
+    "name": "HomeOne Mortgage (Freddie Mac)",
+    "category": "mortgage",
+    "forWho": "Qualified first-time homebuyers. No income or geographic restrictions.",
+    "goalTags": ["first_home"],
+    "eligibility": {},
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "3% minimum down payment",
+      "Fixed rate",
+      "Homebuyer education required",
+      "Single-family homes, townhouses, and condos",
+      "Subject to underwriting"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/loans-mortgages/mortgages/buy-a-home/homeone-program"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "fha-mortgage",
+    "name": "FHA Mortgage",
+    "category": "mortgage",
+    "forWho": "First-time and experienced buyers. Less-than-perfect credit is considered.",
+    "goalTags": ["first_home", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "Low down payment",
+      "Fixed rate",
+      "Mortgage insurance required on all FHA loans",
+      "Subject to underwriting"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/loans-mortgages/mortgages/buy-a-home/fha-mortgage"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "home-possible-mortgage",
+    "name": "Home Possible Mortgage (Freddie Mac)",
+    "category": "mortgage",
+    "forWho": "Low- to moderate-income borrowers; first-time buyer status not required.",
+    "goalTags": ["first_home", "family"],
+    "eligibility": {},
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "Low down payment",
+      "Cancellable mortgage insurance",
+      "Homebuyer education required if all borrowers are first-time buyers",
+      "Subject to underwriting"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/loans-mortgages/mortgages/buy-a-home/home-possible"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "free-small-business-checking",
+    "name": "FNB Free Small Business Checking",
+    "category": "small_business",
+    "forWho": "Businesses. Open with an ID, SSN and/or EIN, and formation documents depending on business type.",
+    "goalTags": ["small_business"],
+    "eligibility": {},
+    "minOpeningDeposit": 50,
+    "keyTerms": [
+      "$50 to open online, $0 in a branch",
+      "No monthly fee",
+      "150 free transactions and $4,999.99 in cash deposits a month",
+      "$200 Merchant Services credit"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/business/checking-savings/business-checking/free-small-business-checking"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "sba-lending",
+    "name": "FNB SBA Lending (7(a), 504, Express)",
+    "category": "small_business",
+    "forWho": "Small businesses funding startup costs, working capital, equipment, or real estate.",
+    "goalTags": ["small_business"],
+    "eligibility": {},
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "SBA Express up to $350,000, usually a 5- or 7-year term",
+      "SBA 504: up to 90% financing for existing businesses",
+      "\"Better Together\" pairs an SBA 7(a) loan with Free Small Business Checking",
+      "Subject to credit approval"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://fnb-online.com/business/loans-leasing/sba-lending"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "learning-center",
+    "name": "FNB Learning Center",
+    "category": "education_tool",
+    "forWho": "Anyone. Free self-paced money lessons, plus free EVERFI modules for college students.",
+    "goalTags": ["education", "credit_building", "first_home", "everyday_banking"],
+    "eligibility": {},
+    "minOpeningDeposit": 0,
+    "keyTerms": [
+      "Free self-paced modules",
+      "Modules: Creating a Budget, Credit Scores & Reports, Credit Cards, Buying a Home, and more",
+      "Free college modules through EVERFI"
+    ],
+    "rateNote": "Free",
+    "sourceUrls": [
+      "https://www.fnb-online.com/learning-modules",
+      "https://fnb.everfi-next.net/welcome/achieve-foundation"
+    ],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "credit-center",
+    "name": "FNB Credit Center",
+    "category": "education_tool",
+    "forWho": "FNB banking customers; included with Student Checking.",
+    "goalTags": ["credit_building"],
+    "eligibility": {},
+    "minOpeningDeposit": 0,
+    "keyTerms": [
+      "Free VantageScore 3.0 from TransUnion, updated monthly",
+      "Full report, monitoring alerts, tips, and disputes",
+      "Soft inquiry; checking does not affect your score"
+    ],
+    "rateNote": "Free",
+    "sourceUrls": ["https://www.fnb-online.com/personal/checking-savings/online-mobile-options/credit-center"],
+    "verified": "2026-10-24"
+  },
+  {
+    "id": "student-loans",
+    "name": "Student Loans (partner programs)",
+    "category": "student_loan",
+    "forWho": "Students through Sallie Mae Smart Option (undergraduates) and PHEAA's PA Forward and Keystone programs.",
+    "goalTags": ["education"],
+    "eligibility": { "lifeStages": ["student"] },
+    "minOpeningDeposit": null,
+    "keyTerms": [
+      "Offered through partner programs: Sallie Mae, PA Forward, Keystone",
+      "Eligibility depends on the program and your school's location",
+      "Amounts and terms set by each program"
+    ],
+    "rateNote": "Check current rate with FNB",
+    "sourceUrls": ["https://www.fnb-online.com/personal/checking-savings/specialty-banking/student-banking-loans/loans"],
+    "verified": "2026-10-24"
+  }
+]
