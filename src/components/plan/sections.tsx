@@ -98,7 +98,7 @@ export function BankerCta({ summary }: { summary: string }) {
           Want a second set of eyes?
         </h2>
         <p className="text-sm opacity-90">
-          We&apos;ll copy a summary of this plan so a banker knows your goals before you meet.
+          We&apos;ll copy a summary of this plan so an FNB banker knows your goals before you meet.
         </p>
       </div>
       <Button
@@ -108,7 +108,7 @@ export function BankerCta({ summary }: { summary: string }) {
       >
         <span className="inline-flex items-center gap-2">
           <CalendarCheck aria-hidden />
-          Book with a banker
+          Book with an FNB banker
         </span>
       </Button>
     </section>

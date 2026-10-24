@@ -26,7 +26,7 @@ const BENEFITS = [
   {
     icon: Landmark,
     title: "Walk in feeling prepared",
-    body: "Bring your plan to a banker who can help you get there.",
+    body: "Bring your plan to an FNB banker who can help you get there.",
   },
 ] as const;
 

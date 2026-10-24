@@ -1,8 +1,7 @@
 import rawCatalog from "@/data/catalog.json";
 import type { LifeEvent, Product, SpendingBucketId } from "@/types";
-import { scrub } from "./scrub";
 
-// Read-only view of Ben's catalog; names and notes go through scrub() so no bank branding shows.
+// Read-only view of Ben's catalog; names and notes render as published (FNB in text, #47).
 const catalog = new Map((rawCatalog as unknown as Product[]).map((p) => [p.id, p]));
 
 export const productById = (id?: string) => (id ? catalog.get(id) : undefined);
@@ -10,7 +9,7 @@ export const productById = (id?: string) => (id ? catalog.get(id) : undefined);
 export const productName = (id: string) => {
   const name = catalog.get(id)?.name;
   return name
-    ? scrub(name)
+    ? name
     : id
         .replace(/^fnb-/, "")
         .replace(/-/g, " ")
