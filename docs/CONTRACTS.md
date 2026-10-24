@@ -1,4 +1,4 @@
-# Contracts v2
+# Contracts v2.1
 
 **Frozen after issue #1 merges.** Changes require a separate PR labeled `contract-change` plus an in-person heads-up.
 Issue #1 copies the types below verbatim into `src/types/index.ts` and the zod schemas into `src/types/schemas.ts`.
@@ -173,10 +173,24 @@ export interface SpendingBucket {
   note: string;                 // 1 line, plain words
 }
 
+export type GapLever =
+  | { kind: "turn_up_dial"; moveFromGuiltFree: number }   // only if guilt-free stays >= 10% of income
+  | { kind: "more_time"; newHorizonMonths: number }
+  | { kind: "smaller_target"; reachableAmount: number };
+
 export interface Allocation {
   goalId: GoalId;
   monthlyAmount: number;
-  monthsToTarget: number;       // ceil((target - allocated savings) / monthlyAmount)
+  monthsToTarget: number;       // ceil(target / monthlyAmount); 0 if monthlyAmount is 0
+  requiredMonthly: number;      // ceil(target / horizonMonths)
+  onTrack: boolean;
+  levers: GapLever[];           // empty when onTrack; turn_up_dial first when present
+}
+
+export interface FutureYou {    // investing shown inside our advice boundary (docs/SPROUT.md rule set F)
+  earmarkMonthly: number | null;  // ~10% for steady income with fixed share <= 60%, else null
+  handoff: string;              // "An FNB advisor can help you ..."
+  unlockCondition?: string;     // when earmarkMonthly is null
 }
 
 export type StepKind = "save" | "open" | "learn" | "habit" | "budget" | "talk_to_banker" | "wait";
@@ -206,6 +220,10 @@ export interface Plan {
   effectiveMonthlyIncome: number;
   monthlySurplus: number;       // effective income - fixed - debt (may be <= 0)
   spendingPlan: SpendingBucket[];
+  fixedShare: number;           // (fixed + debt) / effective income, 0..1+
+  cushionTarget: number;        // starter (students) or full (steady income)
+  cushionFillsInMonths: number | null;  // null when already met or no emergency allocation
+  futureYou: FutureYou;
   emergencyFundTarget: number;  // 3 x (fixed + debt)
   allocation: Allocation[];
   matches: Match[];             // max 2 per goal, sorted by score
@@ -256,7 +274,7 @@ interface AppState {
 
 ## Demo personas (`src/data/personas.ts`)
 
-**Maya (hero, college student, no steady job):** lifeStage student; hasSteadyIncome false; incomeSources: summer_savings 2400 one_time, aid_refund 1500 per_semester, family 200 monthly (effective ~$842/month); monthlyFixedCosts 650; monthlyDebtPayments 0; savingsBalance 800; creditBand "building"; isFnbCustomer false. Swipes lean experiences + freedom. Goals: travel (P1, 9 months, $3,000, "study abroad in Japan"), credit_building (P2, 12 months), first_home (P3, 84 months, "own a place after graduation").
+**Maya (hero, college student, no steady job) v3:** lifeStage student; hasSteadyIncome false; incomeSources: summer_savings 3000 one_time, aid_refund 2000 per_semester, family 300 monthly (effective $1,133/month); monthlyFixedCosts 650; monthlyDebtPayments 0; savingsBalance 400; creditBand "building"; isFnbCustomer false. Values [experiences, freedom] -> Experience Collector. Goals: travel (P1, 12 months, $2,500, "study abroad in Japan"), credit_building (P2, 12 months), first_home (P3, 84 months, "own a place after graduation"). Expected engine output: see the golden test in docs/SPROUT.md.
 
 **Jordan (contrast, young family):** lifeStage young_family; hasSteadyIncome true; incomeSources: job 2400 monthly; monthlyFixedCosts 1500; monthlyDebtPayments 150; savingsBalance 1200; creditBand "fair"; isFnbCustomer false. Swipes lean security + family. Goals: first_home (P1, 60 months, $15,000), emergency_fund (P2, 12 months).
 

@@ -1,77 +1,137 @@
-# Sprout's Brain
+# Sprout's Brain (v2)
 
-Sprout is the app and its advisor. The **engine** (deterministic code, issue #3) decides numbers, stages, and Step one. The **AI** (issues #4, #5) explains them in Sprout's voice. The AI never changes an amount, a stage, a trigger, or the Step one choice.
+Sprout is the app and its advisor. The **engine** (deterministic code) decides numbers, stages, levers, and Step one. The **AI** explains them in Sprout's voice. The AI never changes an amount, a stage, a trigger, a lever, or the Step one choice.
 
-Part 1 (this version): engine rulebook, approved by Ben Sat 3:50 PM.
-Part 2 (next): voice guide, persona copy, system prompts, golden example.
+Approved by Ben, Sat 4:39 PM. v1 (3:50 PM) is superseded.
+
+## Method credit
+
+Sprout's planning logic is **inspired by** Ramit Sethi's *I Will Teach You to Be Rich* (2nd ed., 2019): define a Rich Life first, fund it with a conscious spending plan (fixed costs, savings, investing, guilt-free spending), turn up the "money dials" you love, automate, and focus on big wins. Adapted for students with irregular income and limited to budgeting, saving, credit building, and FNB products. Never call our plan "the Conscious Spending Plan" and never use the book's text or branding in the app. Research and sources: `docs/research/iwt-method.md`.
+
+Reference ranges from the method (share of take-home pay): fixed costs about 50 to 60%, investing about 10%, savings 5 to 10%, guilt-free 20 to 35%.
 
 ## Guiding theme: optimism that leads to action
 
-Sprout's job is to get a student to **start**. Every rule below is tuned so the first screen feels achievable, not judgmental.
-- Always lead with what the user CAN do now, never with what they lack.
-- A small surplus is framed as a start ("$58 a month builds a $650 cushion by summer"), never as a shortfall.
-- "Not yet" is framed as "unlocks when", with the path to unlock it.
-- Guilt-free spending is protected on purpose: plans that ban fun get abandoned.
+- Lead with what the user CAN do now, never with what they lack.
+- Always a number and a date.
+- "Not yet" is framed as "unlocks when", with the path.
+- Guilt-free money is protected on purpose: it funds what the user loves (their top dial).
 
 ## Rule set A: effective income and surplus
 
-- `effectiveMonthlyIncome = Σ monthly×1 + Σ per_semester/4 + Σ one_time/9` (one-time money is spread over the 9-month academic year).
-- `monthlySurplus = effectiveMonthlyIncome − monthlyFixedCosts − monthlyDebtPayments`.
+- `effectiveMonthlyIncome = Σ monthly×1 + Σ per_semester/4 + Σ one_time/9`
+- `fixedShare = (monthlyFixedCosts + monthlyDebtPayments) / effectiveMonthlyIncome`
+- `monthlySurplus = effectiveMonthlyIncome − monthlyFixedCosts − monthlyDebtPayments`
 - Return the breakdown so the UI can show the math.
-- Maya check: 200 + 1500/4 + 2400/9 = 841.67; − 650 = **191.67/month**.
 
-## Rule set B: spending plan (4 buckets)
+## Rule set B: spending plan (4 buckets + Future You)
 
-| Bucket | Rule |
-|---|---|
-| `fixed_costs` | Actual `monthlyFixedCosts` (+ debt payments shown in the note) |
-| `emergency_fund` | 30% of surplus until the cushion target is met, then 0% (its share moves to `goal_savings`) |
-| `goal_savings` | 40% of surplus (70% once the cushion is met), split across goals by priority: P1 50%, P2 30%, P3 20%, renormalized to the goals present |
-| `guilt_free` | 30% of surplus, always |
+Amounts are floored to whole dollars; leftover dollars go to `guilt_free`.
 
-- **Cushion targets:** starter = 1 × (fixed + debt). Full = 3 × (fixed + debt). Students aim for the starter first; young families aim for full.
-- Percentages are of effective monthly income in the output; amounts are rounded to whole dollars; buckets never exceed income.
-- **Surplus ≤ 0:** emergency, goal, and guilt-free amounts are 0; the plan contains only `budget` and `habit` steps plus $0 products. Sprout frames this as "first we find your breathing room".
-- Maya check: emergency ≈ $58, goals ≈ $77 (travel 50%, credit 30%, home 20% of that), guilt-free ≈ $58.
+**Normal case (fixedShare ≤ 60%):**
 
-## Rule set C: Step one (first match wins; must be doable this week)
+| Bucket | Students (or no steady income) | Steady income (young family) |
+|---|---|---|
+| `fixed_costs` | actual fixed + debt payments | actual fixed + debt payments |
+| savings (`emergency_fund` + `goal_savings`) | **20% of income** (method's 10% savings + its 10% investing share, redirected) | **10% of income** |
+| Future You | not allocated; shown as a handoff row (rule set F) | **~10% earmark** shown with FNB advisor handoff (rule set F) |
+| `guilt_free` | the rest (target 20 to 35%) | the rest (target 20 to 35%) |
 
-1. `isFnbCustomer === false` → **Open FNB Student Checking** (students) or the best no/low-fee checking for the life stage. $0, no minimum.
-2. Customer without the starter cushion → **Set up an automatic transfer on the day money arrives** (habit).
-3. Surplus ≤ 0 → **Track one month of spending** (budget).
+**High fixed costs (fixedShare > 60%) and surplus > 0:** savings = 50% of surplus, guilt-free = 50% of surplus, each at least 5% of income when the surplus allows. Future You shows handoff only ("unlocks when fixed costs drop below 60% of income"). Add a **Big Win** step: "Review your biggest fixed cost" (housing, car, phone).
+
+**Surplus ≤ 0:** savings and guilt-free are 0; plan is `budget` and `habit` steps plus $0 products. Sprout: "First we find your breathing room."
+
+**Inside savings:**
+- Starter cushion = 1 × (fixed + debt). Full cushion = 3 × (fixed + debt). Students target starter first; steady-income users target full.
+- Until the target cushion is met: 50% `emergency_fund`, 50% `goal_savings`. After: 100% `goal_savings`.
+- `goal_savings` split by priority: **P1 60%, P2 25%, P3 15%**, renormalized to the goals present; leftover dollars to P1.
+
+## Rule set C: goal feasibility and gap levers
+
+For each goal:
+- `requiredMonthly = ceil(targetAmount / horizonMonths)` (progress so far = 0 for the prototype).
+- `onTrack = allocatedMonthly ≥ requiredMonthly`.
+- If not on track, compute up to three levers:
+  - `more_time`: `newHorizonMonths = ceil(targetAmount / allocatedMonthly)` (omit if allocatedMonthly = 0)
+  - `smaller_target`: `reachableAmount = allocatedMonthly × horizonMonths`
+  - `turn_up_dial`: `moveFromGuiltFree = requiredMonthly − allocatedMonthly`, **only if** guilt-free after the move stays ≥ 10% of income. Present this first for the user's top-value goal: guilt-free money exists to fund what they love.
+- Also report `cushionFillsInMonths` when a cushion is being built, so Sprout can say "after that, your goals get the full amount".
+
+## Rule set D: Step one (first match wins; doable this week)
+
+1. `isFnbCustomer === false` → **Open FNB Student Checking** (students) or the best no-fee checking for the life stage. $0. For Penn State students, mention the HUB branch (288 Pollock Road).
+2. Customer without the target cushion → **Automate it:** set an automatic transfer on the day money arrives.
+3. Surplus ≤ 0 → **Track one month of spending.**
 4. Otherwise → the highest-scoring `now` match.
 
-## Rule set D: staging
+## Rule set E: staging
 
-- `now`: eligible and affordable today AND foundational (everyday banking, starter cushion, $0 tools, education).
-- `next`: eligible today but should follow a `now` item (e.g. a goal CD after checking is open).
-- `later`: fails eligibility or affordability today but passes under a reachable condition. MUST carry `unlockTrigger` and plain `unlockCondition`.
-- Dropped: fails with no reachable condition.
+- `now`: eligible, affordable, foundational (no-fee checking, starter cushion, $0 tools, education, scholarships).
+- `next`: eligible today but follows a `now` item.
+- `later`: reachable condition; MUST carry `unlockTrigger` + `unlockCondition`.
+- Student triggers: secured card → savings ≥ starter cushion + minimum deposit, or `first_paycheck`. Income-dependent products → `first_paycheck` / `internship`. Mortgages and homebuyer programs → `full_time_job` + full cushion.
+- Habit steps always present: **automate on payday**; **no-fee accounts first**.
+- Be honest about weak rates: if a product's published rate is low (e.g. a goal CD at 0.05% APY), the explanation sells the commitment, not the interest.
 
-**Student unlock triggers:**
+## Rule set F: Future You (investing, inside our boundary)
 
-| Product type | Trigger |
+Sprout does not recommend investments, funds, or amounts per product. It shows one row:
+- Students: "Future You: unlocks with your first full-time paycheck. An FNB advisor can help you start." No amount.
+- Steady income, fixedShare ≤ 60%: "Future You: about 10% ($X/month) for the long term. An FNB advisor can help you choose how."
+- Otherwise: handoff only with the unlock condition.
+
+## Golden test: Maya (must match exactly)
+
+Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester; family $300 monthly; fixed $650; debt $0; savings $400; credit building; not an FNB customer; values [experiences, freedom] → **Experience Collector**. Goals: travel P1 $2,500 in 12 months ("study abroad in Japan"); credit_building P2 12 months; first_home P3 84 months.
+
+| Output | Value |
 |---|---|
-| Secured card (credit building) | `savings_threshold` = starter cushion + minimum deposit, OR `life_event: first_paycheck` |
-| Products needing steady income (most loans, unsecured cards) | `life_event: first_paycheck` or `internship` |
-| Mortgages and homebuyer programs | `life_event: full_time_job` AND full cushion (show the money threshold as the trigger, the job in the condition text) |
+| Effective income | $1,133 (300 + 500 + 333) |
+| Fixed share | 57% (normal case) |
+| Savings 20% | $226 → cushion $113, goals $113 → Japan $69, credit $28, home $16 |
+| Guilt-free | $257 (23%) |
+| Japan | needs $209/mo, has $69 → off track |
+| Levers | turn_up_dial: move $140 (guilt-free stays $117 = 10.3%); more_time: 37 months; smaller_target: $828 |
+| Cushion | starter $650, fills in 3 months |
+| Step one | Open FNB Student Checking (HUB branch) |
+| Now | Student Checking, Learning Center modules, FNB scholarship entry if in catalog |
+| Next | Savers Goal CD for the Japan fund |
+| Later | SmartSecured card (savings ≥ $1,150 or first paycheck); homebuyer programs (full-time job + 3 months saved) |
+| Future You | handoff only, unlocks with first full-time paycheck |
+| Not yet | mortgage pre-approval: after steady income and 3 months saved |
 
-**Maya's expected staging (golden test):**
+## Sprout's voice
 
-| Product | Stage | Unlock |
-|---|---|---|
-| Student Checking | now (Step one) | — |
-| Savers Goal CD ($100 open, $25/mo, 12 months) for Japan | next | after checking is open |
-| SmartSecured card ($500 to $2,000 deposit) | later | savings ≥ cushion + $500, or first paycheck |
-| HomeOne / Home Ownership Program | later | full-time job + 3 months saved |
-| Learning Center (free modules) | now | — |
+1. **Possibility first.** Bad: "You can't afford Japan." Good: "Japan is $140 a month away."
+2. **A number and a date.** Bad: "Save more." Good: "$113 a month fills your cushion in 3 months."
+3. **Never shame.** Banned: only, just, behind, should have, can't afford, waste.
+4. **Plain and short.** Under 20 words per sentence; jargon gets a 5-word explanation ("APY, the interest you earn").
+5. **Spend on what you love.** Celebrate the top dial; trim what they don't care about.
+6. **Systems over willpower.** Prefer "automate it" to "try to remember".
+7. **Big wins over small cuts.** Never tell a student to skip coffee.
+8. **Honest.** No promised outcomes, no invented rates, weak rates called weak.
+9. **Warm, a little playful.** At most one plant metaphor per screen.
 
-**Not yet (always for Maya):** mortgage pre-approval: "after a steady income and 3 months saved".
+## Persona taglines (fixed; AI may personalize the description, never the label)
 
-## Rule set E: advice boundary (engine + AI)
+| Persona | Tagline |
+|---|---|
+| Freedom Seeker | You want options, and money is how you buy them. |
+| Experience Collector | You'd rather have stories than stuff, so let's fund the stories. |
+| Safety Builder | You sleep better with a cushion, so we build that first. |
+| Family First | Your money plans start with the people you love. |
+| Future Builder | You're playing the long game, and it shows. |
+| Simple Saver | You want money to be easy, so we keep it simple and automatic. |
 
-Covered: budgeting, saving, credit building, FNB products and programs. Not covered: investing, taxes, insurance products. For those Sprout says an FNB advisor can help when the user is ready, and stops.
+## Prompt contracts (AI routes)
 
-## Catalog note
+**Profile (`/api/profile`)**
+- System: "You are Sprout, a warm, optimistic money coach for college students and young families, built as a prototype for FNB. Follow the voice rules. Never mention specific products or rates. Output JSON only."
+- Input: intake answers + the taxonomy persona.
+- Output: `persona.description` (personalized, 1 sentence), `richLifeStatement` (1 to 2 sentences in the user's own words), per-goal `motivation`, estimated targets flagged `targetIsEstimate`.
 
-Use `src/data/catalog.json` built from `docs/research-fnb-catalog.md`. A larger, more complete FNB catalog (v2) is being researched; it will arrive as a data-only PR to `catalog.json` and must not require engine changes.
+**Plan (`/api/plan`)**
+- System: same identity + "You receive a finished plan from Sprout's engine. You only write words. Never change any number, stage, lever, product, or the Step one choice. Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say an FNB advisor can help. Output JSON only."
+- Input: engine output (numbers, buckets, stages, triggers, levers, Step one, catalog facts for referenced products).
+- Output: `sproutSays` (2 sentences), `headline`, per-match `explanation` tied to the user's motivation, step titles/details, lever wording (top-dial lever first), `bankerSummary`.
+- Server validates: unknown product IDs dropped; any changed number rejected in favor of the engine's.
