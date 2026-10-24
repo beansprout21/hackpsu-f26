@@ -82,9 +82,27 @@ export interface ProfiledGoal extends GoalAnswer {
   motivation: string;           // 1 sentence, the "why" in plain words
 }
 
+export type PersonaId =
+  | "freedom_seeker" | "experience_collector" | "safety_builder"
+  | "family_first" | "future_builder" | "simple_saver";
+
+// Fixed taxonomy, single source of truth: src/data/personaTaxonomy.ts (owner: Ben).
+// Deterministic: persona = PERSONA_BY_VALUE[values[0]] (the top value from swipes).
+// Frontend uses it directly for the pre-login reveal; /api/profile returns the SAME id and label.
+export interface PersonaDef {
+  id: PersonaId;
+  label: string;                // "Freedom Seeker"
+  tagline: string;              // fixed 1-line default description
+}
+// PERSONA_BY_VALUE: Record<ValueTag, PersonaDef>
+//   freedom -> freedom_seeker "Freedom Seeker"      experiences -> experience_collector "Experience Collector"
+//   security -> safety_builder "Safety Builder"     family -> family_first "Family First"
+//   growth -> future_builder "Future Builder"       simplicity -> simple_saver "Simple Saver"
+
 export interface Persona {
-  label: string;                // e.g. "Freedom Seeker", from the swipes
-  description: string;          // 1 sentence, warm, in Sprout's voice
+  id: PersonaId;                // MUST equal PERSONA_BY_VALUE[topValue].id
+  label: string;                // MUST equal the taxonomy label; AI never renames it
+  description: string;          // 1 sentence, warm, in Sprout's voice; AI personalizes this only (fallback: tagline)
 }
 
 export interface GoalProfile {
