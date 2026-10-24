@@ -5,9 +5,20 @@ import Anthropic from "@anthropic-ai/sdk";
 export const AI_TIMEOUT_MS = 15_000;
 
 let client: Anthropic | null | undefined;
+let loggedDisabled = false;
 
-// null when no API key is configured: callers skip straight to the fallback.
+// Emergency demo switch (#39): AI_DISABLED=1 (exactly "1") turns every AI call off.
+export const aiDisabled = () => process.env.AI_DISABLED === "1";
+
+// null when AI is disabled or no API key is configured: callers skip straight to the fallback.
 export function getClient(): Anthropic | null {
+  if (aiDisabled()) {
+    if (!loggedDisabled) {
+      console.log("[ai] AI_DISABLED=1: every AI route uses its template fallback");
+      loggedDisabled = true;
+    }
+    return null;
+  }
   if (client === undefined) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     client = apiKey ? new Anthropic({ apiKey, maxRetries: 0, timeout: AI_TIMEOUT_MS }) : null;
