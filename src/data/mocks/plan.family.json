@@ -1,9 +1,26 @@
 {
   "headline": "A safety net in 14 months, then the path to your first home",
+  "sproutSays": "You're already doing the hard part: steady income and a clear goal. Let's build your family's cushion first so the house never puts you at risk.",
+  "stepOne": {
+    "order": 1,
+    "stage": "now",
+    "kind": "open",
+    "title": "Open FirstRate Savings and name it \"Safety net\"",
+    "detail": "$0 to open in a branch ($50 online). This week, just get the account in place.",
+    "startMonth": 0,
+    "productId": "firstrate-savings"
+  },
+  "effectiveMonthlyIncome": 2400,
   "monthlySurplus": 750,
+  "spendingPlan": [
+    { "bucket": "fixed_costs", "monthlyAmount": 1650, "percent": 68.75, "note": "Rent, bills, and $150 in loan payments." },
+    { "bucket": "emergency_fund", "monthlyAmount": 281, "percent": 11.71, "note": "Builds your family's 3-month cushion ($4,950)." },
+    { "bucket": "goal_savings", "monthlyAmount": 400, "percent": 16.67, "note": "Your down payment fund." },
+    { "bucket": "guilt_free", "monthlyAmount": 69, "percent": 2.87, "note": "Family nights out, no guilt." }
+  ],
   "emergencyFundTarget": 4950,
   "allocation": [
-    { "goalId": "first_home", "monthlyAmount": 469, "monthsToTarget": 32 },
+    { "goalId": "first_home", "monthlyAmount": 400, "monthsToTarget": 38 },
     { "goalId": "emergency_fund", "monthlyAmount": 281, "monthsToTarget": 14 }
   ],
   "matches": [
@@ -28,7 +45,7 @@
       "stage": "next",
       "score": 91,
       "breakdown": { "goalFit": 35, "eligibility": 25, "affordability": 16, "priority": 15 },
-      "explanation": "Your home is 5 years out, so down-payment money can sit in a 12-month goal CD where it's harder to spend. Your $469 a month easily covers the $25 minimum transfer.",
+      "explanation": "Your home is 5 years out, so down-payment money can sit in a 12-month goal CD where it's harder to spend. Your $400 a month easily covers the $25 minimum transfer.",
       "termsToKnow": [
         "12-month fixed term that renews automatically",
         "$100 minimum to open, plus at least $25 a month in transfers",
@@ -41,9 +58,10 @@
       "productId": "fnb-home-ownership-program",
       "goalId": "first_home",
       "stage": "later",
-      "unlockCondition": "3 months of expenses ($4,950) saved and credit range fair or better",
-      "score": 78,
-      "breakdown": { "goalFit": 40, "eligibility": 15, "affordability": 8, "priority": 15 },
+      "unlockCondition": "When 3 months of expenses ($4,950) are saved",
+      "unlockTrigger": { "kind": "savings_threshold", "amount": 4950 },
+      "score": 83,
+      "breakdown": { "goalFit": 40, "eligibility": 20, "affordability": 8, "priority": 15 },
       "explanation": "This program was built for buyers like your family: little to no down payment and up to $5,000 toward closing costs. It unlocks once your safety net is in place.",
       "termsToKnow": [
         "Little to no down payment required",
@@ -59,13 +77,21 @@
       "order": 1,
       "stage": "now",
       "kind": "open",
-      "title": "Open FirstRate Savings for your family's safety net",
-      "detail": "Keep it separate from everyday spending.",
+      "title": "Open FirstRate Savings and name it \"Safety net\"",
+      "detail": "$0 to open in a branch ($50 online). This week, just get the account in place.",
       "startMonth": 0,
       "productId": "firstrate-savings"
     },
     {
       "order": 2,
+      "stage": "now",
+      "kind": "budget",
+      "title": "Set your family's spending plan",
+      "detail": "$1,650 bills, $281 safety net, $400 home fund, $69 guilt-free.",
+      "startMonth": 0
+    },
+    {
+      "order": 3,
       "stage": "now",
       "kind": "save",
       "title": "Auto-save $281 a month to reach $4,950",
@@ -75,17 +101,25 @@
       "monthlyAmount": 281
     },
     {
-      "order": 3,
+      "order": 4,
       "stage": "next",
       "kind": "open",
       "title": "Start a Savers Goal CD for your down payment",
-      "detail": "Open with $100 and transfer $469 a month toward your $15,000 home fund.",
+      "detail": "Open with $100 and transfer $400 a month toward your $15,000 home fund.",
       "startMonth": 1,
       "productId": "savers-goal-cd",
-      "monthlyAmount": 469
+      "monthlyAmount": 400
     },
     {
-      "order": 4,
+      "order": 5,
+      "stage": "next",
+      "kind": "habit",
+      "title": "Hold a 15-minute money check-in each month",
+      "detail": "Look at the safety net and home fund together. Celebrate every milestone.",
+      "startMonth": 1
+    },
+    {
+      "order": 6,
       "stage": "next",
       "kind": "learn",
       "title": "Learn the homebuying basics",
@@ -93,7 +127,7 @@
       "startMonth": 3
     },
     {
-      "order": 5,
+      "order": 7,
       "stage": "later",
       "kind": "wait",
       "title": "Finish your 3-month safety net",
@@ -101,7 +135,7 @@
       "startMonth": 14
     },
     {
-      "order": 6,
+      "order": 8,
       "stage": "later",
       "kind": "talk_to_banker",
       "title": "Ask an FNB banker about the Home Ownership Program",
@@ -118,7 +152,7 @@
       "revisitWhen": "after your $4,950 emergency fund is complete"
     }
   ],
-  "bankerSummary": "Jordan, young family, not yet an FNB customer. Goals: first home ($15,000 down payment + closing in 60 months, priority 1) and emergency fund (12 months). Take-home $2,400/mo, fixed costs $1,500, debt payments $150, surplus $750/mo, savings $1,200, credit range: building. Plan: FirstRate Savings now, Savers Goal CD for the down payment next, Home Ownership Program once the emergency fund is complete and credit is fair or better. Good lead for a first-time homebuyer conversation.",
+  "bankerSummary": "Jordan, young family, steady job, not yet an FNB customer. Take-home $2,400/mo, fixed costs $1,500, debt payments $150, surplus $750/mo, savings $1,200, credit range: fair. Goals: first home ($15,000 down payment + closing in 60 months, P1) and emergency fund (12 months, P2). Plan: FirstRate Savings now, Savers Goal CD for the down payment next, Home Ownership Program once the $4,950 emergency fund is complete. Good lead for a first-time homebuyer conversation.",
   "aiUsed": true,
   "disclaimer": "Educational prototype. Not financial advice. No data is stored."
 }

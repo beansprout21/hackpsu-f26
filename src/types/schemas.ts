@@ -1,4 +1,4 @@
-// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v1).
+// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2).
 // Each schema is type-checked against its interface in ./index.ts at the
 // bottom of this file, so drift between the two fails `npm run build`.
 import { z } from "zod";
@@ -7,14 +7,20 @@ import type {
   FinancialSnapshot,
   GoalAnswer,
   GoalProfile,
+  IncomeSource,
   IntakeAnswers,
   Match,
   NotYet,
   Plan,
   PlanStep,
+  Persona,
   Product,
   ProfiledGoal,
   ScoreBreakdown,
+  SpendingBucket,
+  SwipeAnswer,
+  SwipeCard,
+  UnlockTrigger,
 } from "./index";
 
 // ---------- enums ----------
@@ -40,7 +46,20 @@ export const ValueTagSchema = z.enum([
 ]);
 export const ConfidenceSchema = z.enum(["high", "medium", "low"]);
 export const StageSchema = z.enum(["now", "next", "later"]);
-export const StepKindSchema = z.enum(["save", "open", "learn", "talk_to_banker", "wait"]);
+export const StepKindSchema = z.enum(["save", "open", "learn", "habit", "budget", "talk_to_banker", "wait"]);
+export const IncomeKindSchema = z.enum([
+  "job",
+  "work_study",
+  "family",
+  "aid_refund",
+  "scholarship",
+  "summer_savings",
+  "gig",
+  "other",
+]);
+export const IncomeFrequencySchema = z.enum(["monthly", "per_semester", "one_time"]);
+export const LifeEventSchema = z.enum(["first_paycheck", "internship", "graduation", "full_time_job", "turn_21"]);
+export const SpendingBucketIdSchema = z.enum(["fixed_costs", "emergency_fund", "goal_savings", "guilt_free"]);
 
 const usd = z.number().finite().nonnegative();
 
@@ -53,15 +72,35 @@ export const GoalAnswerSchema = z.object({
   why: z.string(),
 });
 
+export const SwipeCardSchema = z.object({
+  id: z.string(),
+  prompt: z.string(),
+  left: z.object({ label: z.string(), value: ValueTagSchema }),
+  right: z.object({ label: z.string(), value: ValueTagSchema }),
+});
+
+export const SwipeAnswerSchema = z.object({
+  cardId: z.string(),
+  choice: z.enum(["left", "right"]),
+});
+
 export const IntakeAnswersSchema = z.object({
   lifeStage: LifeStageSchema,
+  swipes: z.array(SwipeAnswerSchema).min(6).max(10),
   values: z.array(ValueTagSchema).min(1).max(3),
   goals: z.array(GoalAnswerSchema).min(1).max(3),
   richLifeText: z.string().max(500).optional(),
 });
 
+export const IncomeSourceSchema = z.object({
+  kind: IncomeKindSchema,
+  amount: usd,
+  frequency: IncomeFrequencySchema,
+});
+
 export const FinancialSnapshotSchema = z.object({
-  monthlyIncome: usd,
+  hasSteadyIncome: z.boolean(),
+  incomeSources: z.array(IncomeSourceSchema),
   monthlyFixedCosts: usd,
   monthlyDebtPayments: usd,
   savingsBalance: usd,
@@ -76,7 +115,13 @@ export const ProfiledGoalSchema = GoalAnswerSchema.extend({
   motivation: z.string(),
 });
 
+export const PersonaSchema = z.object({
+  label: z.string(),
+  description: z.string(),
+});
+
 export const GoalProfileSchema = z.object({
+  persona: PersonaSchema,
   richLifeStatement: z.string(),
   goals: z.array(ProfiledGoalSchema),
   topValues: z.array(ValueTagSchema),
@@ -122,12 +167,19 @@ export const ScoreBreakdownSchema = z.object({
   priority: z.number().min(0).max(15),
 });
 
+export const UnlockTriggerSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("savings_threshold"), amount: usd }),
+  z.object({ kind: z.literal("credit_band"), atLeast: CreditBandSchema }),
+  z.object({ kind: z.literal("life_event"), event: LifeEventSchema }),
+]);
+
 export const MatchSchema = z
   .object({
     productId: z.string(),
     goalId: GoalIdSchema,
     stage: StageSchema,
     unlockCondition: z.string().optional(),
+    unlockTrigger: UnlockTriggerSchema.optional(),
     score: z.number().min(0).max(100),
     breakdown: ScoreBreakdownSchema,
     explanation: z.string(),
@@ -143,11 +195,25 @@ export const MatchSchema = z
         message: 'unlockCondition is required when stage is "later"',
       });
     }
+    if (m.stage === "later" && !m.unlockTrigger) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["unlockTrigger"],
+        message: 'unlockTrigger is required when stage is "later"',
+      });
+    }
     const { goalFit, eligibility, affordability, priority } = m.breakdown;
     if (Math.abs(goalFit + eligibility + affordability + priority - m.score) > 0.001) {
       ctx.addIssue({ code: "custom", path: ["score"], message: "score must equal the sum of breakdown" });
     }
   });
+
+export const SpendingBucketSchema = z.object({
+  bucket: SpendingBucketIdSchema,
+  monthlyAmount: usd,
+  percent: z.number().min(0).max(100),
+  note: z.string(),
+});
 
 export const AllocationSchema = z.object({
   goalId: GoalIdSchema,
@@ -176,7 +242,11 @@ export const NotYetSchema = z.object({
 export const PlanSchema = z
   .object({
     headline: z.string(),
+    sproutSays: z.string(),
+    stepOne: PlanStepSchema,
+    effectiveMonthlyIncome: usd,
     monthlySurplus: z.number().finite(), // can be negative
+    spendingPlan: z.array(SpendingBucketSchema),
     emergencyFundTarget: usd,
     allocation: z.array(AllocationSchema),
     matches: z.array(MatchSchema),
@@ -193,6 +263,10 @@ export const PlanSchema = z
       if (count > 2) {
         ctx.addIssue({ code: "custom", path: ["matches"], message: `max 2 matches per goal (${goalId} has ${count})` });
       }
+    }
+    const buckets = p.spendingPlan.map((b) => b.bucket);
+    if (new Set(buckets).size !== buckets.length) {
+      ctx.addIssue({ code: "custom", path: ["spendingPlan"], message: "each spending bucket may appear once" });
     }
     const allocated = p.allocation.reduce((sum, a) => sum + a.monthlyAmount, 0);
     if (allocated > Math.max(p.monthlySurplus, 0) + 0.001) {
@@ -223,6 +297,12 @@ type Assert<T extends true> = T;
 
 export type SchemaChecks = [
   Assert<Same<z.infer<typeof GoalAnswerSchema>, GoalAnswer>>,
+  Assert<Same<z.infer<typeof SwipeCardSchema>, SwipeCard>>,
+  Assert<Same<z.infer<typeof SwipeAnswerSchema>, SwipeAnswer>>,
+  Assert<Same<z.infer<typeof IncomeSourceSchema>, IncomeSource>>,
+  Assert<Same<z.infer<typeof PersonaSchema>, Persona>>,
+  Assert<Same<z.infer<typeof UnlockTriggerSchema>, UnlockTrigger>>,
+  Assert<Same<z.infer<typeof SpendingBucketSchema>, SpendingBucket>>,
   Assert<Same<z.infer<typeof IntakeAnswersSchema>, IntakeAnswers>>,
   Assert<Same<z.infer<typeof FinancialSnapshotSchema>, FinancialSnapshot>>,
   Assert<Same<z.infer<typeof ProfiledGoalSchema>, ProfiledGoal>>,
