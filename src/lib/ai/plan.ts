@@ -10,6 +10,7 @@ import { PlanSchema } from "@/types/schemas";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
 import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { describeAiError, getClient, getModel } from "./client";
+import { voiceSafe } from "./voice";
 
 const PLAN_TIMEOUT_MS = 20_000;
 
@@ -183,22 +184,25 @@ function allowedNumbers(facts: unknown): Set<string> {
   return allowed;
 }
 
-function makeGuard(facts: unknown) {
+// Number guard + voice guard: an AI string survives only if every number it cites came from the
+// engine and it uses no banned voice words ("just" is removed; others keep the template text).
+export function makeGuard(facts: unknown) {
   const allowed = allowedNumbers(facts);
   let rejected = 0;
   const pick = (ai: string | undefined, fallback: string, max: number) => {
     const text = clean(ai, max);
     if (!text) return fallback;
     const numbers = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
-    if (numbers.every((t) => allowed.has(String(Number(t.replace(/,/g, "")))))) return text;
+    const voiced = numbers.every((t) => allowed.has(String(Number(t.replace(/,/g, ""))))) ? voiceSafe(text) : null;
+    if (voiced) return voiced;
     rejected++;
     return fallback;
   };
   return { pick, rejected: () => rejected };
 }
 
-// Copies AI text onto the skeleton by key; anything omitted or failing the number guard keeps the template.
-function mergeText(skeleton: Plan, ai: AiPlanText, guard: ReturnType<typeof makeGuard>): Plan {
+// Copies AI text onto the skeleton by key; anything omitted or failing a guard keeps the template.
+export function mergeText(skeleton: Plan, ai: AiPlanText, guard: ReturnType<typeof makeGuard>): Plan {
   const { pick } = guard;
   const explanationFor = new Map(ai.explanations.map((e) => [e.productId, e.explanation]));
   const stepFor = new Map(ai.steps.map((s) => [s.order, s]));
