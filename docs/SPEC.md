@@ -1,6 +1,6 @@
 # Product Spec v2
 
-Status: **v2 APPROVED Sat 3:15 PM** (v1 1:48 PM). User flow: [FigJam board](https://www.figma.com/board/ZgPLzfLJVNJebjGwW87qAe). Working name: **Waypoint** (placeholder, rename anytime; do not use FNB's logo or trademarks in the UI, label the app "Prototype built for FNB").
+Status: **v2 APPROVED Sat 3:15 PM** (v1 1:48 PM). User flow: [FigJam board](https://www.figma.com/board/ZgPLzfLJVNJebjGwW87qAe). Product name: **Sprout** (the app, the advisor, and the mascot share the name; do not use FNB's logo or trademarks in the UI, label the app "Prototype built for FNB").
 
 ## One-liner
 > Other banks start with your credit score. FNB starts with your life.
@@ -26,7 +26,7 @@ Every completed plan is a **warm lead with context**: a banker sees the customer
 
 ## Core demo flow (target: 90 seconds live; matches the FigJam board)
 1. **Meet Sprout:** landing with the one-liner, Sprout greets.
-2. **Dreams:** swipe value cards (6 to 10, e.g. "Backpack Japan" vs "Build a safety cushion") -> **persona reveal** ("You're a Freedom Seeker") -> place 1 to 3 goals on an interactive timeline -> pick the why for each.
+2. **Dreams:** swipe value cards (6 to 10, e.g. "Backpack Japan" vs "Build a safety cushion") -> **persona reveal** ("You're an Experience Collector" for Maya) -> place 1 to 3 goals on an interactive timeline -> pick the why for each.
 3. **Login (Auth0)** to save progress. Comes after dreams, so users invest before signing up.
 4. **Money snapshot:** "Steady income?" Yes -> monthly income. No/irregular -> lump sums (summer savings, aid refund per semester, family, scholarships). Then costs, savings, credit range (self-reported), FNB customer yes/no. Persona prefill buttons. "Connect your bank (coming soon, via Plaid)" disabled.
 5. **Sprout builds the plan:** loading states narrated by Sprout.
