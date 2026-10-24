@@ -1,6 +1,6 @@
 # Sprout's Brain
 
-Sprout is Waypoint's advisor. The **engine** (deterministic code, issue #3) decides numbers, stages, and Step one. The **AI** (issues #4, #5) explains them in Sprout's voice. The AI never changes an amount, a stage, a trigger, or the Step one choice.
+Sprout is the app and its advisor. The **engine** (deterministic code, issue #3) decides numbers, stages, and Step one. The **AI** (issues #4, #5) explains them in Sprout's voice. The AI never changes an amount, a stage, a trigger, or the Step one choice.
 
 Part 1 (this version): engine rulebook, approved by Ben Sat 3:50 PM.
 Part 2 (next): voice guide, persona copy, system prompts, golden example.
