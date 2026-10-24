@@ -9,18 +9,17 @@ export interface EngineContext {
   math: MoneyMath;
   values: ValueTag[];
   isStudent: boolean;
-  // Cushion that gates new money commitments (deposit-blocked products, unlock thresholds).
-  // Students aim for the starter cushion first; security/family-first users and families aim for full.
+  // Rule set B: students (or no steady income) target the starter cushion first; steady income targets full.
   cushionTarget: number;
+  // Rule set B: students / no steady income save 20% of income; steady income saves 10% + Future You.
+  studentRules: boolean;
 }
-
-const CAUTIOUS_VALUES: ValueTag[] = ["security", "family"];
 
 export function buildContext(profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers): EngineContext {
   const math = computeMath(snapshot);
-  const values = profile.topValues.length ? profile.topValues : intake.values;
+  const values: ValueTag[] = profile.topValues.length ? profile.topValues : intake.values;
   const isStudent = intake.lifeStage === "student";
-  const cautious = values[0] !== undefined && CAUTIOUS_VALUES.includes(values[0]);
+  const studentRules = isStudent || !snapshot.hasSteadyIncome;
   return {
     profile,
     snapshot,
@@ -28,7 +27,8 @@ export function buildContext(profile: GoalProfile, snapshot: FinancialSnapshot, 
     math,
     values,
     isStudent,
-    cushionTarget: isStudent && !cautious ? math.starterCushion : math.fullCushion,
+    studentRules,
+    cushionTarget: studentRules ? math.starterCushion : math.fullCushion,
   };
 }
 

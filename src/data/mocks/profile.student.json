@@ -9,11 +9,11 @@
     {
       "id": "travel",
       "priority": 1,
-      "horizonMonths": 9,
-      "targetAmount": 3000,
+      "horizonMonths": 12,
+      "targetAmount": 2500,
       "why": "study abroad in Japan",
       "targetIsEstimate": false,
-      "motivation": "Studying abroad in Japan is the experience Maya wants most in the next year."
+      "motivation": "Studying abroad in Japan next year is the experience Maya wants most."
     },
     {
       "id": "credit_building",
@@ -39,7 +39,7 @@
     "freedom"
   ],
   "notes": [
-    "Japan is 9 months out while a home is 7 years out, so the trip clearly comes first.",
+    "Japan is 12 months out while a home is 7 years out, so the trip clearly comes first.",
     "Credit building has no dollar target; $500 is estimated as a typical starter secured-card deposit.",
     "The home target is an estimate for a down payment plus closing costs."
   ]

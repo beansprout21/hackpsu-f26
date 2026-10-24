@@ -95,14 +95,13 @@ export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
           unlockCondition: `When your cushion reaches ${usd(ctx.cushionTarget)} (check the minimum with FNB)`,
         };
       }
-    } else if (spare < deposit) {
+    } else if (isSecuredCard(p) && spare < deposit) {
+      // Rule set E: secured card unlocks at savings >= target cushion + minimum deposit.
       const amount = Math.ceil(ctx.cushionTarget + deposit);
       return {
         stage: "later",
         unlockTrigger: { kind: "savings_threshold", amount },
-        unlockCondition: isSecuredCard(p)
-          ? `When your savings reach ${usd(amount)}, so the ${usd(deposit)} deposit leaves your cushion untouched${steady ? "" : " (or your first paycheck arrives)"}`
-          : `When your savings reach ${usd(amount)}, so the ${usd(deposit)} opening deposit leaves your cushion untouched`,
+        unlockCondition: `When your savings reach ${usd(amount)}, so the ${usd(deposit)} deposit leaves your cushion untouched${steady ? "" : " (or your first paycheck arrives)"}`,
       };
     }
   }

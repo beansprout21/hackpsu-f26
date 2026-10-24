@@ -1,10 +1,12 @@
-// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2).
+// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2.1).
 // Each schema is type-checked against its interface in ./index.ts at the
 // bottom of this file, so drift between the two fails `npm run build`.
 import { z } from "zod";
 import type {
   Allocation,
   FinancialSnapshot,
+  FutureYou,
+  GapLever,
   GoalAnswer,
   GoalProfile,
   IncomeSource,
@@ -232,10 +234,33 @@ export const SpendingBucketSchema = z.object({
   note: z.string(),
 });
 
-export const AllocationSchema = z.object({
-  goalId: GoalIdSchema,
-  monthlyAmount: usd,
-  monthsToTarget: z.number().int().nonnegative(),
+export const GapLeverSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("turn_up_dial"), moveFromGuiltFree: usd }),
+  z.object({ kind: z.literal("more_time"), newHorizonMonths: z.number().int().positive() }),
+  z.object({ kind: z.literal("smaller_target"), reachableAmount: usd }),
+]);
+
+export const AllocationSchema = z
+  .object({
+    goalId: GoalIdSchema,
+    monthlyAmount: usd,
+    monthsToTarget: z.number().int().nonnegative(),
+    requiredMonthly: usd,
+    onTrack: z.boolean(),
+    levers: z.array(GapLeverSchema).max(3),
+  })
+  .superRefine((a, ctx) => {
+    if (a.onTrack && a.levers.length > 0) {
+      ctx.addIssue({ code: "custom", path: ["levers"], message: "levers must be empty when onTrack" });
+    }
+    const dial = a.levers.findIndex((l) => l.kind === "turn_up_dial");
+    if (dial > 0) ctx.addIssue({ code: "custom", path: ["levers"], message: "turn_up_dial must come first" });
+  });
+
+export const FutureYouSchema = z.object({
+  earmarkMonthly: usd.nullable(),
+  handoff: z.string(),
+  unlockCondition: z.string().optional(),
 });
 
 export const PlanStepSchema = z.object({
@@ -264,6 +289,10 @@ export const PlanSchema = z
     effectiveMonthlyIncome: usd,
     monthlySurplus: z.number().finite(), // can be negative
     spendingPlan: z.array(SpendingBucketSchema),
+    fixedShare: z.number().finite().nonnegative(),
+    cushionTarget: usd,
+    cushionFillsInMonths: z.number().int().nonnegative().nullable(),
+    futureYou: FutureYouSchema,
     emergencyFundTarget: usd,
     allocation: z.array(AllocationSchema),
     matches: z.array(MatchSchema),
@@ -329,6 +358,8 @@ export type SchemaChecks = [
   Assert<Same<z.infer<typeof ScoreBreakdownSchema>, ScoreBreakdown>>,
   Assert<Same<z.infer<typeof MatchSchema>, Match>>,
   Assert<Same<z.infer<typeof AllocationSchema>, Allocation>>,
+  Assert<Same<z.infer<typeof GapLeverSchema>, GapLever>>,
+  Assert<Same<z.infer<typeof FutureYouSchema>, FutureYou>>,
   Assert<Same<z.infer<typeof PlanStepSchema>, PlanStep>>,
   Assert<Same<z.infer<typeof NotYetSchema>, NotYet>>,
   Assert<Same<z.infer<typeof PlanSchema>, Plan>>,

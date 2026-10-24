@@ -1,91 +1,263 @@
 {
-  "headline": "Free checking this week, a Japan fund that grows every month, credit by summer",
-  "sproutSays": "Your money comes in waves, and that's completely normal for a student. Let's give every dollar a job, starting with one free step you can take this week.",
+  "headline": "Step one this week, then $113 a month toward your goals, starting with travel",
+  "sproutSays": "Your travel goal is $140 a month away, and your guilt-free money can turn up that dial. $113 a month fills your cushion in 3 months, then your goals get the full amount.",
   "stepOne": {
     "order": 1,
     "stage": "now",
     "kind": "open",
     "title": "Open FNB Student Checking this week",
-    "detail": "No monthly service charge and no minimum balance, so it costs nothing to start.",
+    "detail": "No monthly fee on Student Checking and no minimum balance, so it's $0 to start. At Penn State? The FNB branch in the HUB is at 288 Pollock Road.",
     "startMonth": 0,
     "productId": "student-checking"
   },
-  "effectiveMonthlyIncome": 841.67,
-  "monthlySurplus": 191.67,
+  "effectiveMonthlyIncome": 1133.33,
+  "monthlySurplus": 483.33,
   "spendingPlan": [
-    { "bucket": "fixed_costs", "monthlyAmount": 650, "percent": 77.23, "note": "Rent, phone, groceries, and the other bills that keep life running." },
-    { "bucket": "emergency_fund", "monthlyAmount": 60, "percent": 7.13, "note": "Grows your $800 cushion toward 3 months of costs ($1,950)." },
-    { "bucket": "goal_savings", "monthlyAmount": 100, "percent": 11.88, "note": "Your Japan fund, on autopilot." },
-    { "bucket": "guilt_free", "monthlyAmount": 31.67, "percent": 3.76, "note": "Coffee, movies, whatever you like. No guilt." }
+    {
+      "bucket": "fixed_costs",
+      "monthlyAmount": 650,
+      "percent": 57.35,
+      "note": "Rent, bills, and the basics that keep life running."
+    },
+    {
+      "bucket": "emergency_fund",
+      "monthlyAmount": 113,
+      "percent": 9.97,
+      "note": "Builds your cushion to $650 in about 3 months. After that, your goals get the full amount."
+    },
+    {
+      "bucket": "goal_savings",
+      "monthlyAmount": 113,
+      "percent": 9.97,
+      "note": "Split across travel, credit building, first home, by priority."
+    },
+    {
+      "bucket": "guilt_free",
+      "monthlyAmount": 257,
+      "percent": 22.68,
+      "note": "Money for what you love. Spend it with zero guilt."
+    }
   ],
+  "fixedShare": 0.5735,
+  "cushionTarget": 650,
+  "cushionFillsInMonths": 3,
+  "futureYou": {
+    "earmarkMonthly": null,
+    "handoff": "An FNB advisor can help you start.",
+    "unlockCondition": "Unlocks with your first full-time paycheck"
+  },
   "emergencyFundTarget": 1950,
   "allocation": [
-    { "goalId": "travel", "monthlyAmount": 100, "monthsToTarget": 30 }
+    {
+      "goalId": "travel",
+      "monthlyAmount": 69,
+      "monthsToTarget": 37,
+      "requiredMonthly": 209,
+      "onTrack": false,
+      "levers": [
+        {
+          "kind": "turn_up_dial",
+          "moveFromGuiltFree": 140
+        },
+        {
+          "kind": "more_time",
+          "newHorizonMonths": 37
+        },
+        {
+          "kind": "smaller_target",
+          "reachableAmount": 828
+        }
+      ]
+    },
+    {
+      "goalId": "credit_building",
+      "monthlyAmount": 28,
+      "monthsToTarget": 18,
+      "requiredMonthly": 42,
+      "onTrack": false,
+      "levers": [
+        {
+          "kind": "turn_up_dial",
+          "moveFromGuiltFree": 14
+        },
+        {
+          "kind": "more_time",
+          "newHorizonMonths": 18
+        },
+        {
+          "kind": "smaller_target",
+          "reachableAmount": 336
+        }
+      ]
+    },
+    {
+      "goalId": "first_home",
+      "monthlyAmount": 16,
+      "monthsToTarget": 938,
+      "requiredMonthly": 179,
+      "onTrack": false,
+      "levers": [
+        {
+          "kind": "more_time",
+          "newHorizonMonths": 938
+        },
+        {
+          "kind": "smaller_target",
+          "reachableAmount": 1344
+        }
+      ]
+    }
   ],
   "matches": [
     {
-      "productId": "firstrate-savings",
-      "goalId": "travel",
-      "stage": "next",
-      "score": 96,
-      "breakdown": { "goalFit": 40, "eligibility": 25, "affordability": 16, "priority": 15 },
-      "explanation": "Japan is your top goal, so it gets its own savings account. Keeping the trip money separate stops it from quietly getting spent.",
+      "productId": "credit-center",
+      "goalId": "credit_building",
+      "stage": "now",
+      "score": 94,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 20,
+        "priority": 9
+      },
+      "explanation": "FNB Credit Center fits your credit building goal, and you can start right away. Free VantageScore 3.0 from TransUnion, updated monthly.",
       "termsToKnow": [
-        "$50 minimum to open online ($0 in branch)",
-        "$5 monthly fee, waived with a $500 average daily balance",
-        "6 transfers or withdrawals a month; $15 for each one over"
+        "Free",
+        "Free VantageScore 3.0 from TransUnion, updated monthly",
+        "Full report, monitoring alerts, tips, and disputes"
       ],
       "confidence": "high",
-      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/firstrate-savings"
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/online-mobile-options/credit-center"
     },
     {
       "productId": "student-checking",
-      "goalId": "credit_building",
+      "goalId": "everyday_banking",
       "stage": "now",
-      "score": 84,
-      "breakdown": { "goalFit": 30, "eligibility": 25, "affordability": 20, "priority": 9 },
-      "explanation": "Everything starts with a home base for your money. Student Checking has no monthly fee and no overdraft fees, and later it's where you'll pay your card from so you're never late.",
+      "score": 94,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 14,
+        "priority": 15
+      },
+      "explanation": "FNB Student Checking fits your everyday banking goal, and you can start right away. No monthly fee on Student Checking.",
       "termsToKnow": [
+        "No monthly fee on Student Checking",
         "No monthly service charge or minimum balance",
-        "No overdraft fees; transactions are declined when funds are short",
-        "Refunds non-FNB ATM fees up to 4 times per statement cycle"
+        "One free incoming wire per statement cycle"
       ],
       "confidence": "high",
       "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/checking/student-checking"
     },
     {
+      "productId": "savers-goal-cd",
+      "goalId": "travel",
+      "stage": "next",
+      "score": 90,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 10,
+        "priority": 15
+      },
+      "explanation": "Once your first account is open, FNB Savers Goal CD is the natural next move for your travel goal (study abroad in Japan). No monthly fee listed; an early withdrawal penalty applies.",
+      "termsToKnow": [
+        "No monthly fee listed; an early withdrawal penalty applies",
+        "12-month fixed term that renews automatically",
+        "$100 minimum to open"
+      ],
+      "confidence": "high",
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/savers-goal-certificate-of-deposit"
+    },
+    {
+      "productId": "firstrate-savings",
+      "goalId": "travel",
+      "stage": "now",
+      "score": 80,
+      "breakdown": {
+        "goalFit": 30,
+        "eligibility": 25,
+        "affordability": 10,
+        "priority": 15
+      },
+      "explanation": "FNB FirstRate Savings fits your travel goal (study abroad in Japan), and you can start right away. $5 monthly fee, waived once your balance averages $500.",
+      "termsToKnow": [
+        "$5 monthly fee, waived once your balance averages $500",
+        "$50 to open online, $0 in a branch",
+        "6 transfers or withdrawals a month; $15 for each one over"
+      ],
+      "confidence": "medium",
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/firstrate-savings"
+    },
+    {
+      "productId": "learning-center",
+      "goalId": "first_home",
+      "stage": "now",
+      "score": 80,
+      "breakdown": {
+        "goalFit": 30,
+        "eligibility": 25,
+        "affordability": 20,
+        "priority": 5
+      },
+      "explanation": "FNB Learning Center fits your first home goal (own a place after graduation), and you can start right away. Free self-paced modules.",
+      "termsToKnow": [
+        "Free",
+        "Free self-paced modules",
+        "Modules: Creating a Budget, Credit Scores & Reports, Credit Cards, Buying a Home, and more"
+      ],
+      "confidence": "medium",
+      "sourceUrl": "https://www.fnb-online.com/learning-modules"
+    },
+    {
       "productId": "smartsecured-card",
       "goalId": "credit_building",
       "stage": "later",
-      "unlockCondition": "When your savings reach $1,300, so the $500 deposit still leaves your $800 cushion",
-      "unlockTrigger": { "kind": "savings_threshold", "amount": 1300 },
-      "score": 82,
-      "breakdown": { "goalFit": 40, "eligibility": 25, "affordability": 8, "priority": 9 },
-      "explanation": "A secured card is the most reliable way to start credit from a building range. We wait until the deposit won't eat your safety cushion.",
+      "unlockCondition": "When your savings reach $1,150, so the $500 deposit leaves your cushion untouched (or your first paycheck arrives)",
+      "unlockTrigger": {
+        "kind": "savings_threshold",
+        "amount": 1150
+      },
+      "score": 78,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 4,
+        "priority": 9
+      },
+      "explanation": "FNB SmartSecured Credit Card is on your path for your credit building goal. It unlocks when your savings reach $1,150, so the $500 deposit leaves your cushion untouched (or your first paycheck arrives).",
       "termsToKnow": [
         "No annual fee",
         "Credit limit equals your savings deposit, $500 to $2,000",
-        "APR not published; check current rate with FNB"
+        "Subject to credit approval"
       ],
-      "confidence": "high",
+      "confidence": "medium",
       "sourceUrl": "https://www.fnb-online.com/personal/loans-mortgages/personal-loans/personal-credit-cards/smart-secured-credit-card"
     },
     {
-      "productId": "savers-goal-cd",
+      "productId": "fnb-home-ownership-program",
       "goalId": "first_home",
       "stage": "later",
-      "unlockCondition": "When you start your full-time job",
-      "unlockTrigger": { "kind": "life_event", "event": "full_time_job" },
-      "score": 77,
-      "breakdown": { "goalFit": 35, "eligibility": 25, "affordability": 14, "priority": 3 },
-      "explanation": "Your place after graduation is years away, which suits a 12-month goal CD that renews. A steady paycheck makes the $25 monthly transfer easy.",
+      "unlockCondition": "When you have a full-time job and 3 months of expenses ($1,950) saved",
+      "unlockTrigger": {
+        "kind": "savings_threshold",
+        "amount": 1950
+      },
+      "score": 74,
+      "breakdown": {
+        "goalFit": 40,
+        "eligibility": 25,
+        "affordability": 4,
+        "priority": 5
+      },
+      "explanation": "FNB Home Ownership Program is on your path for your first home goal (own a place after graduation). It unlocks when you have a full-time job and 3 months of expenses ($1,950) saved.",
       "termsToKnow": [
-        "12-month fixed term that renews automatically",
-        "$100 minimum to open, plus at least $25 a month in transfers",
-        "Early withdrawal penalty applies"
+        "Little to no down payment required",
+        "Up to $5,000 closing cost grant from FNB",
+        "No mortgage insurance required"
       ],
       "confidence": "medium",
-      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/savers-goal-certificate-of-deposit"
+      "sourceUrl": "https://www.fnb-online.com/personal/loans-mortgages/mortgages/buy-a-home/fnb-home-ownership-program"
     }
   ],
   "steps": [
@@ -94,78 +266,89 @@
       "stage": "now",
       "kind": "open",
       "title": "Open FNB Student Checking this week",
-      "detail": "No monthly service charge and no minimum balance, so it costs nothing to start.",
+      "detail": "No monthly fee on Student Checking and no minimum balance, so it's $0 to start. At Penn State? The FNB branch in the HUB is at 288 Pollock Road.",
       "startMonth": 0,
       "productId": "student-checking"
     },
     {
       "order": 2,
       "stage": "now",
-      "kind": "budget",
-      "title": "Set your spending plan",
-      "detail": "$650 bills, $60 cushion, $100 Japan, $31.67 guilt-free. Every dollar has a job.",
-      "startMonth": 0
+      "kind": "habit",
+      "title": "Automate it the day money arrives",
+      "detail": "Move $226 to savings first: $113 to your cushion, $113 to your goals.",
+      "startMonth": 0,
+      "productId": "firstrate-savings",
+      "monthlyAmount": 226
     },
     {
       "order": 3,
-      "stage": "next",
+      "stage": "now",
+      "kind": "budget",
+      "title": "Set your spending plan",
+      "detail": "$650 bills, $226 savings, $257 guilt-free. Every dollar has a job.",
+      "startMonth": 0
+    },
+    {
+      "order": 4,
+      "stage": "now",
+      "kind": "learn",
+      "title": "Explore FNB Credit Center",
+      "detail": "Free VantageScore 3.0 from TransUnion, updated monthly",
+      "startMonth": 0,
+      "productId": "credit-center"
+    },
+    {
+      "order": 5,
+      "stage": "now",
       "kind": "open",
-      "title": "Open FirstRate Savings and name it \"Japan\"",
-      "detail": "$50 online or $0 in a branch.",
+      "title": "Open FNB FirstRate Savings",
+      "detail": "$5 monthly fee, waived once your balance averages $500",
       "startMonth": 0,
       "productId": "firstrate-savings"
     },
     {
-      "order": 4,
-      "stage": "next",
-      "kind": "save",
-      "title": "Auto-transfer $100 to Japan when your family money lands",
-      "detail": "Automate it so saving happens before spending.",
-      "startMonth": 1,
-      "productId": "firstrate-savings",
-      "monthlyAmount": 100
-    },
-    {
-      "order": 5,
-      "stage": "next",
-      "kind": "habit",
-      "title": "Do a 2-minute money check every Sunday",
-      "detail": "Glance at checking and savings. Small check-ins beat big worries.",
-      "startMonth": 1
-    },
-    {
       "order": 6,
-      "stage": "later",
+      "stage": "next",
       "kind": "open",
-      "title": "Open a SmartSecured card with a $500 deposit",
-      "detail": "Once savings hit $1,300. Put one small bill on it and pay in full every month.",
-      "startMonth": 9,
-      "productId": "smartsecured-card"
+      "title": "Open FNB Savers Goal CD for your travel goal",
+      "detail": "Then move $69 a month into it automatically.",
+      "startMonth": 1,
+      "productId": "savers-goal-cd",
+      "monthlyAmount": 69
     },
     {
       "order": 7,
       "stage": "later",
       "kind": "open",
-      "title": "Start a goal CD for your first place",
-      "detail": "When your full-time job starts, automate $25 or more a month toward your home.",
-      "startMonth": 36,
-      "productId": "savers-goal-cd"
+      "title": "Unlock FNB SmartSecured Credit Card",
+      "detail": "When your savings reach $1,150, so the $500 deposit leaves your cushion untouched (or your first paycheck arrives)",
+      "startMonth": 7,
+      "productId": "smartsecured-card"
+    },
+    {
+      "order": 8,
+      "stage": "later",
+      "kind": "talk_to_banker",
+      "title": "Talk to an FNB banker about FNB Home Ownership Program",
+      "detail": "When you have a full-time job and 3 months of expenses ($1,950) saved",
+      "startMonth": 14,
+      "productId": "fnb-home-ownership-program"
     }
   ],
   "notYet": [
     {
-      "goalId": "travel",
-      "reason": "At $100 a month, Japan takes about 30 months, not 9. We're not cutting your cushion or guilt-free money to force it; extra income is the faster path.",
-      "revisitWhen": "when your first paycheck or internship pay arrives"
+      "productId": "fnb-home-ownership-program",
+      "goalId": "first_home",
+      "reason": "Not a mortgage pre-approval yet. Lenders look for steady income, and a 3-month cushion keeps a new home from becoming a risk.",
+      "revisitWhen": "after a steady income and 3 months saved"
     },
     {
-      "productId": "savers-goal-cd",
-      "goalId": "travel",
-      "reason": "A 12-month CD would lock your Japan money past your 9-month trip, and early withdrawal has a penalty.",
-      "revisitWhen": "after you're back from Japan"
+      "goalId": "credit_building",
+      "reason": "Not an unsecured credit card yet. A secured card builds your history first, without a high limit or a likely denial.",
+      "revisitWhen": "after 6 to 12 months of on-time payments"
     }
   ],
-  "bankerSummary": "Maya, college student, no steady job, not yet an FNB customer. Income: $2,400 summer savings (one-time), $1,500 aid refund per semester, $200/mo from family = about $842/mo effective. Fixed costs $650, no debt, surplus $192/mo, savings $800, credit range: building. Goals: study abroad in Japan ($3,000 in 9 months, P1), build credit (12 months, P2), own a place after graduation (7 years, P3). Plan: Student Checking now, FirstRate Savings for Japan next, SmartSecured card at $1,300 savings, Savers Goal CD after a full-time job. Good fit for a student banking conversation.",
-  "aiUsed": true,
+  "bankerSummary": "College student, not yet an FNB customer, no steady income. Income: $3,000 one-time summer savings, $2,000 per semester aid refund, $300/mo family support = about $1,133/mo effective. Fixed costs $650, debt payments $0 (57% of income), surplus $483/mo, savings $400, credit range: building. Spending plan: $226/mo savings, $257/mo guilt-free. Goals: travel ($2,500 in 12 months, P1, $69/mo of $209/mo needed); credit building ($500 est. in 12 months, P2, $28/mo of $42/mo needed); first home ($15,000 est. in 84 months, P3, $16/mo of $179/mo needed). Plan: now FNB Credit Center, FNB Student Checking, FNB FirstRate Savings, FNB Learning Center; next FNB Savers Goal CD; later FNB SmartSecured Credit Card, FNB Home Ownership Program.",
+  "aiUsed": false,
   "disclaimer": "Educational prototype. Not financial advice. No data is stored."
 }

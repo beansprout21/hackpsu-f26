@@ -1,4 +1,4 @@
-// Demo personas from docs/CONTRACTS.md (v2). Maya is the hero; Jordan is the young-family contrast.
+// Demo personas from docs/CONTRACTS.md (v2.1, Maya v3). Maya is the hero; Jordan is the young-family contrast.
 // Proof moment: re-run Maya with flipSwipes(maya.intake.swipes) and her finances unchanged.
 import type { FinancialSnapshot, IntakeAnswers, SwipeAnswer } from "@/types";
 
@@ -28,22 +28,22 @@ export const maya: DemoPersona = {
     swipes: swipes(["left", "left", "left", "right", "left", "left", "right", "left"]),
     values: ["experiences", "freedom"],
     goals: [
-      { id: "travel", priority: 1, horizonMonths: 9, targetAmount: 3000, why: "study abroad in Japan" },
+      { id: "travel", priority: 1, horizonMonths: 12, targetAmount: 2500, why: "study abroad in Japan" },
       { id: "credit_building", priority: 2, horizonMonths: 12, why: "" },
       { id: "first_home", priority: 3, horizonMonths: 84, why: "own a place after graduation" },
     ],
   },
   snapshot: {
     hasSteadyIncome: false,
-    // effective monthly income: 2400 / 9 + 1500 / 4 + 200 = ~$842
+    // effective monthly income: 3000 / 9 + 2000 / 4 + 300 = $1,133
     incomeSources: [
-      { kind: "summer_savings", amount: 2400, frequency: "one_time" },
-      { kind: "aid_refund", amount: 1500, frequency: "per_semester" },
-      { kind: "family", amount: 200, frequency: "monthly" },
+      { kind: "summer_savings", amount: 3000, frequency: "one_time" },
+      { kind: "aid_refund", amount: 2000, frequency: "per_semester" },
+      { kind: "family", amount: 300, frequency: "monthly" },
     ],
     monthlyFixedCosts: 650,
     monthlyDebtPayments: 0,
-    savingsBalance: 800,
+    savingsBalance: 400,
     creditBand: "building",
     isFnbCustomer: false,
   },

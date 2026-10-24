@@ -1,20 +1,27 @@
-// Rule set B (docs/SPROUT.md): 4-bucket spending plan + per-goal allocation.
-import type { Allocation, GoalId, ProfiledGoal, SpendingBucket } from "@/types";
+// Rule sets B, C, F (docs/SPROUT.md v2): spending plan, per-goal allocation with gap levers,
+// cushion fill time, and the Future You row.
+import type { Allocation, FutureYou, GapLever, GoalId, ProfiledGoal, SpendingBucket } from "@/types";
 import { usd, type EngineContext } from "./context";
 import { GOAL_LABELS } from "./defaults";
 import { monthsToTarget, round2 } from "./math";
 
-const PRIORITY_WEIGHT: Record<1 | 2 | 3, number> = { 1: 0.5, 2: 0.3, 3: 0.2 };
+const PRIORITY_WEIGHT: Record<1 | 2 | 3, number> = { 1: 0.6, 2: 0.25, 3: 0.15 };
+const HIGH_FIXED_SHARE = 0.6;
+const GUILT_FREE_FLOOR = 0.1; // turn_up_dial never takes guilt-free below 10% of income
 
 export interface SpendingResult {
   spendingPlan: SpendingBucket[];
   allocation: Allocation[];
   emergencyMonthly: number;
   goalMonthly: number;
+  savingsMonthly: number;
   guiltFreeMonthly: number;
+  futureYou: FutureYou;
+  highFixedCosts: boolean;
+  cushionFillsInMonths: number | null;
 }
 
-// Split `total` whole dollars by weight; leftover dollars go to the first (highest-priority) goal.
+// Split whole dollars by priority weight (renormalized); leftover dollars go to the first goal.
 function splitByPriority(total: number, goals: ProfiledGoal[]): Map<GoalId, number> {
   const out = new Map<GoalId, number>();
   if (!goals.length || total <= 0) return out;
@@ -29,58 +36,97 @@ function splitByPriority(total: number, goals: ProfiledGoal[]): Map<GoalId, numb
   return out;
 }
 
+// Rule set C: levers for an off-track goal; turn_up_dial first when guilt-free stays >= 10% of income.
+function leversFor(target: number, horizon: number, monthly: number, required: number, guiltFree: number, income: number): GapLever[] {
+  const levers: GapLever[] = [];
+  const move = required - monthly;
+  if (move > 0 && guiltFree - move >= GUILT_FREE_FLOOR * income) {
+    levers.push({ kind: "turn_up_dial", moveFromGuiltFree: move });
+  }
+  if (monthly > 0) {
+    levers.push({ kind: "more_time", newHorizonMonths: Math.ceil(target / monthly) });
+    levers.push({ kind: "smaller_target", reachableAmount: monthly * horizon });
+  }
+  return levers;
+}
+
+function futureYouFor(ctx: EngineContext, earmark: number, highFixed: boolean): FutureYou {
+  if (ctx.studentRules) {
+    return {
+      earmarkMonthly: null,
+      handoff: "An FNB advisor can help you start.",
+      unlockCondition: "Unlocks with your first full-time paycheck",
+    };
+  }
+  if (!highFixed && earmark > 0) {
+    return { earmarkMonthly: earmark, handoff: "An FNB advisor can help you choose how." };
+  }
+  return {
+    earmarkMonthly: null,
+    handoff: "An FNB advisor can help you start.",
+    unlockCondition: "Unlocks when fixed costs drop below 60% of income",
+  };
+}
+
 export function buildSpending(ctx: EngineContext): SpendingResult {
   const { math, snapshot, profile } = ctx;
-  const surplus = Math.max(math.monthlySurplus, 0);
-  // The emergency bucket keeps running until the full 3-month cushion exists.
-  const cushionMet = snapshot.savingsBalance >= math.fullCushion;
+  const income = math.effectiveMonthlyIncome;
+  const surplus = math.monthlySurplus;
+  const highFixed = surplus > 0 && math.fixedShare > HIGH_FIXED_SHARE;
 
-  const emergencyMonthly = cushionMet ? 0 : Math.floor(0.3 * surplus);
-  const goalMonthly = Math.floor((cushionMet ? 0.7 : 0.4) * surplus);
-  const guiltFreeMonthly = Math.floor(0.3 * surplus);
+  // Rule set B: savings, Future You earmark, and guilt-free (the rest, floored).
+  let savingsMonthly = 0;
+  let earmark = 0;
+  if (surplus > 0) {
+    if (highFixed) {
+      savingsMonthly = Math.floor(0.5 * surplus);
+    } else if (ctx.studentRules) {
+      savingsMonthly = Math.min(Math.floor(0.2 * income), Math.floor(surplus));
+    } else {
+      savingsMonthly = Math.min(Math.floor(0.1 * income), Math.floor(surplus));
+      earmark = Math.min(Math.floor(0.1 * income), Math.floor(surplus) - savingsMonthly);
+    }
+  }
+  const guiltFreeMonthly = surplus > 0 ? Math.max(0, Math.floor(surplus - savingsMonthly - earmark)) : 0;
+
+  // Inside savings: cushion first (50/50) until the target cushion is met.
+  const cushionMet = snapshot.savingsBalance >= ctx.cushionTarget;
+  const emergencyMonthly = cushionMet ? 0 : Math.floor(savingsMonthly * 0.5);
+  const goalMonthly = savingsMonthly - emergencyMonthly;
+  const cushionFillsInMonths =
+    !cushionMet && emergencyMonthly > 0 ? monthsToTarget(ctx.cushionTarget, snapshot.savingsBalance, emergencyMonthly) : null;
 
   const goals = [...profile.goals].sort((a, b) => a.priority - b.priority);
-  const efGoal = goals.find((g) => g.id === "emergency_fund");
   const otherGoals = goals.filter((g) => g.id !== "emergency_fund");
-
-  const allocation: Allocation[] = [];
   const split = splitByPriority(otherGoals.length ? goalMonthly : 0, otherGoals);
-  for (const g of goals) {
-    if (g.id === "emergency_fund") continue;
-    const monthly = split.get(g.id) ?? 0;
-    if (monthly > 0) {
-      allocation.push({ goalId: g.id, monthlyAmount: monthly, monthsToTarget: monthsToTarget(g.targetAmount, 0, monthly) });
-    }
-  }
-  if (efGoal) {
-    // The emergency-fund goal is funded by the emergency bucket (plus goal savings if it's the only goal).
-    const monthly = emergencyMonthly + (otherGoals.length ? 0 : goalMonthly);
-    if (monthly > 0) {
-      allocation.push({
-        goalId: "emergency_fund",
-        monthlyAmount: monthly,
-        monthsToTarget: monthsToTarget(math.fullCushion, snapshot.savingsBalance, monthly),
-      });
-    }
-  }
-  allocation.sort(
-    (a, b) => goals.findIndex((g) => g.id === a.goalId) - goals.findIndex((g) => g.id === b.goalId),
-  );
 
-  const income = math.effectiveMonthlyIncome;
+  const allocation: Allocation[] = goals.map((g) => {
+    // The emergency-fund goal is the cushion: funded by the emergency bucket, sized by the engine.
+    const isEf = g.id === "emergency_fund";
+    const monthly = isEf ? emergencyMonthly + (otherGoals.length ? 0 : goalMonthly) : (split.get(g.id) ?? 0);
+    const target = isEf ? ctx.cushionTarget : g.targetAmount;
+    const requiredMonthly = Math.ceil(target / g.horizonMonths);
+    const onTrack = monthly >= requiredMonthly;
+    return {
+      goalId: g.id,
+      monthlyAmount: monthly,
+      monthsToTarget: monthsToTarget(target, 0, monthly),
+      requiredMonthly,
+      onTrack,
+      levers: onTrack ? [] : leversFor(target, g.horizonMonths, monthly, requiredMonthly, guiltFreeMonthly, income),
+    };
+  });
+
   const pct = (amount: number) => (income > 0 ? Math.min(100, round2((100 * amount) / income)) : 0);
   const fixed = round2(math.monthlyFixedCosts + math.monthlyDebtPayments);
-  const noRoom = math.monthlySurplus <= 0;
+  const noRoom = surplus <= 0;
+  const goalNames = otherGoals.length ? otherGoals.map((g) => GOAL_LABELS[g.id]).join(", ") : "your emergency fund";
 
   const emergencyNote = noRoom
     ? "First we find your breathing room, then this starts growing."
     : cushionMet
-      ? "Your 3-month cushion is complete, so this share goes to your goals."
-      : ctx.cushionTarget < math.fullCushion && snapshot.savingsBalance < ctx.cushionTarget
-        ? `Builds a starter cushion of ${usd(ctx.cushionTarget)}, then 3 months of costs (${usd(math.fullCushion)}).`
-        : `Grows your ${usd(snapshot.savingsBalance)} toward 3 months of costs (${usd(math.fullCushion)}).`;
-
-  const goalNames = otherGoals.length ? otherGoals.map((g) => GOAL_LABELS[g.id]).join(", ") : "your emergency fund";
+      ? "Your cushion is in place, so all savings go to your goals."
+      : `Builds your cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${cushionFillsInMonths} months` : ""}. After that, your goals get the full amount.`;
 
   const spendingPlan: SpendingBucket[] = [
     {
@@ -103,9 +149,19 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
       bucket: "guilt_free",
       monthlyAmount: guiltFreeMonthly,
       percent: pct(guiltFreeMonthly),
-      note: noRoom ? "Protected as soon as there's room." : "Fun money, on purpose. No guilt.",
+      note: noRoom ? "Protected as soon as there's room." : "Money for what you love. Spend it with zero guilt.",
     },
   ];
 
-  return { spendingPlan, allocation, emergencyMonthly, goalMonthly, guiltFreeMonthly };
+  return {
+    spendingPlan,
+    allocation,
+    emergencyMonthly,
+    goalMonthly,
+    savingsMonthly,
+    guiltFreeMonthly,
+    futureYou: futureYouFor(ctx, earmark, highFixed),
+    highFixedCosts: highFixed,
+    cushionFillsInMonths,
+  };
 }
