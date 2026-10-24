@@ -2,6 +2,12 @@
 
 HackPSU Fall 2026 project. Team: Ben, Ethan.
 
+**Live:** https://hackpsu-f26.vercel.app (Vercel production, deploys from `main`; each PR gets a preview URL)
+
+## Run locally
+1. `npm install`
+2. `npm run dev` and open http://localhost:3000
+
 ## Setup (each teammate)
 1. `gh auth login` (GitHub CLI) and clone this repo.
 2. Copy `.env.example` to `.env.local` and fill in values.

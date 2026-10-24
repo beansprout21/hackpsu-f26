@@ -1,0 +1,42 @@
+{
+  "persona": {
+    "label": "Freedom Seeker",
+    "description": "You light up for new places and big experiences, and you want money to open doors, not close them."
+  },
+  "richLifeStatement": "My rich life is studying abroad in Japan and having the freedom to say yes to experiences like that, backed by credit I built myself.",
+  "goals": [
+    {
+      "id": "travel",
+      "priority": 1,
+      "horizonMonths": 9,
+      "targetAmount": 3000,
+      "why": "study abroad in Japan",
+      "targetIsEstimate": false,
+      "motivation": "Studying abroad in Japan is the experience Maya wants most in the next year."
+    },
+    {
+      "id": "credit_building",
+      "priority": 2,
+      "horizonMonths": 12,
+      "targetAmount": 500,
+      "why": "",
+      "targetIsEstimate": true,
+      "motivation": "A credit history now gives Maya more freedom later, from apartments to travel."
+    },
+    {
+      "id": "first_home",
+      "priority": 3,
+      "horizonMonths": 84,
+      "targetAmount": 15000,
+      "why": "own a place after graduation",
+      "targetIsEstimate": true,
+      "motivation": "Maya wants a place of her own once she graduates and starts working."
+    }
+  ],
+  "topValues": ["experiences", "freedom"],
+  "notes": [
+    "Japan is 9 months out while a home is 7 years out, so the trip clearly comes first.",
+    "Credit building has no dollar target; $500 is estimated as a typical starter secured-card deposit.",
+    "The home target is an estimate for a down payment plus closing costs."
+  ]
+}

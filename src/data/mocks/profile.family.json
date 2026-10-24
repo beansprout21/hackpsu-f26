@@ -1,0 +1,33 @@
+{
+  "persona": {
+    "label": "Steady Builder",
+    "description": "You plan ahead so the people you love are covered, and you'd rather build slowly than risk a setback."
+  },
+  "richLifeStatement": "Our rich life is a home of our own where the kids can grow up, with enough of a safety net that a surprise bill never shakes us.",
+  "goals": [
+    {
+      "id": "first_home",
+      "priority": 1,
+      "horizonMonths": 60,
+      "targetAmount": 15000,
+      "why": "",
+      "targetIsEstimate": false,
+      "motivation": "A first home gives Jordan's family stability and a place to put down roots."
+    },
+    {
+      "id": "emergency_fund",
+      "priority": 2,
+      "horizonMonths": 12,
+      "targetAmount": 5000,
+      "why": "",
+      "targetIsEstimate": true,
+      "motivation": "A cushion protects the family from surprise costs while they save for the house."
+    }
+  ],
+  "topValues": ["security", "family"],
+  "notes": [
+    "Security is the top value, so the emergency fund should come before mortgage steps even though the home is priority 1.",
+    "No emergency fund amount was given; $5,000 is an estimate until monthly costs are known.",
+    "The $15,000 target covers both down payment and closing costs."
+  ]
+}
