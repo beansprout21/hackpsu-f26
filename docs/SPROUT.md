@@ -6,7 +6,7 @@ Approved by Ben, Sat 4:39 PM. v1 (3:50 PM) is superseded.
 
 ## Method credit
 
-Sprout's planning logic is **inspired by** Ramit Sethi's *I Will Teach You to Be Rich* (2nd ed., 2019): define a Rich Life first, fund it with a conscious spending plan (fixed costs, savings, investing, guilt-free spending), turn up the "money dials" you love, automate, and focus on big wins. Adapted for students with irregular income and limited to budgeting, saving, credit building, and FNB products. Never call our plan "the Conscious Spending Plan" and never use the book's text or branding in the app. Research and sources: `docs/research/iwt-method.md`.
+Sprout's planning logic uses as its **starting guideline** (not a copy; we tune every number for FNB and students) Ramit Sethi's *I Will Teach You to Be Rich* (2nd ed., 2019): define a Rich Life first, fund it with a conscious spending plan (fixed costs, savings, investing, guilt-free spending), turn up the "money dials" you love, automate, and focus on big wins. Adapted for students with irregular income and limited to budgeting, saving, credit building, and FNB products. Never call our plan "the Conscious Spending Plan" and never use the book's text or branding in the app. Research and sources: `docs/research/iwt-method.md`.
 
 Reference ranges from the method (share of take-home pay): fixed costs about 50 to 60%, investing about 10%, savings 5 to 10%, guilt-free 20 to 35%.
 
@@ -59,7 +59,7 @@ For each goal:
 
 ## Rule set D: Step one (first match wins; doable this week)
 
-1. `isFnbCustomer === false` → **Open FNB Student Checking** (students) or the best no-fee checking for the life stage. $0. For Penn State students, mention the HUB branch (288 Pollock Road).
+1. `isFnbCustomer === false` → **Open FNB Student Checking** (students) or the best-fit FNB checking for the life stage, with its fee and how to avoid it. $0. For Penn State students, mention the HUB branch (288 Pollock Road).
 2. Customer without the target cushion → **Automate it:** set an automatic transfer on the day money arrives.
 3. Surplus ≤ 0 → **Track one month of spending.**
 4. Otherwise → the highest-scoring `now` match.
@@ -70,7 +70,8 @@ For each goal:
 - `next`: eligible today but follows a `now` item.
 - `later`: reachable condition; MUST carry `unlockTrigger` + `unlockCondition`.
 - Student triggers: secured card → savings ≥ starter cushion + minimum deposit, or `first_paycheck`. Income-dependent products → `first_paycheck` / `internship`. Mortgages and homebuyer programs → `full_time_job` + full cushion.
-- Habit steps always present: **automate on payday**; **no-fee accounts first**.
+- Habit step always present: **automate on payday**.
+- **Fit-first, fee-transparent:** recommend the FNB account that best fits the user's situation (not simply the cheapest). Every account card states its monthly fee and exactly how THIS user avoids it (e.g. "no monthly fee on Student Checking", "waived with direct deposit"). Framing: Sprout makes sure you never pay a fee you didn't see coming.
 - Be honest about weak rates: if a product's published rate is low (e.g. a goal CD at 0.05% APY), the explanation sells the commitment, not the interest.
 
 ## Rule set F: Future You (investing, inside our boundary)
@@ -122,6 +123,12 @@ Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester
 | Family First | Your money plans start with the people you love. |
 | Future Builder | You're playing the long game, and it shows. |
 | Simple Saver | You want money to be easy, so we keep it simple and automatic. |
+
+## Latency (demo reliability)
+
+- `/api/profile` uses **Claude Haiku 5.5** (`ANTHROPIC_PROFILE_MODEL`, default `claude-haiku-5-5`): short writing task, faster and cheaper.
+- `/api/plan` stays on `ANTHROPIC_MODEL` (Sonnet 5.5) with a **20 second** timeout before falling back to template text.
+- Target end-to-end under 15 seconds; the UI narrates the wait (Ethan, #10).
 
 ## Prompt contracts (AI routes)
 
