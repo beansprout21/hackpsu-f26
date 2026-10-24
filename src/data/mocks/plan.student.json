@@ -1,0 +1,161 @@
+{
+  "headline": "Japan in 7 months, a real credit history by next fall",
+  "monthlySurplus": 750,
+  "emergencyFundTarget": 4950,
+  "allocation": [
+    { "goalId": "travel", "monthlyAmount": 469, "monthsToTarget": 7 },
+    { "goalId": "credit_building", "monthlyAmount": 281, "monthsToTarget": 2 }
+  ],
+  "matches": [
+    {
+      "productId": "firstrate-savings",
+      "goalId": "travel",
+      "stage": "now",
+      "score": 98,
+      "breakdown": { "goalFit": 40, "eligibility": 25, "affordability": 18, "priority": 15 },
+      "explanation": "Japan is your top goal, so it gets its own savings account. Separating the trip money keeps it from getting spent, and you can open it online for $50.",
+      "termsToKnow": [
+        "$50 minimum to open online ($0 in branch)",
+        "$5 monthly fee, waived with a $500 average daily balance",
+        "6 transfers or withdrawals a month; $15 for each one over"
+      ],
+      "confidence": "high",
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/firstrate-savings"
+    },
+    {
+      "productId": "smartsecured-card",
+      "goalId": "credit_building",
+      "stage": "next",
+      "score": 86,
+      "breakdown": { "goalFit": 40, "eligibility": 25, "affordability": 12, "priority": 9 },
+      "explanation": "Your credit range is still building, and a secured card is the most reliable way to start. Two months of your credit allocation covers the $500 deposit without touching your trip fund.",
+      "termsToKnow": [
+        "No annual fee",
+        "Credit limit equals your savings deposit, $500 to $2,000",
+        "APR not published; check current rate with FNB"
+      ],
+      "confidence": "high",
+      "sourceUrl": "https://www.fnb-online.com/personal/loans-mortgages/personal-loans/personal-credit-cards/smart-secured-credit-card"
+    },
+    {
+      "productId": "student-checking",
+      "goalId": "credit_building",
+      "stage": "now",
+      "score": 84,
+      "breakdown": { "goalFit": 30, "eligibility": 25, "affordability": 20, "priority": 9 },
+      "explanation": "Everyday banking comes first. Student Checking has no monthly fee and no overdraft fees, and it's where you'll pay your card from each month so payments are always on time.",
+      "termsToKnow": [
+        "No monthly service charge or minimum balance",
+        "No overdraft fees; transactions are declined when funds are short",
+        "Refunds non-FNB ATM fees up to 4 times per statement cycle"
+      ],
+      "confidence": "medium",
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/checking/student-checking"
+    },
+    {
+      "productId": "savers-goal-cd",
+      "goalId": "travel",
+      "stage": "later",
+      "unlockCondition": "After Japan, once 3 months of expenses ($4,950) are saved",
+      "score": 82,
+      "breakdown": { "goalFit": 28, "eligibility": 25, "affordability": 14, "priority": 15 },
+      "explanation": "A 12-month goal CD is a good home for your next big adventure fund. It's held back for now because its term runs past your 9-month trip.",
+      "termsToKnow": [
+        "12-month fixed term that renews automatically",
+        "$100 minimum to open, plus at least $25 a month in transfers",
+        "Early withdrawal penalty applies"
+      ],
+      "confidence": "low",
+      "sourceUrl": "https://www.fnb-online.com/personal/checking-savings/savings/savers-goal-certificate-of-deposit"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "stage": "now",
+      "kind": "open",
+      "title": "Open FirstRate Savings for your Japan fund",
+      "detail": "Name it \"Japan\" so the money has a job.",
+      "startMonth": 0,
+      "productId": "firstrate-savings"
+    },
+    {
+      "order": 2,
+      "stage": "now",
+      "kind": "save",
+      "title": "Auto-save $469 a month for Japan",
+      "detail": "Schedule the transfer for payday. At this pace you reach $3,000 in about 7 months, ahead of your 9-month goal.",
+      "startMonth": 0,
+      "productId": "firstrate-savings",
+      "monthlyAmount": 469
+    },
+    {
+      "order": 3,
+      "stage": "now",
+      "kind": "open",
+      "title": "Open Student Checking for everyday spending",
+      "detail": "No monthly fee and no overdraft fees while you're in school.",
+      "startMonth": 0,
+      "productId": "student-checking"
+    },
+    {
+      "order": 4,
+      "stage": "next",
+      "kind": "save",
+      "title": "Set aside $281 a month for your card deposit",
+      "detail": "Two months gets you to the $500 deposit for a secured card.",
+      "startMonth": 0,
+      "monthlyAmount": 281
+    },
+    {
+      "order": 5,
+      "stage": "next",
+      "kind": "open",
+      "title": "Open a SmartSecured card with a $500 deposit",
+      "detail": "Use it for one small recurring bill, like your phone.",
+      "startMonth": 2,
+      "productId": "smartsecured-card"
+    },
+    {
+      "order": 6,
+      "stage": "next",
+      "kind": "learn",
+      "title": "Pay the full statement balance every month",
+      "detail": "On-time, paid-in-full payments are what build your score.",
+      "startMonth": 2
+    },
+    {
+      "order": 7,
+      "stage": "later",
+      "kind": "open",
+      "title": "After Japan, start a goal CD for your next adventure",
+      "detail": "Once your 3-month cushion is in place, a 12-month CD keeps long-range savings out of reach.",
+      "startMonth": 9,
+      "productId": "savers-goal-cd"
+    },
+    {
+      "order": 8,
+      "stage": "later",
+      "kind": "talk_to_banker",
+      "title": "Review your credit progress with an FNB banker",
+      "detail": "After a year of on-time payments, ask what your options look like.",
+      "startMonth": 12
+    }
+  ],
+  "notYet": [
+    {
+      "productId": "savers-goal-cd",
+      "goalId": "travel",
+      "reason": "A 12-month CD would lock your Japan money past your 9-month trip, and early withdrawal has a penalty.",
+      "revisitWhen": "after you're back from Japan"
+    },
+    {
+      "goalId": "credit_building",
+      "reason": "Not an unsecured credit card yet. With a building credit range, a secured card starts your history without likely denials or a high limit.",
+      "revisitWhen": "after 6 to 12 months of on-time payments"
+    }
+  ],
+  "bankerSummary": "Maya, college student, not yet an FNB customer. Goals: study abroad in Japan ($3,000 in 9 months, priority 1) and build credit (12 months). Take-home $2,400/mo, fixed costs $1,500, debt payments $150, surplus $750/mo, savings $1,200, credit range: building. Plan: FirstRate Savings + Student Checking now, SmartSecured card in month 2, Savers Goal CD after the trip. Good fit for a student banking conversation.",
+  "aiUsed": true,
+  "disclaimer": "Educational prototype. Not financial advice. No data is stored."
+}
