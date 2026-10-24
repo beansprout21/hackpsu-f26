@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sprout } from "lucide-react";
 import { StepIndicator } from "./StepIndicator";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export function SiteHeader() {
   return (
@@ -17,7 +18,9 @@ export function SiteHeader() {
         </Link>
         <StepIndicator />
         {/* Auth0 user menu mounts here (#7). */}
-        <div data-slot="user-menu" className="flex min-w-8 justify-end" />
+        <div data-slot="user-menu" className="flex min-w-8 justify-end">
+          <UserMenu />
+        </div>
       </div>
     </header>
   );
