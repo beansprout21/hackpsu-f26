@@ -28,8 +28,8 @@ for (const goal of GoalIdSchema.options) {
 const published = catalog.filter((p) => p.rateNote !== "Check current rate with FNB" && p.rateNote !== "Free");
 console.log(`published rates: ${published.map((p) => `${p.id} (${p.rateNote})`).join("; ")}`);
 
-if (catalog.length < 15 || catalog.length > 25) {
-  console.error(`FAIL: expected 15 to 25 products, got ${catalog.length}`);
+if (catalog.length < 15 || catalog.length > 100) {
+  console.error(`FAIL: expected 15 to 100 products, got ${catalog.length}`);
   process.exit(1);
 }
 if (missing.length) {
