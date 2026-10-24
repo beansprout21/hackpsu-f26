@@ -1,7 +1,8 @@
 {
   "persona": {
-    "label": "Steady Builder",
-    "description": "You plan ahead so the people you love are covered, and you'd rather build slowly than risk a setback."
+    "id": "safety_builder",
+    "label": "Safety Builder",
+    "description": "You plan ahead so the people you love are covered. That steady instinct is exactly what gets a family into its first home."
   },
   "richLifeStatement": "Our rich life is a home of our own where the kids can grow up, with enough of a safety net that a surprise bill never shakes us.",
   "goals": [
@@ -24,7 +25,10 @@
       "motivation": "A cushion protects the family from surprise costs while they save for the house."
     }
   ],
-  "topValues": ["security", "family"],
+  "topValues": [
+    "security",
+    "family"
+  ],
   "notes": [
     "Security is the top value, so the emergency fund should come before mortgage steps even though the home is priority 1.",
     "No emergency fund amount was given; $5,000 is an estimate until monthly costs are known.",

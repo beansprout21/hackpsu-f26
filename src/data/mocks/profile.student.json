@@ -1,7 +1,8 @@
 {
   "persona": {
-    "label": "Freedom Seeker",
-    "description": "You light up for new places and big experiences, and you want money to open doors, not close them."
+    "id": "experience_collector",
+    "label": "Experience Collector",
+    "description": "Japan is calling, and you'd rather collect memories than things. Let's make sure your money can keep up with you."
   },
   "richLifeStatement": "My rich life is studying abroad in Japan and having the freedom to say yes to experiences like that, backed by credit I built myself.",
   "goals": [
@@ -33,7 +34,10 @@
       "motivation": "Maya wants a place of her own once she graduates and starts working."
     }
   ],
-  "topValues": ["experiences", "freedom"],
+  "topValues": [
+    "experiences",
+    "freedom"
+  ],
   "notes": [
     "Japan is 9 months out while a home is 7 years out, so the trip clearly comes first.",
     "Credit building has no dollar target; $500 is estimated as a typical starter secured-card deposit.",
