@@ -1,6 +1,7 @@
 // POST /api/plan: { profile, snapshot, intake } -> ApiResponse<Plan>
 // Engine builds the plan; AI rewrites its wording; any AI failure returns the engine plan.
 import { NextResponse } from "next/server";
+import { requireSession } from "@/lib/server/auth";
 import { z } from "zod";
 import type { ApiResponse, Plan } from "@/types";
 import { PlanRequestSchema } from "@/types/schemas";
@@ -8,7 +9,8 @@ import { buildPlanSkeleton } from "@/lib/server/engine/plan";
 import { generatePlan } from "@/lib/ai/plan";
 
 export async function POST(request: Request) {
-  // TODO(#7): require an Auth0 session here once src/lib/server/auth.ts lands.
+  const auth = await requireSession();
+  if (auth.response) return auth.response;
   let body: unknown;
   try {
     body = await request.json();

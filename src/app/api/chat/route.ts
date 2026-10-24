@@ -1,5 +1,6 @@
 // POST /api/chat: { question, profile, plan } -> ApiResponse<{ answer, citedProductIds }>
 import { NextResponse } from "next/server";
+import { requireSession } from "@/lib/server/auth";
 import { z } from "zod";
 import type { ApiResponse } from "@/types";
 import { ChatRequestSchema } from "@/types/schemas";
@@ -8,7 +9,8 @@ import { answerQuestion, type ChatAnswer } from "@/lib/ai/chat";
 const MAX_QUESTION_CHARS = 500;
 
 export async function POST(request: Request) {
-  // TODO(#7): require an Auth0 session here once src/lib/server/auth.ts lands.
+  const auth = await requireSession();
+  if (auth.response) return auth.response;
   let body: unknown;
   try {
     body = await request.json();
