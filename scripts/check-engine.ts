@@ -2,12 +2,12 @@
 // from docs/SPROUT.md v2 row by row. Run: npx tsx scripts/check-engine.ts
 import studentProfile from "../src/data/mocks/profile.student.json";
 import familyProfile from "../src/data/mocks/profile.family.json";
-import { flipSwipes, jordan, maya } from "../src/data/personas";
+import { jordan, maya, mayaOpposite, OPPOSITE_VALUES } from "../src/data/personas";
 import { personaFromValues } from "../src/data/personaTaxonomy";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { getProduct, isCatalogId } from "../src/lib/server/catalog";
 import { GoalProfileSchema, PlanSchema } from "../src/types/schemas";
-import type { GoalProfile, IntakeAnswers, Plan, ValueTag } from "../src/types";
+import type { GoalProfile, IntakeAnswers, Plan } from "../src/types";
 
 let failures = 0;
 const check = (ok: boolean, msg: string) => {
@@ -19,13 +19,12 @@ const mayaProfile = GoalProfileSchema.parse(studentProfile);
 const jordanProfile = GoalProfileSchema.parse(familyProfile);
 
 // Opposite swipes: same finances and goals, flipped values -> different persona and plan.
-const oppositeValues: ValueTag[] = ["security", "family"];
-const oppositeIntake: IntakeAnswers = { ...maya.intake, swipes: flipSwipes(maya.intake.swipes), values: oppositeValues };
-const oppositeDef = personaFromValues(oppositeValues);
+const oppositeIntake: IntakeAnswers = mayaOpposite.intake;
+const oppositeDef = personaFromValues(OPPOSITE_VALUES);
 const oppositeProfile: GoalProfile = {
   ...mayaProfile,
   persona: { id: oppositeDef.id, label: oppositeDef.label, description: oppositeDef.tagline },
-  topValues: oppositeValues,
+  topValues: OPPOSITE_VALUES,
 };
 
 const runs: { name: string; plan: Plan }[] = [
