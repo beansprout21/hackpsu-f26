@@ -1,5 +1,5 @@
 // Snapshot form draft <-> FinancialSnapshot (Contracts v2), following Ethan's approved addendum on #10.
-import type { CreditBand, FinancialSnapshot, IncomeFrequency, IncomeKind } from "@/types";
+import type { CreditBand, ExtractedSnapshot, FinancialSnapshot, IncomeFrequency, IncomeKind } from "@/types";
 import { FinancialSnapshotSchema } from "@/types/schemas";
 
 export interface IncomeOption {
@@ -7,6 +7,7 @@ export interface IncomeOption {
   kind: IncomeKind;
   label: string;
   frequencies: IncomeFrequency[];
+  addable?: false; // false: only used to label rows filled from a document, not offered as an "add" button
 }
 
 // "No / irregular" income rows; each row becomes one IncomeSource. The first option per kind is
@@ -20,9 +21,12 @@ export const INCOME_OPTIONS: IncomeOption[] = [
   { id: "scholarship", kind: "scholarship", label: "Scholarship", frequencies: ["per_semester", "one_time"] },
   { id: "gig", kind: "gig", label: "Gig or side work", frequencies: ["monthly", "one_time"] },
   { id: "other", kind: "other", label: "Other", frequencies: ["monthly", "per_semester", "one_time"] },
+  { id: "job", kind: "job", label: "Paycheck", frequencies: ["monthly", "one_time"], addable: false },
+  { id: "work_study", kind: "work_study", label: "Work-study", frequencies: ["monthly", "per_semester"], addable: false },
 ];
 
-export const optionById = (id: string) => INCOME_OPTIONS.find((o) => o.id === id) ?? INCOME_OPTIONS[INCOME_OPTIONS.length - 1];
+export const optionById = (id: string) =>
+  INCOME_OPTIONS.find((o) => o.id === id) ?? INCOME_OPTIONS.find((o) => o.id === "other")!;
 const optionForKind = (kind: IncomeKind) => INCOME_OPTIONS.find((o) => o.kind === kind) ?? optionById("other");
 
 export const FREQUENCY_LABELS: Record<IncomeFrequency, string> = {
@@ -54,7 +58,11 @@ export interface IncomeRow {
   kind: IncomeKind;
   frequency: IncomeFrequency;
   amount: string;
+  fromDoc?: boolean; // filled from an uploaded document; cleared when the user edits the row
 }
+
+// Single-value fields an uploaded document can fill.
+export type DocField = "monthlyTakeHome" | "fixedCosts" | "debtPayments" | "savings" | "creditBand";
 
 export interface SnapshotDraft {
   steady: boolean | null;
@@ -66,6 +74,7 @@ export interface SnapshotDraft {
   savings: string;
   creditBand: CreditBand | null;
   isFnbCustomer: boolean;
+  fromDoc: Partial<Record<DocField, boolean>>; // drives the "From your document" marker
 }
 
 export const EMPTY_DRAFT: SnapshotDraft = {
@@ -78,6 +87,7 @@ export const EMPTY_DRAFT: SnapshotDraft = {
   savings: "",
   creditBand: null,
   isFnbCustomer: false,
+  fromDoc: {},
 };
 
 let rowCounter = 0;
@@ -111,8 +121,52 @@ export function draftFromSnapshot(s: FinancialSnapshot): SnapshotDraft {
     savings: String(s.savingsBalance),
     creditBand: s.creditBand,
     isFnbCustomer: s.isFnbCustomer,
+    fromDoc: {},
   };
 }
+
+const wholeDollars = (n: number) => String(Math.round(n));
+
+// Merge one uploaded document into the draft (Contracts v2.3): fill only fields that are still empty, so the
+// user's own entries and earlier documents win; add incomes that aren't already listed (same kind, frequency,
+// and amount). Pure, so it is safe as a state updater.
+export function applyExtraction(d: SnapshotDraft, ex: ExtractedSnapshot): SnapshotDraft {
+  const next: SnapshotDraft = { ...d, fromDoc: { ...d.fromDoc } };
+  const fill = (field: Exclude<DocField, "creditBand">, value: number | null) => {
+    if (value === null || next[field].trim() !== "") return;
+    next[field] = wholeDollars(value);
+    next.fromDoc[field] = true;
+  };
+
+  const incomes = ex.incomeSources.filter((s) => s.amount > 0);
+  if (incomes.length > 0) {
+    if (next.steady === null) next.steady = incomes.every((s) => s.kind === "job" && s.frequency === "monthly");
+    if (next.steady) {
+      const pay = incomes.filter((s) => s.kind === "job" && s.frequency === "monthly").reduce((sum, s) => sum + s.amount, 0);
+      fill("monthlyTakeHome", pay > 0 ? pay : null);
+    } else {
+      const listed = new Set(next.rows.map((r) => `${r.kind}|${r.frequency}|${Math.round(toAmount(r.amount))}`));
+      const added = incomes
+        .filter((s) => !listed.has(`${s.kind}|${s.frequency}|${Math.round(s.amount)}`))
+        .map((s) => ({ key: newRowKey(), optionId: optionForKind(s.kind).id, kind: s.kind, frequency: s.frequency, amount: wholeDollars(s.amount), fromDoc: true }));
+      if (added.length > 0) next.rows = [...next.rows, ...added];
+      next.noIncome = false;
+    }
+  }
+
+  fill("fixedCosts", ex.monthlyFixedCosts);
+  fill("debtPayments", ex.monthlyDebtPayments);
+  fill("savings", ex.savingsBalance);
+  if (ex.creditBand !== null && next.creditBand === null) {
+    next.creditBand = ex.creditBand;
+    next.fromDoc.creditBand = true;
+  }
+  return next;
+}
+
+// True when a document gave Sprout at least one value to fill in.
+export const hasValues = (ex: ExtractedSnapshot) =>
+  ex.incomeSources.length > 0 || [ex.monthlyFixedCosts, ex.monthlyDebtPayments, ex.savingsBalance, ex.creditBand].some((v) => v !== null);
 
 // Rows that count toward income, in incomeSources order (the readout labels lines with these).
 export const countedRows = (d: SnapshotDraft) =>

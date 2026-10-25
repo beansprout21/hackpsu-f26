@@ -1,7 +1,7 @@
 // Client wrappers for the Sprout API routes. Every call returns the route's `data` or throws an
 // ApiError with a message that is safe to show the user. A 401 means the Auth0 session ended,
 // so we send the user back through login (returning to /snapshot).
-import type { ApiResponse, FinancialSnapshot, GoalProfile, IntakeAnswers, Plan, ShareStatus } from "@/types";
+import type { ApiResponse, ExtractedSnapshot, FinancialSnapshot, GoalProfile, IntakeAnswers, Plan, ShareStatus } from "@/types";
 import { GoalProfileSchema, PlanSchema } from "@/types/schemas";
 import studentProfileMock from "@/data/mocks/profile.student.json";
 import familyProfileMock from "@/data/mocks/profile.family.json";
@@ -88,4 +88,33 @@ export function sharePlan(data: { intake: IntakeAnswers; snapshot: FinancialSnap
 
 export function stopSharing(): Promise<ShareStatus> {
   return send<ShareStatus>("DELETE", "/api/share");
+}
+
+// Document upload (v2.3): one file per request, multipart. 503 means upload is turned off (AI_DISABLED or no key).
+const EXTRACT_TIMEOUT_MS = 35_000;
+
+export async function extractDocument(file: File): Promise<ExtractedSnapshot> {
+  const form = new FormData();
+  form.append("file", file);
+  let res: Response;
+  try {
+    res = await fetch("/api/extract", { method: "POST", body: form, signal: AbortSignal.timeout(EXTRACT_TIMEOUT_MS) });
+  } catch (error) {
+    const timedOut = error instanceof DOMException && error.name === "TimeoutError";
+    throw new ApiError(timedOut ? "Couldn't read that file in time. You can type your numbers instead." : "We couldn't reach Sprout. Check your connection and try again.");
+  }
+  if (res.status === 401) {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign(LOGIN_RETURN_TO_SNAPSHOT);
+    throw new ApiError("Your session ended. Sign in again to keep going.", 401);
+  }
+  let json: ApiResponse<ExtractedSnapshot>;
+  try {
+    json = (await res.json()) as ApiResponse<ExtractedSnapshot>;
+  } catch {
+    // e.g. the platform's 413 for bodies over 4.5 MB, which is not our JSON envelope
+    throw new ApiError(res.status === 413 ? "That file is over 4 MB. Try a smaller file or a photo of the page." : "Couldn't read that file. You can type your numbers instead.", res.status);
+  }
+  if (!json.ok) throw new ApiError(json.error || "Couldn't read that file. You can type your numbers instead.", res.status);
+  return json.data;
 }
