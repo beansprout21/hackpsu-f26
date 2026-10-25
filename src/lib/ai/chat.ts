@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { Allocation, ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, IncomeKind, Match, Plan, Product, SpendingBucketId, ValueTag } from "@/types";
 import { fnbFitMatch, fundName, p1GoalId, productShortName } from "@/lib/client/chatCopy";
+import { statedGap } from "@/lib/client/overview";
 import { aboutTime, timeSpan } from "@/lib/client/time";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
 import { GOAL_LABELS } from "@/lib/server/engine/defaults";
@@ -46,7 +47,7 @@ const CHAT_SYSTEM = [
   "Never invent rates, fees, or products. If a rate isn't published, say to check the current rate with FNB.",
   'Call the emergency savings the "safety cushion", never "emergency fund".',
   'You are a prototype built for FNB, not FNB itself: say "FNB\'s" or the product name, never "our" products.',
-  'Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away".',
+  'Say "a month away" ONLY for a goal whose gapMonthly is a number, with that gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". When gapMonthly is null, never state a gap: say what goes in each month and when it gets there.',
   "Durations: under 24 months say months; from 24 months say whole years, written the way the JSON's *Time fields are (\"about 4 years\"). Never write 24 or more months.",
   `Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say "${ADVISOR_LINE}" and stop.`,
   "List every productId you mention in citedProductIds. Output JSON only.",
@@ -476,6 +477,19 @@ function explainUnlock(plan: Plan, profile: GoalProfile, snapshot: FinancialSnap
   };
 }
 
+const nullableRound = (n: number | null) => (n === null ? null : Math.round(n));
+
+// v2.1: the gap answer's lead when guilt-free money can't close the gap (same rule as the Overview line).
+function unclosableLead(alloc: Allocation, fund: string, horizonMonths?: number): string {
+  if (alloc.monthlyAmount <= 0) return `Your ${fund} starts growing after your safety cushion is full.`;
+  const moreTime = alloc.levers.find((l) => l.kind === "more_time");
+  const atPace = moreTime?.newHorizonMonths ?? alloc.monthsToTarget;
+  if (atPace > 0 && atPace <= 60) return `Your ${fund} gets ${usd(alloc.monthlyAmount)} a month, which gets you there in ${timeSpan(atPace)}.`;
+  const smaller = alloc.levers.find((l) => l.kind === "smaller_target");
+  const reachable = smaller?.reachableAmount ?? alloc.monthlyAmount * (horizonMonths ?? 0);
+  return `Your ${fund} gets ${usd(alloc.monthlyAmount)} a month. A ${usd(reachable)} target fits your timeline.`;
+}
+
 function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn?: GoalId): Explained | null {
   const goalId = goalIdIn ?? p1GoalId(profile);
   const alloc = plan.allocation.find((a) => a.goalId === goalId);
@@ -483,6 +497,8 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
   const fund = fundName(goalId);
   const guiltFree = bucket(plan, "guilt_free");
   const gap = Math.max(0, alloc.requiredMonthly - alloc.monthlyAmount);
+  // DASHBOARD.md v2.1 (#159): the gap is named only when guilt-free money can close it.
+  const closable = statedGap(alloc) !== null;
   const laterMatch = plan.matches.find((m) => m.stage === "later" && m.goalId === goalId && m.unlockCondition);
   // "What if I give it more time?" leads with the more-time lever; otherwise the engine's order (dial first).
   const askedTime = /\b(time|longer|months?|years?)\b/i.test(question);
@@ -503,7 +519,9 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
       ? `First we find your breathing room. Your next move: ${lowerFirst(plan.stepOne.title).replace(/\.?$/, ".")} Once money is coming in each month, Sprout sets your ${fund} amount.`
       : alloc.monthlyAmount === 0 && laterMatch?.unlockCondition
         ? `Your ${fund} starts growing ${lowerFirst(laterMatch.unlockCondition).replace(/\.$/, "")}.`
-        : `Your ${fund} needs ${usd(alloc.requiredMonthly)} a month and gets ${usd(alloc.monthlyAmount)}, so it's ${usd(gap)} a month away.`;
+        : closable
+          ? `Your ${fund} needs ${usd(alloc.requiredMonthly)} a month and gets ${usd(alloc.monthlyAmount)}, so it's ${usd(gap)} a month away.`
+          : unclosableLead(alloc, fund, profile.goals.find((g) => g.id === goalId)?.horizonMonths);
   // #114: "What if I give it more time?" answers the what-if itself (the new time at the current pace), not the gap again.
   const moreTime = alloc.levers.find((l) => l.kind === "more_time");
   const dial = alloc.levers.find((l) => l.kind === "turn_up_dial");
@@ -523,7 +541,7 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
       fund,
       requiredMonthly: alloc.requiredMonthly,
       allocatedMonthly: alloc.monthlyAmount,
-      gapMonthly: gap,
+      gapMonthly: closable ? gap : null,
       timeAtPace: alloc.monthsToTarget > 0 ? aboutTime(alloc.monthsToTarget) : null,
       onTrack: alloc.onTrack,
       levers: levers.map((l) =>
@@ -598,7 +616,7 @@ function chatFacts(question: string, profile: GoalProfile, plan: Plan, extra: { 
     richLife: profile.richLifeStatement,
     goals: profile.goals.map((g) => {
       const a = plan.allocation.find((x) => x.goalId === g.id);
-      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ? allocationFacts(a) : null, gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null };
+      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ? allocationFacts(a) : null, gapMonthly: a ? nullableRound(statedGap(a)) : null };
     }),
     money: {
       effectiveMonthlyIncome: plan.effectiveMonthlyIncome,
@@ -730,7 +748,9 @@ export async function answerQuestion(question: string, profile: GoalProfile, pla
     const answer = voiceNormalize(voiced);
     // A what-if may name the gap left after the change.
     const afterGap = whatIf && !whatIf.cushion && !whatIf.onTrackAfter ? [whatIf.requiredMonthly - whatIf.newMonthly] : [];
-    if (!gapClaimsConsistent(answer, plan, afterGap)) throw new Error("consistency guard");
+    // v2.1 (#159): only closable gaps may be stated, so unclosable ones are left out of the allowed set.
+    const statedPlan = { ...plan, allocation: plan.allocation.filter((a) => a.onTrack || statedGap(a) !== null) };
+    if (!gapClaimsConsistent(answer, statedPlan, afterGap)) throw new Error("consistency guard");
     return { answer, citedProductIds: keepCited([...ai.citedProductIds, ...(explained?.cited.slice(0, 1) ?? [])], plan), aiUsed: true, route, intent: intent.kind };
   } catch (error) {
     return {

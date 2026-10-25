@@ -97,6 +97,11 @@ export const cushionProgress = (saved: number, target: number, milestoneInMonths
 // 4. Your goals (the emergency_fund goal is the cushion block, not a line here).
 export const goalOnTrack = (id: GoalId, monthly: number) => `${fund(id)} is on track: ${usd(monthly)} a month gets you there.`;
 export const goalGap = (id: GoalId, gap: number) => `${fund(id)} is ${usd(gap)} a month away.`;
+// v2.1 (#159): when the gap can't be closed from guilt-free money, never state it; say what's going in instead.
+export const goalGoingInGetsThere = (id: GoalId, monthly: number, monthsAtPace: number) =>
+  `${fund(id)}: ${usd(monthly)} a month going in gets you there in ${months(monthsAtPace)}.`;
+export const goalGoingInReachable = (id: GoalId, monthly: number, reachableAmount: number) =>
+  `${fund(id)}: ${usd(monthly)} a month going in. A ${usd(reachableAmount)} target fits your timeline.`;
 export const goalOnPath = (id: GoalId, monthsAtPace: number) => `${fund(id)}: on your path, ${aboutTime(monthsAtPace)} at your pace.`;
 // v3.1: a non-P1 goal with money going in says so; the pace part only when it's within 2 x horizon.
 export const goalGoingIn = (id: GoalId, monthly: number, monthsAtPace: number | null) =>
@@ -122,6 +127,11 @@ export const leverMoreTime = (id: GoalId, newHorizonMonths: number) => ({
 export const leverSmallerTarget = (id: GoalId, reachableAmount: number) => ({
   label: "See a smaller target",
   askSprout: `What if my ${FUND_NAME[id]} target were ${usd(reachableAmount)}?`,
+});
+// v2.1 (#159): the smaller_target button under a "gets you there in" line (same Ask Sprout question).
+export const leverSmallerTargetByDate = (id: GoalId, reachableAmount: number) => ({
+  ...leverSmallerTarget(id, reachableAmount),
+  label: "See it by your date",
 });
 // v3.1: more_time is shown only up to this many months.
 export const MORE_TIME_MAX_MONTHS = 60;

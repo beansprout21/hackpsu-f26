@@ -2,7 +2,7 @@
 // tab shows, in block order. Every string comes from planCopy.ts; every number from the plan/snapshot.
 import catalog from "@/data/catalog.json";
 import { PERSONA_BY_VALUE } from "@/data/personaTaxonomy";
-import type { FinancialSnapshot, GapLever, GoalId, GoalProfile, Match, Plan, Product, Stage } from "@/types";
+import type { Allocation, FinancialSnapshot, GapLever, GoalId, GoalProfile, Match, Plan, Product, Stage } from "@/types";
 import * as copy from "./planCopy";
 
 export interface OverviewStep {
@@ -97,6 +97,39 @@ function pickLever(goalId: GoalId, levers: GapLever[], plan: Plan): { label: str
   if (smaller) return leverCopy(goalId, smaller);
   if (plan.steps.some((s) => /^Big Win/i.test(s.title))) return copy.LEVER_BIG_WIN;
   return undefined;
+}
+
+// DASHBOARD.md v2.1 (#159): a gap is stated only when it can be closed today, i.e. the engine offers
+// turn_up_dial (the gap fits in guilt-free money with guilt-free staying >= 10% of income). Else null.
+// One rule for the Overview line, the Ask Sprout starter chip and the chat gap answer.
+export function statedGap(a: Pick<Allocation, "onTrack" | "requiredMonthly" | "monthlyAmount" | "levers">): number | null {
+  if (a.onTrack || !a.levers.some((l) => l.kind === "turn_up_dial")) return null;
+  const gap = a.requiredMonthly - a.monthlyAmount;
+  return gap > 0 ? gap : null;
+}
+
+// v2.1: the P1 line when the gap isn't closable. Time-based within 60 months (smaller target button),
+// else the target that fits the timeline (Big Win button if the plan has it).
+function unclosableLine(g: { id: GoalId; horizonMonths: number }, a: Allocation, plan: Plan): OverviewModel["goals"][number] {
+  const moreTime = a.levers.find((l) => l.kind === "more_time");
+  const smaller = a.levers.find((l) => l.kind === "smaller_target");
+  const monthsAtPace = moreTime?.newHorizonMonths ?? a.monthsToTarget;
+  if (monthsAtPace > 0 && monthsAtPace <= copy.MORE_TIME_MAX_MONTHS) {
+    return {
+      goalId: g.id,
+      line: copy.goalGoingInGetsThere(g.id, a.monthlyAmount, monthsAtPace),
+      tone: "on_path",
+      ...(smaller ? { lever: copy.leverSmallerTargetByDate(g.id, smaller.reachableAmount) } : {}),
+    };
+  }
+  const reachable = smaller?.reachableAmount ?? a.monthlyAmount * g.horizonMonths;
+  const bigWin = plan.steps.some((s) => /^Big Win/i.test(s.title));
+  return {
+    goalId: g.id,
+    line: copy.goalGoingInReachable(g.id, a.monthlyAmount, reachable),
+    tone: "on_path",
+    ...(bigWin ? { lever: copy.LEVER_BIG_WIN } : {}),
+  };
 }
 
 const ACCOUNT_CATEGORIES: Product["category"][] = ["checking", "savings", "cd", "credit_card", "small_business"];
@@ -236,31 +269,32 @@ export function buildOverview(plan: Plan, profile: GoalProfile, snapshot: Financ
       }
       const a = plan.allocation.find((x) => x.goalId === g.id);
       if (!a) return [];
+      // $0 going in: the later match's unlock; else the cushion, if it isn't full yet; else the top goal.
+      const laterLine = (): OverviewModel["goals"] => {
+        const goalLater = plan.matches.find((m) => m.goalId === g.id && m.stage === "later" && m.unlockCondition);
+        const unlock = goalLater?.unlockCondition
+          ? copy.withoutWhen(goalLater.unlockCondition)
+          : met
+            ? copy.TOP_GOAL_UNLOCK
+            : copy.DEFAULT_UNLOCK;
+        return [{ goalId: g.id, line: copy.goalLater(g.id, unlock), tone: "later" }];
+      };
       if (g.id === p1?.id) {
         if (a.onTrack) return [{ goalId: g.id, line: copy.goalOnTrack(g.id, a.monthlyAmount), tone: "on_track" }];
-        const lever = pickLever(g.id, a.levers, plan);
-        return [
-          {
-            goalId: g.id,
-            line: copy.goalGap(g.id, a.requiredMonthly - a.monthlyAmount),
-            tone: "gap",
-            ...(lever ? { lever } : {}),
-          },
-        ];
+        const gap = statedGap(a);
+        if (gap !== null) {
+          const lever = pickLever(g.id, a.levers, plan);
+          return [{ goalId: g.id, line: copy.goalGap(g.id, gap), tone: "gap", ...(lever ? { lever } : {}) }];
+        }
+        // v2.1: never state a gap guilt-free money can't close.
+        return a.monthlyAmount > 0 ? [unclosableLine(g, a, plan)] : laterLine();
       }
       // v3.1: money going in says so; the pace only when it's within 2 x horizon.
       if (a.monthlyAmount > 0) {
         const pace = a.monthsToTarget <= 2 * g.horizonMonths ? a.monthsToTarget : null;
         return [{ goalId: g.id, line: copy.goalGoingIn(g.id, a.monthlyAmount, pace), tone: "on_path" }];
       }
-      // $0 going in: the later match's unlock; else the cushion, if it isn't full yet; else the top goal.
-      const goalLater = plan.matches.find((m) => m.goalId === g.id && m.stage === "later" && m.unlockCondition);
-      const unlock = goalLater?.unlockCondition
-        ? copy.withoutWhen(goalLater.unlockCondition)
-        : met
-          ? copy.TOP_GOAL_UNLOCK
-          : copy.DEFAULT_UNLOCK;
-      return [{ goalId: g.id, line: copy.goalLater(g.id, unlock), tone: "later" }];
+      return laterLine();
     });
 
   // Deprecated v1 fields (until #95 renders `steps`): the FNB fit and the 3 product steps as a path.

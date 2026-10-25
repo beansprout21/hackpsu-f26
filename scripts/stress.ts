@@ -410,6 +410,16 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
   const habitLines = o.goals.filter((g) => isHabit(g.goalId) && /\$\d/.test(g.line));
   record("habit goal lines have no dollar amounts", u, habitLines.length === 0, habitLines.map((g) => `"${g.line}"`).join("; "));
 
+  // #159 (DASHBOARD.md v2.1): a stated gap ("$X a month away", "close the $X gap") must fit in guilt-free money
+  // with guilt-free staying >= 10% of income; otherwise the gap is never stated.
+  const guiltFreeRoom = bucket("guilt_free") - 0.1 * plan.effectiveMonthlyIncome;
+  const statedGaps = [
+    ...o.goals.flatMap((g) => [...g.line.matchAll(/\$([\d,]+) a month away/g)].map((m) => ({ where: `goal ${g.goalId}`, n: Number(m[1].replace(/,/g, "")) }))),
+    ...starterChips(plan, profile, u.snapshot).flatMap((c) => [...c.question.matchAll(/close the \$([\d,]+) gap/g)].map((m) => ({ where: "starter chip", n: Number(m[1].replace(/,/g, "")) }))),
+  ];
+  const tooBig = statedGaps.filter((x) => x.n > guiltFreeRoom + 1);
+  record("no stated gap larger than guilt-free room", u, tooBig.length === 0, tooBig.map((x) => `${x.where}: $${x.n} vs room $${Math.round(guiltFreeRoom)}`).join("; "));
+
   // Months/years: every duration in a goal line matches the engine number, in the v2 format.
   const timeProblems: string[] = [];
   for (const g of o.goals) {

@@ -3,7 +3,8 @@
 import studentProfile from "../src/data/mocks/profile.student.json";
 import familyProfile from "../src/data/mocks/profile.family.json";
 import { jordan, maya } from "../src/data/personas";
-import { buildOverview, overviewSteps, type OverviewModel } from "../src/lib/client/overview";
+import { buildOverview, overviewSteps, statedGap, type OverviewModel } from "../src/lib/client/overview";
+import { starterChips } from "../src/lib/client/chatCopy";
 import { ASK_SPROUT_STARTERS } from "../src/lib/client/planCopy";
 import { aboutTime, timeSpan } from "../src/lib/client/time";
 import { CUSHION_SIZED_NOTE, ESTIMATE_BASIS } from "../src/components/intake/copy";
@@ -198,6 +199,30 @@ console.log("\n=== Landing preview (#113)");
   const mayaStepOne = run(maya.snapshot).nextMove.title;
   check(!/^open\b/i.test(start) && mayaStepOne.startsWith(start), 'Start here = Maya\'s Step one: "' + start + '" / "' + mayaStepOne + '"');
   check(/safety cushion/.test(previewText("Next")), 'Next names the safety cushion: "' + previewText("Next") + '"');
+}
+
+// #159 (DASHBOARD.md v2.1): a gap is stated only when guilt-free money can close it (turn_up_dial offered).
+console.log("\n=== Gap stated only when closable (#159)");
+{
+  const mayaPlan = buildPlanSkeleton(mayaProfile, maya.snapshot, maya.intake);
+  const mayaChips = starterChips(mayaPlan, mayaProfile, maya.snapshot).map((c) => c.question);
+  check(run(maya.snapshot).goals.find((g) => g.goalId === "travel")?.line === "Travel fund is $129 a month away.", "Maya: travel line unchanged ($129 gap fits her guilt-free)");
+  check(mayaChips.includes("How do I close the $129 gap for my travel fund?"), `Maya: gap chip unchanged (${JSON.stringify(mayaChips)})`);
+
+  // Ben 8:44 AM: $92 a month to work with and a family goal said "Family fund is $154 a month away."
+  const intake: IntakeAnswers = { ...maya.intake, goals: [{ id: "family", priority: 1, horizonMonths: 24, why: "" }] };
+  const profile = fallbackProfile(intake);
+  const snapshot: FinancialSnapshot = { ...maya.snapshot, incomeSources: [{ kind: "family", amount: 742, frequency: "monthly" }] };
+  const plan = buildPlanSkeleton(profile, snapshot, intake);
+  const o = buildOverview(plan, profile, snapshot);
+  const family = o.goals.find((g) => g.goalId === "family");
+  const alloc = plan.allocation.find((a) => a.goalId === "family");
+  const chips = starterChips(plan, profile, snapshot).map((c) => c.question);
+  console.log(`  $${plan.monthlySurplus} to work with; family needs $${alloc?.requiredMonthly}, gets $${alloc?.monthlyAmount}; line: "${family?.line}"${family?.lever ? ` -> "${family.lever.label}"` : ""}`);
+  check(plan.monthlySurplus === 92, `regression: $92 a month to work with (got $${plan.monthlySurplus})`);
+  check(!!alloc && !alloc.onTrack && statedGap(alloc) === null, "regression: family is off track and the gap is not closable");
+  check(!!family && !/a month away/.test(family.line) && family.tone !== "gap", `regression: no stated gap ("${family?.line}")`);
+  check(!chips.some((q) => /close the \$/.test(q)) && chips.includes("How can I reach my family fund sooner?"), `regression: chip "How can I reach my family fund sooner?" (${JSON.stringify(chips)})`);
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
