@@ -6,7 +6,7 @@ const COPY: Record<Exclude<BankerAccess["kind"], "ok">, { title: string; body: s
   signed_out: { title: "Sign in to continue", body: "The banker dashboard needs an FNB banker account." },
   denied: {
     title: "Banker access only",
-    body: "This page is for FNB bankers preparing for a conversation. Your own plan is still right where you left it.",
+    body: "Only FNB bankers can see shared plans. Ask the Sprout team for a demo.",
   },
   unavailable: { title: "Sharing is unavailable right now", body: "Shared plans can't be loaded at the moment. Try again shortly." },
 };

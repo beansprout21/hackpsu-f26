@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Printer } from "lucide-react";
 import type { GoalProfile, Plan } from "@/types";
 import { ChatPanel } from "@/components/chat/ChatPanel";
@@ -31,6 +32,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
         <Button type="button" variant="outline" size="lg" onClick={() => window.print()} className="-mt-8 h-11 gap-2 self-center px-5">
           <Printer aria-hidden /> Save for my banker (PDF)
         </Button>
+        <Link href="/banker" className="-mt-10 self-center text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Banker view (demo)</Link>
         <SharePlanCard plan={plan} profile={profile} />
         <p className="text-caption text-muted-foreground">{plan.disclaimer}</p>
         <ChatPanel plan={plan} profile={profile} />
