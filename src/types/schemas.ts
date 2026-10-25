@@ -1,9 +1,12 @@
-// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2.2).
+// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2.3).
 // Each schema is type-checked against its interface in ./index.ts at the
 // bottom of this file, so drift between the two fails `npm run build`.
 import { z } from "zod";
 import type {
   Allocation,
+  ChatIntent,
+  ChatTurn,
+  ExtractedSnapshot,
   FinancialSnapshot,
   FutureYou,
   GapLever,
@@ -331,10 +334,23 @@ export const PlanRequestSchema = z.object({
   snapshot: FinancialSnapshotSchema,
   intake: IntakeAnswersSchema,
 });
+export const ChatTurnSchema = z.object({
+  role: z.enum(["user", "sprout"]),
+  text: z.string().max(600),
+});
+export const ChatIntentSchema = z.object({
+  kind: z.enum(["why_step_one", "how_split", "why_cushion", "why_product", "product_fees", "when_unlock", "goal_gap", "what_if", "free"]),
+  productId: z.string().optional(),
+  goalId: GoalIdSchema.optional(),
+  amount: z.number().optional(),
+});
 export const ChatRequestSchema = z.object({
-  question: z.string().min(1),
+  question: z.string().min(1).max(500),
   profile: GoalProfileSchema,
   plan: PlanSchema,
+  snapshot: FinancialSnapshotSchema.optional(),   // v2.3: richer personal context
+  history: z.array(ChatTurnSchema).max(6).optional(),  // v2.3: conversation memory, oldest first
+  intent: ChatIntentSchema.optional(),            // v2.3: set by chips
 });
 export const ChatResponseSchema = z.object({
   answer: z.string(),
@@ -379,6 +395,18 @@ export const ShareStatusSchema = z.object({
   expiresAt: z.string().optional(),
 });
 
+// ---------- document upload (v2.3) ----------
+export const ExtractedSnapshotSchema = z.object({
+  documentKind: z.enum(["bank_statement", "pay_stub", "credit_card_statement", "credit_report", "other"]),
+  incomeSources: z.array(IncomeSourceSchema),
+  monthlyFixedCosts: z.number().min(0).nullable(),
+  monthlyDebtPayments: z.number().min(0).nullable(),
+  savingsBalance: z.number().min(0).nullable(),
+  creditBand: CreditBandSchema.nullable(),
+  confidence: ConfidenceSchema,
+  notes: z.array(z.string()).max(4),
+});
+
 // ---------- compile-time drift checks ----------
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 type Assert<T extends true> = T;
@@ -409,4 +437,7 @@ export type SchemaChecks = [
   Assert<Same<z.infer<typeof SharedPlanSchema>, SharedPlan>>,
   Assert<Same<z.infer<typeof SharedPlanSummarySchema>, SharedPlanSummary>>,
   Assert<Same<z.infer<typeof ShareStatusSchema>, ShareStatus>>,
+  Assert<Same<z.infer<typeof ChatTurnSchema>, ChatTurn>>,
+  Assert<Same<z.infer<typeof ChatIntentSchema>, ChatIntent>>,
+  Assert<Same<z.infer<typeof ExtractedSnapshotSchema>, ExtractedSnapshot>>,
 ];

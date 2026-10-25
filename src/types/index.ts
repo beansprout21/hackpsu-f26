@@ -266,5 +266,36 @@ export interface ShareStatus {
   expiresAt?: string;
 }
 
+// ---------- Ask Sprout (v2.3) ----------
+export interface ChatTurn {     // one message of conversation memory, kept in the browser (AppState.chat)
+  role: "user" | "sprout";
+  text: string;                 // <= 600 chars
+}
+
+export type ChatIntentKind =
+  | "why_step_one" | "how_split" | "why_cushion" | "why_product" | "product_fees"
+  | "when_unlock" | "goal_gap" | "what_if" | "free";
+
+export interface ChatIntent {   // set by a chip; typed questions send none (= "free")
+  kind: ChatIntentKind;
+  productId?: string;
+  goalId?: GoalId;
+  amount?: number;              // what_if: monthly dollars (+ more, - less)
+}
+
+// ---------- Document upload (v2.3) ----------
+export type DocumentKind = "bank_statement" | "pay_stub" | "credit_card_statement" | "credit_report" | "other";
+
+export interface ExtractedSnapshot {  // what Sprout read from one uploaded file; the user reviews it before use
+  documentKind: DocumentKind;
+  incomeSources: IncomeSource[];
+  monthlyFixedCosts: number | null;
+  monthlyDebtPayments: number | null;
+  savingsBalance: number | null;
+  creditBand: CreditBand | null;      // only from a credit report
+  confidence: Confidence;
+  notes: string[];                    // <= 4 plain sentences; never account numbers or full names
+}
+
 // ---------- API envelope ----------
 export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };
