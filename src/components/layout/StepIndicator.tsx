@@ -17,7 +17,7 @@ export function StepIndicator() {
 
   return (
     <nav aria-label="Progress">
-      <p className="text-sm font-medium text-muted-foreground sm:hidden">
+      <p className="text-small font-medium text-muted-foreground sm:hidden">
         Step {current + 1} of {STEPS.length}:{" "}
         <span className="text-foreground">{STEPS[current].label}</span>
       </p>
@@ -36,7 +36,7 @@ export function StepIndicator() {
               <span
                 aria-current={active ? "step" : undefined}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium",
+                  "flex items-center gap-2 rounded-full px-3 py-1 text-small font-medium",
                   active && "bg-highlight text-highlight-foreground",
                   done && "text-foreground [&_svg]:text-primary",
                   !active && !done && "text-muted-foreground",
