@@ -20,7 +20,7 @@ export function LifeStageStep({
   onPick: (stage: LifeStage) => void;
 }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
+    <div className="grid gap-3">
       {LIFE_STAGES.map((s) => (
         <button
           key={s.id}
@@ -28,7 +28,7 @@ export function LifeStageStep({
           aria-pressed={value === s.id}
           onClick={() => onPick(s.id)}
           className={cn(
-            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left lg:min-h-32 lg:items-start transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             value === s.id ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
           )}
         >

@@ -149,10 +149,7 @@ export function IntakeWizard() {
           {step === "lifeStage" && (
             <LifeStageStep
               value={draft.lifeStage}
-              onPick={(lifeStage) => {
-                setDraft((d) => ({ ...d, lifeStage }));
-                next();
-              }}
+              onPick={(lifeStage) => setDraft((d) => ({ ...d, lifeStage }))}
             />
           )}
           {step === "swipes" && (
