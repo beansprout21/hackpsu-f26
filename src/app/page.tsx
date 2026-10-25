@@ -65,7 +65,7 @@ function StartButton({ className }: { className?: string }) {
       )}
     >
       <span className="inline-flex items-center gap-2">
-        Plant your first goal
+        Start my plan (about 3 minutes)
         <LinkPendingIcon className="size-6">
           <ArrowRight
             className="size-6 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
@@ -98,7 +98,7 @@ export default function Home() {
           <div className="flex flex-col gap-3">
             <StartButton className="sm:self-start" />
             <span className="text-small text-muted-foreground">
-              About 90 seconds · No sign-up to start · No credit check
+              Swipe what you value → Set your goals → Get your plan
             </span>
           </div>
         </div>

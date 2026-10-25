@@ -6,7 +6,17 @@ import { personaFromValues } from "@/data/personaTaxonomy";
 import { cn } from "@/lib/utils";
 import type { GoalId, LifeStage, ValueTag } from "@/types";
 import { Chip } from "./GoalTimeline";
-import { GOALS, LIFE_STAGES, VALUE_LABELS, WHY_CHIPS, formatHorizon, goalMeta } from "./copy";
+import {
+  GOALS,
+  GOAL_GROUPS,
+  LIFE_STAGE_OPTIONS,
+  RICH_LIFE,
+  VALUE_LABELS,
+  WHY_CHIPS,
+  formatHorizon,
+  goalMeta,
+  richLifeChips,
+} from "./copy";
 import type { GoalDraft } from "./draft";
 
 const RICH_LIFE_MAX = 500;
@@ -16,27 +26,26 @@ export function LifeStageStep({
   value,
   onPick,
 }: {
-  value?: LifeStage;
-  onPick: (stage: LifeStage) => void;
+  value?: string; // LIFE_STAGE_OPTIONS key
+  onPick: (key: string, stage: LifeStage) => void;
 }) {
   return (
     <div className="grid gap-3">
-      {LIFE_STAGES.map((s) => (
+      {LIFE_STAGE_OPTIONS.map((s) => (
         <button
-          key={s.id}
+          key={s.key}
           type="button"
-          aria-pressed={value === s.id}
-          onClick={() => onPick(s.id)}
+          aria-pressed={value === s.key}
+          onClick={() => onPick(s.key, s.stage)}
           className={cn(
             "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-            value === s.id ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
+            value === s.key ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
           )}
         >
           <span className="flex flex-col">
             <span className="text-lg font-semibold">{s.label}</span>
-            <span className="text-sm text-muted-foreground">{s.detail}</span>
           </span>
-          {value === s.id && <Check className="size-5 shrink-0 text-primary" aria-hidden />}
+          {value === s.key && <Check className="size-5 shrink-0 text-primary" aria-hidden />}
         </button>
       ))}
     </div>
@@ -79,30 +88,38 @@ export function GoalsStep({
   const full = selected.length >= 3;
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-        {GOALS.map(({ id, label, icon: Icon }) => {
-          const on = selected.includes(id);
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={on}
-              disabled={!on && full}
-              onClick={() => onToggle(id)}
-              className={cn(
-                "flex min-h-24 flex-col items-start justify-between gap-2 rounded-2xl border-2 p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
-                on ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
-              )}
-            >
-              <span className="flex w-full items-center justify-between">
-                <Icon className="size-6 text-highlight" aria-hidden />
-                {on && <Check className="size-5 text-primary" aria-hidden />}
-              </span>
-              <span className="font-semibold leading-snug">{label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {GOAL_GROUPS.map((group) => (
+        <section key={group.id} aria-label={group.label} className="flex flex-col gap-3">
+          <h3 className="font-semibold">{group.label}</h3>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
+            {GOALS.filter((g) => g.group === group.id).map(({ id, label, hint, icon: Icon }) => {
+              const on = selected.includes(id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={on}
+                  disabled={!on && full}
+                  onClick={() => onToggle(id)}
+                  className={cn(
+                    "flex min-h-24 flex-col items-start justify-between gap-2 rounded-2xl border-2 p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
+                    on ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
+                  )}
+                >
+                  <span className="flex w-full items-center justify-between">
+                    <Icon className="size-6 text-highlight" aria-hidden />
+                    {on && <Check className="size-5 text-primary" aria-hidden />}
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="font-semibold leading-snug">{label}</span>
+                    {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {selected.length} of 3 picked{full && ". Unpick one to swap it."}
       </p>
@@ -157,22 +174,48 @@ export function WhyStep({
   );
 }
 
-export function RichLifeStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function RichLifeStep({
+  value,
+  values,
+  onChange,
+}: {
+  value: string;
+  values: ValueTag[];
+  onChange: (v: string) => void;
+}) {
+  // A chip fills the box (or adds to what's there); the text stays editable.
+  const addChip = (chip: string) =>
+    onChange((value.trim() ? `${value.trim().replace(/[.!]?$/, ".")} ${chip}` : chip).slice(0, RICH_LIFE_MAX));
   return (
-    <label className="flex flex-col gap-2">
-      <span className="font-semibold">Describe your rich life in one sentence</span>
-      <textarea
-        value={value}
-        maxLength={RICH_LIFE_MAX}
-        rows={3}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Living in Tokyo for a semester without checking my balance every day."
-        className="resize-none rounded-xl border border-input bg-transparent p-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-      />
-      <span className="self-end text-xs text-muted-foreground tabular-nums">
-        {value.length}/{RICH_LIFE_MAX}
-      </span>
-    </label>
+    <div className="flex flex-col gap-3">
+      <p className="text-muted-foreground">{RICH_LIFE.explainer}</p>
+      <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
+        {RICH_LIFE.prompts.map((q) => (
+          <li key={q}>{q}</li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2">
+        {richLifeChips(values).map((chip) => (
+          <Chip key={chip} selected={value.includes(chip)} onClick={() => !value.includes(chip) && addChip(chip)}>
+            {chip}
+          </Chip>
+        ))}
+      </div>
+      <label className="flex flex-col gap-2">
+        <span className="font-semibold">Describe your rich life in one sentence</span>
+        <textarea
+          value={value}
+          maxLength={RICH_LIFE_MAX}
+          rows={3}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Living in Tokyo for a semester without checking my balance every day."
+          className="resize-none rounded-xl border border-input bg-transparent p-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+        <span className="self-end text-xs text-muted-foreground tabular-nums">
+          {value.length}/{RICH_LIFE_MAX}
+        </span>
+      </label>
+    </div>
   );
 }
 
