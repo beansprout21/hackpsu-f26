@@ -156,7 +156,7 @@ export function TimelineTrack({
                   style={{ width: MARKER, height: MARKER }}
                   className={cn(
                     "flex cursor-grab touch-none items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground outline-none transition-[box-shadow,transform] duration-150 select-none focus-visible:ring-4 focus-visible:ring-ring/50 active:cursor-grabbing",
-                    isDragging ? "scale-110 shadow-xl" : "shadow-md hover:scale-105",
+                    isDragging ? "scale-125 shadow-xl" : "shadow-md hover:scale-105",
                   )}
                 >
                   <meta.icon className="size-5" aria-hidden />
