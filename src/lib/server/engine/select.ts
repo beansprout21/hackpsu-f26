@@ -22,6 +22,8 @@ export function candidateFor(
 ): Candidate | null {
   // #118: mortgages and homebuyer programs only ever serve the first_home goal.
   if (product.category === "mortgage" && goal.id !== "first_home") return null;
+  // #126: small-business products (business checking and savings, business cards) only for a small_business goal.
+  if (product.category === "small_business" && goal.id !== "small_business") return null;
   const breakdown = scoreProduct(product, goal, ctx);
   const staging = stageFor(product, ctx);
   if (!breakdown || !staging) return null;

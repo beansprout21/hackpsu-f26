@@ -387,5 +387,68 @@ check(
 );
 check(/first home \(\$15,000 in 5 years, P1/.test(j.bankerSummary), "Jordan banker summary: first home in 5 years (not 60 months)");
 
+// #126: every skeleton is PlanSchema-valid (max 2 matches per goal), over 3,000 seeded random users that
+// lean on the safety cushion; small-business products only for a small_business goal.
+console.log("\n=== Schema-valid plans (#126): 3,000 seeded random users");
+let seed126 = 12601;
+const rnd = () => ((seed126 = (seed126 * 1103515245 + 12345) % 2147483648) / 2147483648);
+const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)];
+const MONEY_GOALS: GoalId[] = ["emergency_fund", "travel", "first_home", "family", "education", "small_business"];
+const HABIT_IDS: GoalId[] = ["credit_building", "everyday_banking"];
+const LIFE: IntakeAnswers["lifeStage"][] = ["student", "new_grad", "young_family"];
+const BANDS: CreditBand[] = ["building", "fair", "good", "excellent", "unsure"];
+const VALUES = ["freedom", "security", "experiences", "family", "growth", "simplicity"] as const;
+const invalid: string[] = [];
+const overCap: string[] = [];
+const businessLeak: string[] = [];
+for (let i = 0; i < 3000; i++) {
+  const money = [...MONEY_GOALS].sort(() => rnd() - 0.5).slice(0, 1 + Math.floor(rnd() * 3));
+  if (rnd() < 0.6 && !money.includes("emergency_fund")) money[0] = "emergency_fund";
+  const habits = HABIT_IDS.filter(() => rnd() < 0.35);
+  const goals: GoalAnswer[] = [...money, ...habits].map((id, k) => ({
+    id,
+    priority: (Math.min(k, 2) + 1) as 1 | 2 | 3,
+    horizonMonths: pick([6, 12, 24, 60, 120]),
+    ...(rnd() < 0.5 ? { targetAmount: pick([500, 2000, 8000, 20000]) } : {}),
+    why: "",
+  }));
+  const steady = rnd() < 0.5;
+  const income = pick([0, 600, 1500, 3200, 6000]);
+  const intake: IntakeAnswers = {
+    ...maya.intake,
+    lifeStage: pick(LIFE),
+    values: [pick(VALUES), pick(VALUES)].filter((v, k, a) => a.indexOf(v) === k),
+    goals,
+  };
+  const snapshot: FinancialSnapshot = {
+    hasSteadyIncome: steady,
+    incomeSources: income ? [{ kind: steady ? "job" : "gig", amount: income, frequency: "monthly" }] : [],
+    monthlyFixedCosts: pick([150, 650, 1400, 2500]),
+    monthlyDebtPayments: pick([0, 0, 150, 400]),
+    savingsBalance: pick([0, 400, 2500, 15000]),
+    creditBand: pick(BANDS),
+    isFnbCustomer: rnd() < 0.3,
+  };
+  const profile = fallbackProfile(intake);
+  const plan = buildPlanSkeleton(profile, snapshot, intake);
+  const parsed = PlanSchema.safeParse(plan);
+  if (!parsed.success) invalid.push("user " + i + ": " + parsed.error.issues[0]?.message);
+  const perGoal = new Map<string, number>();
+  for (const m of plan.matches) perGoal.set(m.goalId, (perGoal.get(m.goalId) ?? 0) + 1);
+  for (const [g, n] of perGoal) if (n > 2) overCap.push("user " + i + ": " + g + " has " + n);
+  if (!goals.some((g) => g.id === "small_business")) {
+    const biz = plan.matches.find((m) => getProduct(m.productId)?.category === "small_business");
+    if (biz) businessLeak.push("user " + i + ": " + biz.productId + " (" + biz.goalId + ")");
+  }
+}
+check(invalid.length === 0, "3,000 users: every skeleton passes PlanSchema" + (invalid.length ? " (" + invalid.length + " invalid, e.g. " + invalid.slice(0, 2).join("; ") + ")" : ""));
+check(overCap.length === 0, "3,000 users: max 2 matches per goal" + (overCap.length ? " (" + overCap.length + ", e.g. " + overCap.slice(0, 2).join("; ") + ")" : ""));
+check(businessLeak.length === 0, "3,000 users: small-business products only with a small_business goal" + (businessLeak.length ? " (" + businessLeak.length + ", e.g. " + businessLeak.slice(0, 2).join("; ") + ")" : ""));
+const cushionUser = lendingRuns.find((r) => r.name === "grid emergency_fund/good/steady/200");
+check(
+  !!cushionUser && cushionUser.plan.matches.some((m) => m.productId === "firstrate-savings") && cushionUser.plan.matches.filter((m) => m.goalId === "emergency_fund").length <= 2,
+  "Safety cushion goal keeps its savings home (FirstRate Savings) within 2 matches",
+);
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
