@@ -13,6 +13,11 @@ const MAX_FILES = 3;
 const MAX_BYTES = 4 * 1024 * 1024;
 const ACCEPTED = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
 const FALLBACK = "Couldn't read that file. You can type your numbers instead.";
+// Clearly fake demo files in public/demo, read through the same upload path as a real file.
+const SAMPLES = [
+  { path: "/demo/sample-bank-statement.pdf", type: "application/pdf" },
+  { path: "/demo/sample-pay-stub.jpg", type: "image/jpeg" },
+];
 export const PRIVACY_LINE = "Sprout's AI reads your file to fill in this form, then discards it. Sprout never stores it.";
 
 interface Upload {
@@ -72,6 +77,21 @@ export function DocumentUpload({ onExtracted }: { onExtracted: (ex: ExtractedSna
     setBusy(false);
   }
 
+  async function readSamples() {
+    try {
+      const files = await Promise.all(
+        SAMPLES.map(async ({ path, type }) => {
+          const res = await fetch(path);
+          if (!res.ok) throw new Error("sample missing");
+          return new File([await res.blob()], path.split("/").pop()!, { type });
+        }),
+      );
+      await readFiles(files);
+    } catch {
+      setUploads((list) => [...list, { id: ++uploadCounter, name: "Sample files", status: "error", message: FALLBACK, notes: [] }]);
+    }
+  }
+
   return (
     <section aria-labelledby="upload-title" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
       <div className="flex flex-col gap-1">
@@ -116,6 +136,16 @@ export function DocumentUpload({ onExtracted }: { onExtracted: (ex: ExtractedSna
           <span className="text-xs text-muted-foreground">
             {left > 0 ? `Up to ${left} more file${left === 1 ? "" : "s"}.` : "That's 3 files. Edit anything below."}
           </span>
+          {left > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void readSamples()}
+              className="inline-flex items-center text-xs font-medium text-brand-700 underline underline-offset-4 hover:text-foreground disabled:opacity-50 max-lg:min-h-11"
+            >
+              Try a sample statement
+            </button>
+          )}
         </div>
       )}
 
