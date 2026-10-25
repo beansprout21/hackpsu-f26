@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Tabs } from "@base-ui/react/tabs";
 import { LayoutDashboard, Map, Printer, Target, Wallet } from "lucide-react";
 import { AskSproutMobile, AskSproutProvider, SproutCopilot } from "@/components/chat/AskSprout";
+import { SharePlanCard } from "@/components/share/SharePlanCard";
 import type { GoalProfile, Plan, Stage } from "@/types";
 import { GoalsProgress } from "./GoalsProgress";
 import { matchKey } from "./MatchRow";
@@ -128,9 +130,15 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
                     >
                       <Printer className="size-5" aria-hidden /> Save for my banker (PDF)
                     </button>
-                    {/* Share with FNB card (#53) mounts here. */}
+                    <Link
+                      href="/banker"
+                      className="self-center text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      Banker view (demo)
+                    </Link>
                   </>
                 }
+                share={<SharePlanCard plan={plan} profile={profile} />}
               />
             </Tabs.Panel>
             <Tabs.Panel value="money" className="outline-none">

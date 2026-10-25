@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth0 } from "@/lib/auth0";
 import { authBypassed } from "@/lib/server/auth";
 
-const PROTECTED_PAGES = ["/snapshot", "/plan"];
+const PROTECTED_PAGES = ["/snapshot", "/plan", "/banker"];
 const RETURN_TO_AFTER_LOGIN = "/snapshot";
 
 const isUnder = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
     const session = await auth0.getSession(request);
     if (!session) {
       const login = new URL("/auth/login", request.nextUrl.origin);
-      login.searchParams.set("returnTo", RETURN_TO_AFTER_LOGIN);
+      login.searchParams.set("returnTo", isUnder(pathname, "/banker") ? "/banker" : RETURN_TO_AFTER_LOGIN);
       return NextResponse.redirect(login);
     }
   }

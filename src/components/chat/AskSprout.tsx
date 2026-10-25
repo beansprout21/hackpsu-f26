@@ -25,7 +25,7 @@ import type { GoalProfile, Plan } from "@/types";
 
 const CHIPS = ["Why this first?", "What if I save $50 more?", "When can I get a credit card?"];
 const MAX_QUESTION_CHARS = 500; // same limit as /api/chat
-const DISCLAIMER = "Educational prototype. Not financial advice. No data is stored.";
+const DISCLAIMER = "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB.";
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
 type Turn =

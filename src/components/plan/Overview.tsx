@@ -35,6 +35,7 @@ export function Overview({
   onTab,
   onStage,
   actions,
+  share,
 }: {
   plan: Plan;
   stages: StageInfo[];
@@ -42,6 +43,7 @@ export function Overview({
   onTab: (tab: "money" | "goals" | "roadmap") => void;
   onStage: (stage: Stage) => void;
   actions: ReactNode;
+  share?: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -49,6 +51,8 @@ export function Overview({
         <StepOneCard step={plan.stepOne} />
         <BankerCta summary={plan.bankerSummary}>{actions}</BankerCta>
       </div>
+
+      {share}
 
       <SummaryCard title="Your roadmap" more="Open roadmap" onMore={() => onTab("roadmap")}>
         <StageTiles stages={stages} done={done} onSelect={onStage} />

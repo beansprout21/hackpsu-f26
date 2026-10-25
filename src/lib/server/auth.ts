@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import type { SessionData } from "@auth0/nextjs-auth0/types";
 import type { ApiResponse } from "@/types";
-import { auth0 } from "@/lib/auth0";
+import { auth0, ROLES_CLAIM } from "@/lib/auth0";
 
 export type SessionCheck = { session: SessionData; response?: undefined } | { session?: undefined; response: NextResponse };
 
@@ -26,4 +26,27 @@ export async function requireSession(): Promise<SessionCheck> {
     };
   }
   return { session };
+}
+
+// Banker role (Contracts v2.2): Auth0 claim `https://sprout-demo/roles` contains "banker", or the session email is
+// in BANKER_EMAILS (comma-separated, server-only). The DEMO_AUTH_BYPASS demo session counts as a banker.
+export function isBanker(session: SessionData): boolean {
+  if (authBypassed()) return true;
+  const roles = session.user[ROLES_CLAIM];
+  if (Array.isArray(roles) && roles.includes("banker")) return true;
+  const email = typeof session.user.email === "string" ? session.user.email.trim().toLowerCase() : "";
+  const allow = (process.env.BANKER_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return email !== "" && allow.includes(email);
+}
+
+// Usage in a banker route: const auth = await requireBanker(); if (auth.response) return auth.response;
+export async function requireBanker(): Promise<SessionCheck> {
+  const auth = await requireSession();
+  if (auth.response) return auth;
+  if (!isBanker(auth.session)) {
+    return {
+      response: NextResponse.json<ApiResponse<never>>({ ok: false, error: "Banker access only" }, { status: 403 }),
+    };
+  }
+  return auth;
 }
