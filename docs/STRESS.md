@@ -340,3 +340,27 @@ Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH
   - 375 px: no overflow.
 - **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
 - **Issues:** none opened. Updated #107.
+
+### Cycle 6 (6:09 AM ET, seed 28218, main `512a1dd`)
+
+- **Main moved 8 commits:** fixes for #107, #109, #112, #113, #114, #144, plus #121 and docs.
+- **Harness:** 514 users, 0.7 s. **0 failing invariants**, 0 chat problems (735 answers), 0 API problems, 0 crashes. `check-engine`, `check-overview`, `check-chat` and `check-proxy` all pass.
+  - #107 verified (habits only: all savings to the cushion, no "savings goal" text)
+  - #109 verified (no surplus: only products that cost nothing new as now/next)
+- **Browser (parents pay rent, 1280 + 375 px):** the dev server had died during a computer sleep and was restarted. Seeded intake/snapshot → plan → gap chip → "What if I give it more time?" → Save PDF.
+  - Plan correct: travel $60/mo, gap $140, cushion $1,000 full in 14 months.
+  - "More time" now answers "about 20 months instead of 6 months" (#114 verified).
+  - Landing preview starts "Move $20 into your travel fund" (#113 verified).
+  - The no-surplus gap answer now gives the next move (#144 verified, via script).
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** none opened. Verified fixed: #107, #109, #113, #114, #144.
+
+### Night summary (stopped after cycle 6; a cycle 7 would start about 6:55 and run past 7:00 AM)
+
+- **Coverage:** 6 cycles, 6 seeds. 3,084 user plans (6 × 514), 4,375 Ask Sprout template answers, 306 API route-handler calls. 0 crashes and 0 API problems in every cycle.
+- **Browser:** 6 personas (Maya, Maya opposite swipes, Jordan, no income, habits only, parents pay rent) at 1280 + 375 px, each through Save PDF.
+- **Opened tonight:** #139, #144 (both fixed and verified before 6:15 AM).
+- **Verified fixed by the harness or browser tonight:** #104, #105, #107, #108, #109, #110, #113, #114, #130, #139, #144.
+- **Still open:** #111 (a chosen habit can fall outside the Overview's 4 guide steps) and #115 (tap targets under 24 px).
+- **Not covered:** live AI (no `ANTHROPIC_API_KEY` in this clone: 0 of 120 plan builds, 0 of 240 chats) and the Share → banker → Stop sharing round trip with real storage (no Upstash).
