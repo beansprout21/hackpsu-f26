@@ -89,7 +89,7 @@ export const WHY_CHIPS: Record<GoalId, string[]> = {
   travel: ["Study abroad", "See family", "Bucket-list trip", "Need a break"],
   first_home: ["Stop renting", "Room for kids", "Be near family", "Build equity"],
   emergency_fund: ["Stop stressing", "Job feels shaky", "Had a scare before"],
-  credit_building: ["Get an apartment", "Lower rates later", "Get approved for a car"],
+  credit_building: ["Start my credit history", "Get my first credit card", "Rent without a co-signer", "Pay less interest later"],
   education: ["Less debt", "Grad school", "Certification"],
   small_business: ["Side hustle", "Be my own boss", "Turn a hobby into income"],
   family: ["Support my parents", "Give my kids a head start", "Plan for a new baby"],
