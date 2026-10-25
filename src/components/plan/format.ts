@@ -36,7 +36,7 @@ export function formatDate(iso: string) {
 
 export const BUCKETS: Record<SpendingBucketId, { label: string; color: string }> = {
   fixed_costs: { label: "Fixed costs", color: "bg-chart-4" },
-  emergency_fund: { label: "Cushion", color: "bg-chart-2" },
+  emergency_fund: { label: "Safety cushion", color: "bg-chart-2" },
   goal_savings: { label: "Goals", color: "bg-chart-1" },
   guilt_free: { label: "Guilt-free", color: "bg-chart-3" },
 };

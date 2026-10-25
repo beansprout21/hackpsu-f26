@@ -1,5 +1,6 @@
 import { ShieldCheck, Sparkles } from "lucide-react";
 import { AskChip } from "@/components/chat/AskSprout";
+import { ASK_SPROUT_STARTERS } from "@/lib/client/planCopy";
 import { cn } from "@/lib/utils";
 import type { Plan, SpendingBucket } from "@/types";
 import { BUCKETS, formatMonths, usd } from "./format";
@@ -52,7 +53,7 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         <div className="flex gap-3 rounded-xl bg-brand-50 p-4">
           <ShieldCheck className="size-5 shrink-0 text-brand-600" aria-hidden />
           <p className="text-small">
-            <span className="font-semibold">Your {usd(plan.cushionTarget)} cushion</span>{" "}
+            <span className="font-semibold">Your {usd(plan.cushionTarget)} safety cushion</span>{" "}
             {plan.cushionFillsInMonths !== null
               ? `fills in about ${formatMonths(plan.cushionFillsInMonths)}.`
               : cushionBucket && cushionBucket.monthlyAmount > 0
@@ -75,7 +76,7 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
       </div>
 
       <div className="flex flex-wrap gap-2 xl:col-start-1">
-        <AskChip question="What if I save $50 more?" />
+        <AskChip question={ASK_SPROUT_STARTERS[1]} />
         <AskChip question="Why is my guilt-free money this amount?" />
       </div>
     </section>
@@ -88,24 +89,6 @@ export function SpendingBar({ buckets }: { buckets: SpendingBucket[] }) {
       {buckets.map((b) => (
         <span key={b.bucket} className={cn("h-full", BUCKETS[b.bucket].color)} style={{ width: `${Math.max(b.percent, 0)}%` }} />
       ))}
-    </div>
-  );
-}
-
-// Overview version: the bar plus one line per bucket.
-export function SpendingSummary({ plan }: { plan: Plan }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <SpendingBar buckets={plan.spendingPlan} />
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
-        {plan.spendingPlan.map((b) => (
-          <li key={b.bucket} className="flex items-center gap-2 text-small">
-            <span className={cn("size-2 shrink-0 rounded-full", BUCKETS[b.bucket].color)} aria-hidden />
-            <span className="text-muted-foreground">{BUCKETS[b.bucket].label}</span>
-            <span className="ml-auto font-semibold tabular-nums">{usd(b.monthlyAmount)}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

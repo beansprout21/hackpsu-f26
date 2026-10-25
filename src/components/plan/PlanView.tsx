@@ -1,19 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Tabs } from "@base-ui/react/tabs";
 import { LayoutDashboard, Map, Printer, Target, Wallet } from "lucide-react";
 import { AskSproutMobile, AskSproutProvider, SproutCopilot } from "@/components/chat/AskSprout";
 import { SharePlanCard } from "@/components/share/SharePlanCard";
-import type { GoalProfile, Plan, Stage } from "@/types";
+import { buildOverview } from "@/lib/client/overview";
+import { useAppState } from "@/lib/client/state";
+import type { FinancialSnapshot, GoalProfile, Plan, Stage } from "@/types";
 import { GoalsProgress } from "./GoalsProgress";
 import { matchKey } from "./MatchRow";
 import { Overview } from "./Overview";
 import { PrintPlan } from "./PrintPlan";
-import { Roadmap, stagesFor } from "./Roadmap";
+import { Roadmap, stepKey } from "./Roadmap";
 import { SummaryHeader } from "./sections";
 import { SpendingPlan } from "./SpendingPlan";
+
+// /plan?mock= demo plans arrive without a snapshot; rebuild the fields the Overview reads from the plan.
+function snapshotFromPlan(plan: Plan): FinancialSnapshot {
+  return {
+    hasSteadyIncome: false,
+    incomeSources: [],
+    monthlyFixedCosts: plan.spendingPlan.find((b) => b.bucket === "fixed_costs")?.monthlyAmount ?? 0,
+    monthlyDebtPayments: 0,
+    savingsBalance: 0,
+    creditBand: "unsure",
+    isFnbCustomer: false,
+  };
+}
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -36,6 +51,9 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ key: string; tick: number } | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
+  const [app] = useAppState();
+  const snapshot = useMemo(() => app.snapshot ?? snapshotFromPlan(plan), [app.snapshot, plan]);
+  const overview = useMemo(() => buildOverview(plan, profile, snapshot), [plan, profile, snapshot]);
 
   const toggleDone = useCallback((key: string) => {
     setDone((prev) => {
@@ -61,14 +79,6 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
     if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
   }, []);
 
-  const openStage = useCallback(
-    (next: Stage) => {
-      setStage(next);
-      setTab("roadmap");
-    },
-    [setTab],
-  );
-
   // A product cited in Ask Sprout: open Roadmap, its stage, and its row, then scroll to it.
   const cite = useCallback(
     (productId: string) => {
@@ -87,8 +97,6 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     document.getElementById(`product-${focus.key}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
   }, [focus]);
-
-  const stages = stagesFor(plan);
 
   return (
     <AskSproutProvider plan={plan} profile={profile} onCite={cite}>
@@ -116,11 +124,14 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
 
             <Tabs.Panel value="overview" className="outline-none">
               <Overview
-                plan={plan}
-                stages={stages}
-                done={done}
+                model={overview}
+                personaId={profile.persona.id}
+                stepKind={plan.stepOne.kind}
+                bankerSummary={plan.bankerSummary}
+                stepOneDone={done.has(stepKey(plan.stepOne))}
+                onStepOneDone={() => toggleDone(stepKey(plan.stepOne))}
                 onTab={setTab}
-                onStage={openStage}
+                onProduct={cite}
                 actions={
                   <>
                     <button

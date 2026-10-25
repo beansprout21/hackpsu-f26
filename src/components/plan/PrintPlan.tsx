@@ -93,7 +93,7 @@ export function PrintPlan({ plan, profile }: { plan: Plan; profile: GoalProfile 
           </tbody>
         </table>
         <p>
-          <strong>Cushion:</strong> {usd(plan.cushionTarget)}
+          <strong>Safety cushion:</strong> {usd(plan.cushionTarget)}
           {plan.cushionFillsInMonths !== null ? `, fills in about ${formatMonths(plan.cushionFillsInMonths)}.` : "."}{" "}
           <strong>Future You:</strong>{" "}
           {futureYou.earmarkMonthly !== null
@@ -112,7 +112,7 @@ export function PrintPlan({ plan, profile }: { plan: Plan; profile: GoalProfile 
               <li key={a.goalId} className="break-inside-avoid tabular-nums">
                 <strong>{goalMeta(a.goalId).label}</strong> ({a.onTrack ? "on track" : "needs a boost"}):{" "}
                 {usd(a.monthlyAmount)}/mo allocated of {usd(a.requiredMonthly)}/mo required
-                {a.monthlyAmount > 0 ? `; at this pace, ${formatMonths(a.monthsToTarget)}.` : "; starts after the cushion."}
+                {a.monthlyAmount > 0 ? `; at this pace, ${formatMonths(a.monthsToTarget)}.` : "; starts after the safety cushion."}
                 {!a.onTrack && a.levers[0] && <> Top lever: {leverText(a.levers[0], a)}</>}
               </li>
             ))}

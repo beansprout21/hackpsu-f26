@@ -75,6 +75,9 @@ const STAGES: {
   },
 ];
 
+// Stage look (icon, size, colors) for other views, e.g. the Overview's "Your path".
+export const stageMeta = (id: Stage) => STAGES.find((s) => s.id === id) ?? STAGES[0];
+
 const TOP_TASKS = 3;
 const isBigWin = (s: PlanStep) => /big win/i.test(s.title);
 export const stepKey = (s: PlanStep) => `${s.order}-${s.title}`;
