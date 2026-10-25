@@ -48,7 +48,7 @@ function IntroStep() {
 }
 
 const SPROUT_LINES: Record<Step, string> = {
-  intro: "Hi, I'm Sprout. Most banks start with your credit score. I'd rather start with your life. Takes about 3 minutes.",
+  intro: "Hi, I'm Sprout. Most banks start with your credit score. I'd rather start with your life.",
   lifeStage: "First, where are you in life right now?",
   swipes: "Quick gut checks. Pick the one that sounds more like you. There are no wrong answers.",
   persona: "Here's what I'm hearing from you.",

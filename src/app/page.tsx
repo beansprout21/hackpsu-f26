@@ -65,7 +65,7 @@ function StartButton({ className }: { className?: string }) {
       )}
     >
       <span className="inline-flex items-center gap-2">
-        Start my plan (about 3 minutes)
+        Start my plan
         <LinkPendingIcon className="size-6">
           <ArrowRight
             className="size-6 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
