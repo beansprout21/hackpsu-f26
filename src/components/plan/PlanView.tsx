@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { GoalProfile, Plan } from "@/types";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { GoalsProgress } from "./GoalsProgress";
 import { Roadmap } from "./Roadmap";
 import { BankerCta, NotYetCard, SproutIntro, StepOneCard } from "./sections";
@@ -23,6 +24,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
       <NotYetCard items={plan.notYet} />
       <BankerCta summary={plan.bankerSummary} />
       <p className="text-sm text-muted-foreground">{plan.disclaimer}</p>
+      <ChatPanel plan={plan} profile={profile} />
     </div>
   );
 }
