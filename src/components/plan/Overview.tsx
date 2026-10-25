@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowRight, Check, CircleCheck, ExternalLink, Hourglass, Sprout, TrendingUp, type LucideIcon } from "lucide-react";
-import { AskChip } from "@/components/chat/AskSprout";
+import { ArrowRight, Check, CircleCheck, CircleHelp, ExternalLink, Hourglass, Sparkles, Sprout, TrendingUp, type LucideIcon } from "lucide-react";
+import { AskChip, useAskSprout } from "@/components/chat/AskSprout";
+import type { BlockChips, Chip } from "@/lib/client/chatCopy";
 import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
 import type { OverviewModel } from "@/lib/client/overview";
 import * as copy from "@/lib/client/planCopy";
@@ -15,10 +16,32 @@ import { BankerCta } from "./sections";
 
 type Tab = "money" | "goals" | "roadmap";
 
-// One Overview block: Ethan's card, a title, and an optional link to the tab with the detail.
+// The small "?" on each block: asks that block's first chip from blockChips() (docs/ASK_SPROUT.md).
+function HelpChip({ chip, className }: { chip?: Chip; className?: string }) {
+  const { ask, busy } = useAskSprout();
+  if (!chip) return null;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => void ask(chip)}
+      aria-label={chip.label}
+      title={chip.label}
+      className={cn(
+        "inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-highlight/10 text-highlight outline-none transition-colors duration-200 hover:bg-highlight/20 focus-visible:ring-4 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50",
+        className,
+      )}
+    >
+      <CircleHelp className="size-5" aria-hidden />
+    </button>
+  );
+}
+
+// One Overview block: Ethan's card, a title, its "?" chip, and an optional link to the tab with the detail.
 function Block({
   id,
   title,
+  help,
   more,
   onMore,
   className,
@@ -26,6 +49,7 @@ function Block({
 }: {
   id: string;
   title: string;
+  help?: Chip;
   more?: string;
   onMore?: () => void;
   className?: string;
@@ -34,10 +58,12 @@ function Block({
   return (
     <section aria-labelledby={id} className={cn("flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card", className)}>
       <header className="flex items-center justify-between gap-2">
-        <h2 id={id} className="text-body font-semibold">
-          {title}
-        </h2>
-        {/* TODO(#76): small "?" chip from blockChips() (src/lib/client/chatCopy.ts) via useAskSprout().ask. */}
+        <span className="flex items-center gap-2">
+          <h2 id={id} className="text-body font-semibold">
+            {title}
+          </h2>
+          <HelpChip chip={help} />
+        </span>
         {more && onMore && (
           <button
             type="button"
@@ -57,6 +83,7 @@ function Block({
 // 1. Your next move: persona chip, Step one (templates), Done, "Why this first?", and the FNB fit under it.
 function NextMove({
   model,
+  chips,
   personaId,
   stepKind,
   done,
@@ -64,6 +91,7 @@ function NextMove({
   onProduct,
 }: {
   model: OverviewModel;
+  chips: BlockChips;
   personaId: PersonaId;
   stepKind: StepKind;
   done: boolean;
@@ -125,26 +153,29 @@ function NextMove({
             {copy.DONE_MESSAGE}
           </span>
         )}
-        <AskChip question={copy.WHY_THIS_FIRST} className="self-center" />
+        {chips.nextMove[0] && <AskChip chip={chips.nextMove[0]} className="self-center" />}
       </div>
 
       {fnbFit && (
-        <button
-          type="button"
-          onClick={() => onProduct(fnbFit.productId)}
-          className="flex flex-col gap-1 rounded-xl bg-brand-50 px-4 py-3 text-left outline-none transition-colors hover:bg-brand-100 focus-visible:ring-4 focus-visible:ring-ring/30"
-        >
-          <span className="text-caption font-semibold tracking-wide text-brand-700 uppercase">{copy.FNB_FIT_LABEL}</span>
-          <span className="text-body font-semibold">{fnbFit.name}</span>
-          <span className="text-small text-muted-foreground">{fnbFit.line}</span>
-        </button>
+        <div className="flex items-start gap-2 rounded-xl bg-brand-50 pr-3">
+          <button
+            type="button"
+            onClick={() => onProduct(fnbFit.productId)}
+            className="flex min-w-0 flex-1 flex-col gap-1 rounded-xl px-4 py-3 text-left outline-none transition-colors hover:bg-brand-100 focus-visible:ring-4 focus-visible:ring-ring/30"
+          >
+            <span className="text-caption font-semibold tracking-wide text-brand-700 uppercase">{copy.FNB_FIT_LABEL}</span>
+            <span className="text-body font-semibold">{fnbFit.name}</span>
+            <span className="text-small text-muted-foreground">{fnbFit.line}</span>
+          </button>
+          <HelpChip chip={chips.fnbFit[0]} className="mt-3" />
+        </div>
       )}
     </section>
   );
 }
 
 // 2. Your month: one sentence and one 3-part bar (safety cushion / goals / guilt-free).
-function Month({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => void }) {
+function Month({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
   const { bar } = model.month;
   const parts = [
     { key: "cushion", label: copy.MONTH_BAR_LABELS.cushion, amount: bar.cushion, color: BUCKETS.emergency_fund.color },
@@ -153,7 +184,7 @@ function Month({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => vo
   ];
   const total = parts.reduce((s, p) => s + p.amount, 0);
   return (
-    <Block id="your-month" title={copy.BLOCK_TITLES.month} more={copy.DETAILS_LABEL} onMore={() => onTab("money")}>
+    <Block id="your-month" title={copy.BLOCK_TITLES.month} help={chips.month[0]} more={copy.DETAILS_LABEL} onMore={() => onTab("money")}>
       <p className="text-lead font-semibold text-balance">{model.month.sentence}</p>
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label={parts.map((p) => `${p.label} ${usd(p.amount)}`).join(", ")}>
         {total > 0 && parts.map((p) => <span key={p.key} className={cn("h-full", p.color)} style={{ width: `${(100 * p.amount) / total}%` }} />)}
@@ -174,12 +205,12 @@ function Month({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => vo
 }
 
 // 3. Your safety cushion: target, reason, progress bar with the "1 month covered" marker.
-function Cushion({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => void }) {
+function Cushion({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
   const c = model.cushion;
   const markAt = c.target > 0 ? Math.min(100, (100 * c.milestone) / c.target) : 0;
   const showMark = !c.met && c.milestone < c.target;
   return (
-    <Block id="your-cushion" title={c.title} more={copy.DETAILS_LABEL} onMore={() => onTab("money")}>
+    <Block id="your-cushion" title={c.title} help={chips.cushion[0]} more={copy.DETAILS_LABEL} onMore={() => onTab("money")}>
       <p className="text-small text-muted-foreground">{c.reason}</p>
       <div className={cn("flex flex-col gap-1", showMark && "pb-5")}>
         <div className="relative">
@@ -215,7 +246,23 @@ const TONE: Record<OverviewModel["goals"][number]["tone"], { icon: LucideIcon; c
   later: { icon: Hourglass, className: "text-muted-foreground" },
 };
 
-function Goals({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => void }) {
+// The P1 lever: shows lever.label, asks lever.askSprout (with the chip's intent when blockChips has it).
+function LeverButton({ label, chip, question }: { label: string; chip?: Chip; question: string }) {
+  const { ask, busy } = useAskSprout();
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => void ask(chip ?? question)}
+      className="ml-7 inline-flex items-center gap-1 self-start rounded-full bg-highlight/10 px-3 py-1 text-left text-small font-medium text-highlight outline-none transition-colors duration-200 hover:bg-highlight/20 focus-visible:ring-4 focus-visible:ring-ring/30 active:bg-highlight/25 disabled:pointer-events-none disabled:opacity-50"
+    >
+      <Sparkles className="size-4 shrink-0" aria-hidden />
+      {label}
+    </button>
+  );
+}
+
+function Goals({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
   if (model.goals.length === 0) return null;
   return (
     <Block id="your-goals" title={copy.BLOCK_TITLES.goals} more={copy.DETAILS_LABEL} onMore={() => onTab("goals")}>
@@ -226,10 +273,10 @@ function Goals({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => vo
             <li key={g.goalId} className="flex flex-col gap-2">
               <span className="flex items-start gap-2 text-body">
                 <tone.icon className={cn("mt-0.5 size-5 shrink-0", tone.className)} aria-hidden />
-                <span className={cn(g.tone === "gap" && "font-semibold")}>{g.line}</span>
+                <span className={cn("flex-1", g.tone === "gap" && "font-semibold")}>{g.line}</span>
+                {!g.lever && <HelpChip chip={chips.goals[g.goalId]?.[0]} className="-my-1" />}
               </span>
-              {/* TODO(#76): render lever.label and ask lever.askSprout via useAskSprout().ask; AskChip shows its question for now. */}
-              {g.lever && <AskChip question={g.lever.askSprout} className="ml-7" />}
+              {g.lever && <LeverButton label={g.lever.label} chip={chips.goals[g.goalId]?.[0]} question={g.lever.askSprout} />}
             </li>
           );
         })}
@@ -239,7 +286,17 @@ function Goals({ model, onTab }: { model: OverviewModel; onTab: (tab: Tab) => vo
 }
 
 // 5. Your path: Now / Next / Later, one product each; a row opens that product in the Roadmap tab.
-function Path({ model, onTab, onProduct }: { model: OverviewModel; onTab: (tab: Tab) => void; onProduct: (productId: string) => void }) {
+function Path({
+  model,
+  chips,
+  onTab,
+  onProduct,
+}: {
+  model: OverviewModel;
+  chips: BlockChips;
+  onTab: (tab: Tab) => void;
+  onProduct: (productId: string) => void;
+}) {
   if (model.path.length === 0) return null;
   return (
     <Block id="your-path" title={copy.BLOCK_TITLES.path} more={copy.OPEN_ROADMAP_LABEL} onMore={() => onTab("roadmap")}>
@@ -247,11 +304,11 @@ function Path({ model, onTab, onProduct }: { model: OverviewModel; onTab: (tab: 
         {model.path.map((p) => {
           const meta = stageMeta(p.stage as Stage);
           return (
-            <li key={p.stage}>
+            <li key={p.stage} className="flex items-start gap-1">
               <button
                 type="button"
                 onClick={() => p.productId && onProduct(p.productId)}
-                className="flex w-full items-start gap-3 rounded-xl px-2 py-2 text-left outline-none transition-colors hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
+                className="flex min-w-0 flex-1 items-start gap-3 rounded-xl px-2 py-2 text-left outline-none transition-colors hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
               >
                 <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", meta.dot)} aria-hidden>
                   <meta.icon className="size-5" />
@@ -265,6 +322,7 @@ function Path({ model, onTab, onProduct }: { model: OverviewModel; onTab: (tab: 
                   {p.unlock && <span className="text-small font-medium text-warning">{p.unlock}</span>}
                 </span>
               </button>
+              <HelpChip chip={chips.path[p.stage]?.[0]} className="mt-2" />
             </li>
           );
         })}
@@ -297,16 +355,17 @@ export function Overview({
   actions: ReactNode;
   share?: ReactNode;
 }) {
+  const chips = useAskSprout().blockChips();
   return (
     <div className="flex flex-col gap-6">
-      <NextMove model={model} personaId={personaId} stepKind={stepKind} done={stepOneDone} onDone={onStepOneDone} onProduct={onProduct} />
+      <NextMove model={model} chips={chips} personaId={personaId} stepKind={stepKind} done={stepOneDone} onDone={onStepOneDone} onProduct={onProduct} />
       <div className="grid gap-6 md:grid-cols-2">
-        <Month model={model} onTab={onTab} />
-        <Cushion model={model} onTab={onTab} />
+        <Month model={model} chips={chips} onTab={onTab} />
+        <Cushion model={model} chips={chips} onTab={onTab} />
       </div>
       <div className="grid gap-6 md:grid-cols-2">
-        <Goals model={model} onTab={onTab} />
-        <Path model={model} onTab={onTab} onProduct={onProduct} />
+        <Goals model={model} chips={chips} onTab={onTab} />
+        <Path model={model} chips={chips} onTab={onTab} onProduct={onProduct} />
       </div>
       <section aria-label={copy.BLOCK_TITLES.fnb} className="grid items-start gap-6 md:grid-cols-2">
         <BankerCta summary={bankerSummary} title={copy.BLOCK_TITLES.fnb}>
