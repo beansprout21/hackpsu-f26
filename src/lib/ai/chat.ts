@@ -12,7 +12,7 @@ import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { monthsToTarget } from "@/lib/server/engine/math";
 import { describeAiError, getClient, getModel } from "./client";
 import { VOICE_RULES } from "./plan";
-import { goalWord, voiceNormalize, voiceSafe } from "./voice";
+import { gapClaimsConsistent, goalWord, voiceNormalize, voiceSafe } from "./voice";
 
 const CHAT_TIMEOUT_MS = 15_000;
 const ADVISOR_LINE = "When you're ready for that, an FNB advisor can help.";
@@ -45,6 +45,7 @@ const CHAT_SYSTEM = [
   "Do not ask the user a question; suggested next questions are shown separately.",
   "Never invent rates, fees, or products. If a rate isn't published, say to check the current rate with FNB.",
   'Call the emergency savings the "safety cushion", never "emergency fund".',
+  'Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away".',
   "Durations: under 24 months say months; from 24 months say whole years, written the way the JSON's *Time fields are (\"about 4 years\"). Never write 24 or more months.",
   `Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say "${ADVISOR_LINE}" and stop.`,
   "List every productId you mention in citedProductIds. Output JSON only.",
@@ -550,13 +551,14 @@ function chatFacts(question: string, profile: GoalProfile, plan: Plan, extra: { 
       ...extra.whatIf,
       currentTime: extra.whatIf.currentMonthsToTarget > 0 ? aboutTime(extra.whatIf.currentMonthsToTarget) : null,
       newTime: extra.whatIf.newMonthsToTarget > 0 ? aboutTime(extra.whatIf.newMonthsToTarget) : null,
+      gapAfter: !extra.whatIf.cushion && !extra.whatIf.onTrackAfter ? Math.round(extra.whatIf.requiredMonthly - extra.whatIf.newMonthly) : null,
     },
     persona: profile.persona.label,
     topValues: profile.topValues,
     richLife: profile.richLifeStatement,
     goals: profile.goals.map((g) => {
       const a = plan.allocation.find((x) => x.goalId === g.id);
-      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ?? null, timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null };
+      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ?? null, timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null, gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null };
     }),
     money: {
       effectiveMonthlyIncome: plan.effectiveMonthlyIncome,
@@ -686,6 +688,9 @@ export async function answerQuestion(question: string, profile: GoalProfile, pla
     const voiced = voiceSafe(short);
     if (!voiced) throw new Error("voice guard");
     const answer = voiceNormalize(voiced);
+    // A what-if may name the gap left after the change.
+    const afterGap = whatIf && !whatIf.cushion && !whatIf.onTrackAfter ? [whatIf.requiredMonthly - whatIf.newMonthly] : [];
+    if (!gapClaimsConsistent(answer, plan, afterGap)) throw new Error("consistency guard");
     return { answer, citedProductIds: keepCited([...ai.citedProductIds, ...(explained?.cited.slice(0, 1) ?? [])], plan), aiUsed: true, route, intent: intent.kind };
   } catch (error) {
     return {
