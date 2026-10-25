@@ -70,6 +70,9 @@ export function IntakeWizard() {
   const stepRef = useRef<HTMLDivElement>(null);
   const step = STEPS[stepIndex];
   const values = deriveValues(draft.swipes);
+  // The persona reveal has little on screen, so on desktop it's one centered column
+  // (progress, Sprout, card, buttons) instead of the side-by-side layout.
+  const centered = step === "persona";
 
   useEffect(() => {
     stepRef.current?.focus({ preventScroll: true });
@@ -120,8 +123,15 @@ export function IntakeWizard() {
   // Desktop (lg+): a pinned left column (progress, Sprout's line) beside a wide step area.
   // Phones keep the single column: progress, Sprout, step, buttons.
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-x-12">
-      <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
+    <div
+      className={cn(
+        "flex flex-col gap-6",
+        centered
+          ? "lg:mx-auto lg:w-full lg:max-w-xl"
+          : "lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-x-12",
+      )}
+    >
+      <aside className={cn("flex flex-col gap-6", !centered && "lg:sticky lg:top-24")}>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-end gap-3 text-xs text-muted-foreground lg:justify-start">
             <span className="flex items-center gap-1.5">
@@ -187,7 +197,12 @@ export function IntakeWizard() {
           )}
         </div>
 
-        <div className="sticky bottom-0 -mx-4 flex gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0">
+        <div
+          className={cn(
+            "sticky bottom-0 -mx-4 flex gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0",
+            centered && "lg:justify-center",
+          )}
+        >
           {stepIndex === 0 ? (
             <Link href="/" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-12 px-4")}>
               <ArrowLeft aria-hidden />
