@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { FinancialSnapshot, GoalProfile, IntakeAnswers, Plan } from "@/types";
+import type { ChatTurn, FinancialSnapshot, GoalProfile, IntakeAnswers, Plan } from "@/types";
 
 export interface AppState {
   intake?: IntakeAnswers;
   snapshot?: FinancialSnapshot;
   profile?: GoalProfile;
   plan?: Plan;
+  chat?: ChatTurn[]; // v2.3: Ask Sprout memory, last 6 turns (browser only)
 }
 
 // Key is part of the frozen contract (docs/CONTRACTS.md); the old product name is intentional.
@@ -35,6 +36,8 @@ function subscribe(listener: () => void) {
 
 export function updateAppState(patch: Partial<AppState>) {
   const next = { ...read(), ...patch };
+  // Ask Sprout's memory belongs to one plan: a new (or cleared) plan starts a fresh conversation.
+  if ("plan" in patch && !("chat" in patch)) delete next.chat;
   cache = next;
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
