@@ -474,9 +474,10 @@ for (let i = 0; i < 2000; i++) {
     const p = getProduct(m.productId);
     if (p && /\bIRA\b|retirement/i.test(p.name + " " + p.forWho)) fitProblems.push("user " + i + ": " + m.productId + " (" + m.goalId + ")");
     if (p?.category === "credit_card" && m.goalId === "emergency_fund") fitProblems.push("user " + i + ": " + m.productId + " for the safety cushion");
+    if (m.productId === "cardguard" && m.goalId === "emergency_fund") fitProblems.push("user " + i + ": CardGuard for the safety cushion");
   }
 }
-check(fitProblems.length === 0, "2,000 users: no retirement account, no credit card for the safety cushion" + (fitProblems.length ? " (" + fitProblems.length + ", e.g. " + fitProblems.slice(0, 2).join("; ") + ")" : ""));
+check(fitProblems.length === 0, "2,000 users: no retirement account, no credit card or CardGuard for the safety cushion" + (fitProblems.length ? " (" + fitProblems.length + ", e.g. " + fitProblems.slice(0, 2).join("; ") + ")" : ""));
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
