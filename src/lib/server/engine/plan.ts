@@ -18,7 +18,6 @@ import { GOAL_LABELS } from "./defaults";
 import { feeNote, termsWithFee } from "./fees";
 import { monthsToTarget } from "./math";
 import { buildNotYet } from "./notYet";
-import { topValueGoal } from "./score";
 import { candidateFor, selectMatches, type Candidate } from "./select";
 import { buildSpending, type SpendingResult } from "./spending";
 import { isMortgageLike } from "./stage";
@@ -257,8 +256,8 @@ function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
   if (math.monthlySurplus <= 0) {
     return "Right now your costs use up all of your income, and that's okay. First we find your breathing room, starting with one free step right now.";
   }
-  // Lever wording: lead with the top-value goal's turn-up-the-dial lever when there is one.
-  const focus = topValueGoal(ctx);
+  // Lever wording (v3.1): lead with the P1 goal's turn-up-the-dial lever when there is one.
+  const focus = [...ctx.profile.goals].sort((a, b) => a.priority - b.priority)[0]?.id;
   const a = focus ? spending.allocation.find((x) => x.goalId === focus) : undefined;
   const dial = a?.levers.find((l) => l.kind === "turn_up_dial");
   const first =
@@ -268,12 +267,15 @@ function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
   // Second sentence: the early win (1 month covered) when it's still ahead, else the full cushion.
   const fills = spending.cushionFillsInMonths;
   const milestone = spending.milestoneInMonths;
+  const fullOnly = `${usd(spending.emergencyMonthly)} a month fills your safety cushion in ${fills} months, then your goals get the full amount.`;
   const second = fills
     ? milestone && milestone < fills
       ? `${usd(spending.emergencyMonthly)} a month covers one month of costs in ${milestone} months and fills your safety cushion in ${fills}.`
-      : `${usd(spending.emergencyMonthly)} a month fills your safety cushion in ${fills} months, then your goals get the full amount.`
+      : fullOnly
     : "Let's give every dollar a job, beginning with one easy step right now.";
-  return `${first} ${second}`;
+  // Text budget (DASHBOARD.md): <= 35 words; a long P1 name drops the milestone clause.
+  const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
+  return words(`${first} ${second}`) > 35 && fills ? `${first} ${fullOnly}` : `${first} ${second}`;
 }
 
 export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers): Plan {

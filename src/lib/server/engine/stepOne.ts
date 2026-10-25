@@ -53,8 +53,10 @@ export function chooseStepOne(ctx: EngineContext, spending: SpendingResult): Pla
       detail: "No surprise fees, ever.",
     };
   }
-  // Row 4: the safety cushion is the goal, or there are no goals.
-  if (!p1 || p1.id === "emergency_fund") {
+  // Row 4: the safety cushion is the goal, there are no goals, or (v3.1) a security/family top value
+  // while the cushion isn't met.
+  const cushionMet = ctx.snapshot.savingsBalance >= ctx.cushionTarget;
+  if (!p1 || p1.id === "emergency_fund" || (ctx.cushionFirst && !cushionMet)) {
     return {
       ...base,
       kind: "save",

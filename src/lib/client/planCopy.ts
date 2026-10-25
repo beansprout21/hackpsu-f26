@@ -56,8 +56,13 @@ export const cushionProgress = (saved: number, target: number, milestoneInMonths
 export const goalOnTrack = (id: GoalId, monthly: number) => `${fund(id)} is on track: ${usd(monthly)} a month gets you there.`;
 export const goalGap = (id: GoalId, gap: number) => `${fund(id)} is ${usd(gap)} a month away.`;
 export const goalOnPath = (id: GoalId, monthsAtPace: number) => `${fund(id)}: on your path, about ${months(monthsAtPace)} at your pace.`;
+// v3.1: a non-P1 goal with money going in says so; the pace part only when it's within 2 x horizon.
+export const goalGoingIn = (id: GoalId, monthly: number, monthsAtPace: number | null) =>
+  `${fund(id)}: ${usd(monthly)} a month going in${monthsAtPace !== null ? `, about ${months(monthsAtPace)} at your pace` : ""}.`;
 export const goalLater = (id: GoalId, unlock: string) => `${fund(id)}: starts growing after ${unlock}.`;
 export const DEFAULT_UNLOCK = "your safety cushion is full";
+// v3.1: the $0-going-in unlock when the cushion is already full.
+export const TOP_GOAL_UNLOCK = "your top goal is on track";
 
 export const leverTurnUpDial = (id: GoalId, move: number) => ({
   label: `See what moving ${usd(move)} from guilt-free does`,
@@ -71,6 +76,13 @@ export const leverSmallerTarget = (id: GoalId, reachableAmount: number) => ({
   label: "See a smaller target",
   askSprout: `What if my ${FUND_NAME[id]} target were ${usd(reachableAmount)}?`,
 });
+// v3.1: more_time is shown only up to this many months.
+export const MORE_TIME_MAX_MONTHS = 60;
+// v3.1: last resort when no money lever fits and the plan has the Big Win step.
+export const LEVER_BIG_WIN = {
+  label: "Review your biggest fixed cost",
+  askSprout: "How can I lower my biggest fixed cost?",
+};
 
 // 5. Your path.
 export const pathUnlock = (condition: string) => `Unlocks when ${withoutWhen(condition)}.`;

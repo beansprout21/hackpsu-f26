@@ -1,12 +1,12 @@
 {
-  "headline": "$188 a month toward your goals, starting with first home",
-  "sproutSays": "You have $750 a month of breathing room, and that's a real start. $187 a month covers one month of costs in 3 months and fills your safety cushion in 21.",
+  "headline": "$150 a month toward your goals, starting with first home",
+  "sproutSays": "Your first home goal is $100 a month away, and your guilt-free money can turn up that dial. $225 a month fills your safety cushion in 17 months, then your goals get the full amount.",
   "stepOne": {
     "order": 1,
     "stage": "now",
     "kind": "save",
-    "title": "Move $20 into your home fund right now.",
-    "detail": "You'll put $188 a month toward it. This starts it.",
+    "title": "Move $20 into savings right now.",
+    "detail": "That starts your $4,950 safety cushion.",
     "startMonth": 0
   },
   "effectiveMonthlyIncome": 2400,
@@ -20,14 +20,14 @@
     },
     {
       "bucket": "emergency_fund",
-      "monthlyAmount": 187,
-      "percent": 7.79,
-      "note": "Builds your safety cushion to $4,950 in about 21 months. After that, your goals get the full amount."
+      "monthlyAmount": 225,
+      "percent": 9.38,
+      "note": "Builds your safety cushion to $4,950 in about 17 months. After that, your goals get the full amount."
     },
     {
       "bucket": "goal_savings",
-      "monthlyAmount": 188,
-      "percent": 7.83,
+      "monthlyAmount": 150,
+      "percent": 6.25,
       "note": "Split across first home, by priority."
     },
     {
@@ -39,7 +39,7 @@
   ],
   "fixedShare": 0.6875,
   "cushionTarget": 4950,
-  "cushionFillsInMonths": 21,
+  "cushionFillsInMonths": 17,
   "futureYou": {
     "earmarkMonthly": null,
     "handoff": "An FNB advisor can help you start.",
@@ -49,39 +49,39 @@
   "allocation": [
     {
       "goalId": "first_home",
-      "monthlyAmount": 188,
-      "monthsToTarget": 80,
+      "monthlyAmount": 150,
+      "monthsToTarget": 100,
       "requiredMonthly": 250,
       "onTrack": false,
       "levers": [
         {
           "kind": "turn_up_dial",
-          "moveFromGuiltFree": 62
+          "moveFromGuiltFree": 100
         },
         {
           "kind": "more_time",
-          "newHorizonMonths": 80
+          "newHorizonMonths": 100
         },
         {
           "kind": "smaller_target",
-          "reachableAmount": 11280
+          "reachableAmount": 9000
         }
       ]
     },
     {
       "goalId": "emergency_fund",
-      "monthlyAmount": 187,
-      "monthsToTarget": 27,
+      "monthlyAmount": 225,
+      "monthsToTarget": 22,
       "requiredMonthly": 413,
       "onTrack": false,
       "levers": [
         {
           "kind": "more_time",
-          "newHorizonMonths": 27
+          "newHorizonMonths": 22
         },
         {
           "kind": "smaller_target",
-          "reachableAmount": 2244
+          "reachableAmount": 2700
         }
       ]
     }
@@ -198,8 +198,8 @@
       "order": 1,
       "stage": "now",
       "kind": "save",
-      "title": "Move $20 into your home fund right now.",
-      "detail": "You'll put $188 a month toward it. This starts it.",
+      "title": "Move $20 into savings right now.",
+      "detail": "That starts your $4,950 safety cushion.",
       "startMonth": 0
     },
     {
@@ -207,7 +207,7 @@
       "stage": "now",
       "kind": "habit",
       "title": "Automate it on payday",
-      "detail": "Move $375 to savings first: $187 to your safety cushion, $188 to your goals.",
+      "detail": "Move $375 to savings first: $225 to your safety cushion, $150 to your goals.",
       "startMonth": 0,
       "productId": "firstrate-savings",
       "monthlyAmount": 375
@@ -251,10 +251,10 @@
       "stage": "next",
       "kind": "open",
       "title": "Open Flex CD for your emergency fund goal",
-      "detail": "Then move $187 a month into it automatically.",
+      "detail": "Then move $225 a month into it automatically.",
       "startMonth": 1,
       "productId": "flex-cd",
-      "monthlyAmount": 187
+      "monthlyAmount": 225
     },
     {
       "order": 8,
@@ -262,7 +262,7 @@
       "kind": "talk_to_banker",
       "title": "Talk to an FNB banker about FNB Home Ownership Program",
       "detail": "When your $4,950 safety cushion is full",
-      "startMonth": 21,
+      "startMonth": 17,
       "productId": "fnb-home-ownership-program"
     }
   ],
@@ -274,7 +274,7 @@
       "revisitWhen": "after your $4,950 safety cushion is full"
     }
   ],
-  "bankerSummary": "Young family, not yet an FNB customer, steady income. Income: $2,400/mo job = about $2,400/mo effective. Fixed costs $1,500, debt payments $150 (69% of income), surplus $750/mo, savings $1,200, credit range: fair. Spending plan: $375/mo savings, $375/mo guilt-free. Goals: first home ($15,000 in 60 months, P1, $188/mo of $250/mo needed); emergency fund ($5,000 est. in 12 months, P2, $187/mo of $413/mo needed). Plan: now Mortgage calculators, Freestyle Checking, FirstRate Savings; next Flex CD; later FNB Home Ownership Program.",
+  "bankerSummary": "Young family, not yet an FNB customer, steady income. Income: $2,400/mo job = about $2,400/mo effective. Fixed costs $1,500, debt payments $150 (69% of income), surplus $750/mo, savings $1,200, credit range: fair. Spending plan: $375/mo savings, $375/mo guilt-free. Goals: first home ($15,000 in 60 months, P1, $150/mo of $250/mo needed); emergency fund ($5,000 est. in 12 months, P2, $225/mo of $413/mo needed). Plan: now Mortgage calculators, Freestyle Checking, FirstRate Savings; next Flex CD; later FNB Home Ownership Program.",
   "aiUsed": false,
   "disclaimer": "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB."
 }

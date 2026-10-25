@@ -7,6 +7,7 @@ import { scenarios } from "../src/data/scenarios";
 import { buildOverview, type OverviewModel } from "../src/lib/client/overview";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { GOAL_LABELS } from "../src/lib/server/engine/defaults";
+import { getProduct } from "../src/lib/server/catalog";
 import type { Plan, SpendingBucketId } from "../src/types";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -77,7 +78,17 @@ function flagsFor(p: Plan, o: OverviewModel, p1Id: string | undefined): string[]
   }
   for (const g of o.goals) {
     if (g.goalId !== p1Id && (g.tone === "gap" || g.lever)) flags.push(`non-P1 ${GOAL_LABELS[g.goalId]} has tone "${g.tone}"`);
+    const funded = (p.allocation.find((a) => a.goalId === g.goalId)?.monthlyAmount ?? 0) > 0;
+    if (funded && /starts growing/i.test(g.line)) flags.push(`"starts growing" on a goal that gets money: "${g.line}"`);
+    const leverMonths = Number(g.lever?.askSprout.match(/(\d+) months\?$/)?.[1] ?? 0);
+    if (leverMonths > 60) flags.push(`lever asks about ${leverMonths} months`);
   }
+
+  // v3.1: no student loan at any stage, including not-yet.
+  const loanIds = [...p.matches.map((m) => m.productId), ...p.notYet.flatMap((n) => (n.productId ? [n.productId] : []))].filter(
+    (id) => getProduct(id)?.category === "student_loan",
+  );
+  if (loanIds.length) flags.push(`student loan recommended: ${loanIds.join(", ")}`);
 
   if (p.cushionTarget < 1000) flags.push(`cushion ${usd(p.cushionTarget)} < $1,000`);
   const waitsOnFullCushion = o.cushion.met ? o.goals.find((g) => /after .*safety cushion is full/i.test(g.line)) : undefined;
