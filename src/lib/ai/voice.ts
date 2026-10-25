@@ -1,6 +1,6 @@
 // Voice guard for AI-written text (docs/SPROUT.md voice rule 3), shared by /api/chat and /api/plan.
 // "just" is dropped (meaning-safe); any other banned word means the caller keeps its template text.
-import type { GoalId } from "@/types";
+import type { GoalId, Plan } from "@/types";
 import { aboutTime, timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 
@@ -28,6 +28,20 @@ export function specificTimes(text: string): string {
     const span = timeSpan(n);
     return span.startsWith("more than") ? span : about ? `${about}${span}` : aboutTime(n);
   });
+}
+
+// "$N a month away" is a gap claim (DASHBOARD.md goal lines): N must be a real gap of an off-track goal
+// (required - allocated) or a turn_up_dial move. Anything else (an on-track goal, a monthly amount) is wrong.
+export function gapClaimsConsistent(text: string, plan: Plan, extraGaps: number[] = []): boolean {
+  const claims = [...text.matchAll(/\$\s?([\d,]+)\s*(?:a|per|\/)\s*month\s+away/gi)].map((m) => Number(m[1].replace(/,/g, "")));
+  if (claims.length === 0) return true;
+  const gaps = new Set<number>(extraGaps.map(Math.round));
+  for (const a of plan.allocation) {
+    if (a.onTrack) continue;
+    gaps.add(Math.round(a.requiredMonthly - a.monthlyAmount));
+    for (const l of a.levers) if (l.kind === "turn_up_dial") gaps.add(Math.round(l.moveFromGuiltFree));
+  }
+  return claims.every((n) => gaps.has(n));
 }
 
 // Applied to every AI string after the number guard (so derived year counts can't trip it), and to template
