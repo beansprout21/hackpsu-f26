@@ -166,7 +166,8 @@ export function IntakeWizard() {
       </aside>
 
       <div className="flex min-w-0 flex-col gap-6">
-        <div ref={stepRef} tabIndex={-1} role="group" aria-labelledby="sprout-line" className="flex flex-col gap-6 outline-none">
+        {/* Scroll margin keeps a focused control from landing behind the pinned Back/Next bar. */}
+        <div ref={stepRef} tabIndex={-1} role="group" aria-labelledby="sprout-line" className="flex flex-col gap-6 outline-none [&_*]:scroll-mb-24">
           {step === "intro" && <IntroStep />}
           {step === "lifeStage" && (
             <LifeStageStep
@@ -213,9 +214,11 @@ export function IntakeWizard() {
           )}
         </div>
 
+        {/* Back/Next stay pinned to the bottom on every step and screen size; the bar bleeds into the page
+            padding so step content scrolls under its blurred background. */}
         <div
           className={cn(
-            "sticky bottom-0 -mx-4 flex gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0",
+            "sticky bottom-0 z-30 -mx-4 flex gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10",
             centered && "lg:justify-center",
           )}
         >
