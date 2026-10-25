@@ -35,3 +35,22 @@ Lead decisions made overnight (Ben may override):
 9. **12:00** Final check that Devpost shows Submitted and hackpsu.org shows the project. Hacking ends 1:45 PM; judging 2:00 to 3:30 PM, ECoRE 2nd floor (one of you must be present and scanned in).
 
 ## Hourly log
+
+### 3:20 AM (lead wake 1)
+**Verified by the lead on `main` aa1cf57 (AI off, local):** check-engine, check-overview, check-chat pass; scenarios pass (0 flagged); stress (seed 9707, 314 users) 0 crashes, 0 API problems, 0 chat problems, 2 failing invariants: goal bucket lands on money goals 41 (#107), no surplus: only $0 products 118 (#109). Maya golden unchanged ($91 / $22 / $118): #106 not applied yet.
+
+**Agent reports (not re-checked by the lead beyond the run above):**
+- Finder (#119): cycle 2 at 3:06, seed 83923, 514 users; same 2 invariants failing. Live AI 0 (no key in its clone).
+- Fixer (#120): merged #127 (#124), #129 (#126, schema-invalid plans and Ask Sprout 400s). #133 (#130, IRA/credit-card tags) ready but held on a +1 in #109's count.
+- AI auditor (#121): stopped at 3:13 after 8 cycles, full cap used (200 plans / 400 chats, about 200 profiles). Fallback 0% in the last 5 cycles; plan ~8 s, chat ~1.7 s. 9 PRs merged (#125 to #137).
+
+**Lead decisions (SPROUT.md v3.3; Ben may override):**
+- #130: merge #133 now. The +1 is an existing #109 failure made visible, not a regression.
+- #109: what counts as a $0 product with no surplus (education tools, $0 deposit, or an everyday account funded from current savings); everything else `later`.
+- #107: habits only, all savings go to the safety cushion; never "your savings goal" without one.
+- #105: engine keeps the first of duplicate goal ids; no contract change.
+- Fixer order: #133 merge, #106 (Maya numbers, demo-critical), #109, #107, #105, then P1s.
+
+**API use tonight:** Auditor 200 plans / 400 chats (cap reached), Finder 0, Fixer 0. Dollar cost not measured here; check console.anthropic.com usage in the morning.
+
+**Vercel:** PR deploys still rate-limited ("more than 100 deployments in 24 h, retry in 24 hours"). Production is still the last good deploy.
