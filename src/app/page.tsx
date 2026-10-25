@@ -89,16 +89,16 @@ export default function Home() {
             </p>
             <h1 className="text-title font-semibold text-balance sm:text-display">
               {/* Screen readers get the sentence once; what's shown is decorative. Phones (#180) keep
-                  the original static sentence; the typing line is sm+ only. */}
+                  the original static sentence; the typing word is sm+ only. */}
               <span className="sr-only">Most banks start with your credit score. Sprout starts with your life.</span>
-              <span aria-hidden className="sm:hidden">
+              <span aria-hidden className="sm:block">
                 Most banks start with your credit score.{" "}
               </span>
-              <span aria-hidden className="hidden sm:block">
-                <TypedPhrase />
-              </span>
-              <span aria-hidden className="text-brand-700 sm:block">
+              <span aria-hidden className="text-brand-700 sm:hidden">
                 Sprout starts with your life.
+              </span>
+              <span aria-hidden className="hidden text-brand-700 sm:block">
+                <TypedPhrase />
               </span>
             </h1>
             <p className="max-w-prose text-lead text-muted-foreground">

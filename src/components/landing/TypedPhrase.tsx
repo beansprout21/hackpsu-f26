@@ -2,19 +2,14 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-// Landing headline (#85): each phrase holds, deletes letter by letter, then the next types out.
-// Every phrase is followed on the page by "Sprout starts with your life."
-export const PHRASES = [
-  "Most banks start with your credit score.",
-  "Budget apps start with what you spent.",
-  "Loan applications start with your income.",
-  "Most money advice starts with a spreadsheet.",
-  "Money tips start with what you're doing wrong.",
-];
+// Landing headline (#85): "Sprout starts with your ___." Each word holds, deletes letter by
+// letter, then the next types out. The first one is what phones and reduced motion see.
+const PREFIX = "Sprout starts with your ";
+export const PHRASES = ["life.", "dreams.", "goals.", "values.", "future."];
 
-const HOLD_MS = 4000;
-const DELETE_MS = 28;
-const TYPE_MS = 55;
+const HOLD_MS = 2500;
+const DELETE_MS = 60;
+const TYPE_MS = 90;
 const GAP_MS = 350;
 
 type Phase = "hold" | "delete" | "type";
@@ -116,10 +111,12 @@ export function TypedPhrase() {
     <span aria-hidden className="grid text-wrap">
       {PHRASES.map((p) => (
         <span key={p} className="invisible col-start-1 row-start-1">
+          {PREFIX}
           {p}
         </span>
       ))}
       <span className="col-start-1 row-start-1">
+        {PREFIX}
         {reduceMotion ? (
           text
         ) : (
