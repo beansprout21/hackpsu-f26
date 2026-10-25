@@ -35,10 +35,13 @@ export function specificTimes(text: string): string {
   });
 }
 
-// "$N a month away" is a gap claim (DASHBOARD.md goal lines): N must be a real gap of an off-track goal
-// (required - allocated) or a turn_up_dial move. Anything else (an on-track goal, a monthly amount) is wrong.
+// "$N a month away" (or "$N from on track", "$N short") is a gap claim (DASHBOARD.md goal lines): N must be a
+// real gap of an off-track goal (required - allocated) or a turn_up_dial move. Anything else is wrong.
 export function gapClaimsConsistent(text: string, plan: Plan, extraGaps: number[] = []): boolean {
-  const claims = [...text.matchAll(/\$\s?([\d,]+)\s*(?:a|per|\/)\s*month\s+away/gi)].map((m) => Number(m[1].replace(/,/g, "")));
+  const claims = [
+    // "away" counts only as "a month away": "$750 away" is an unlock's dollars-to-go, not a monthly gap.
+    ...text.matchAll(/\$\s?([\d,]+)\s*(?:(?:a|per|\/)\s*month\s+away\b|(?:(?:a|per|\/)\s*month\s+)?(?:from|short of) (?:being )?on track\b)/gi),
+  ].map((m) => Number(m[1].replace(/,/g, "")));
   if (claims.length === 0) return true;
   const gaps = new Set<number>(extraGaps.map(Math.round));
   for (const a of plan.allocation) {

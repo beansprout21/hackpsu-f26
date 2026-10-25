@@ -206,7 +206,7 @@ function textFlags(field: string, text: string, planProductIds: Set<string>, all
 }
 
 // "on track" said about the P1 goal the engine has off track (no conditional); "$N a month away" that isn't a real gap.
-const CONDITIONAL = /\b(if|would|could|move|moving|turn|get|put|puts|stay|keep|once|by|when|to be|away from|from being|stretch|stretching|give|giving)\b/i;
+const CONDITIONAL = /\b(if|would|could|move|moving|turn|get|put|puts|stay|keep|once|by|when|to be|away from|from being|from on track|short of|stretch|stretching|give|giving)\b/i;
 // Goal words used to tell which goal an "on track" clause is about.
 const GOAL_WORDS: [GoalId, RegExp][] = [
   ["travel", /\b(travel|trip|japan|abroad|vacation)\b/i],
