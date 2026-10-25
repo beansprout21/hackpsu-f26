@@ -2,10 +2,11 @@ import { ShieldCheck, Sparkles } from "lucide-react";
 import { AskChip } from "@/components/chat/AskSprout";
 import { ASK_SPROUT_STARTERS } from "@/lib/client/planCopy";
 import { cn } from "@/lib/utils";
-import type { Plan, SpendingBucket } from "@/types";
+import { INCOME_SPREAD_NOTE } from "@/components/snapshot/draft";
+import type { FinancialSnapshot, Plan, SpendingBucket } from "@/types";
 import { BUCKETS, formatMonths, usd } from "./format";
 
-export function SpendingPlan({ plan }: { plan: Plan }) {
+export function SpendingPlan({ plan, snapshot }: { plan: Plan; snapshot?: FinancialSnapshot }) {
   const costs = plan.effectiveMonthlyIncome - plan.monthlySurplus;
   const cushionBucket = plan.spendingPlan.find((b) => b.bucket === "emergency_fund");
   const { futureYou } = plan;
@@ -28,6 +29,9 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         <p className="text-small text-muted-foreground tabular-nums">
           {usd(plan.effectiveMonthlyIncome)} comes in − {usd(costs)} in costs
         </p>
+        {snapshot?.incomeSources.some((s) => s.frequency !== "monthly") && (
+          <p className="text-small text-muted-foreground">{INCOME_SPREAD_NOTE}</p>
+        )}
       </div>
 
       <div className="xl:col-start-1">

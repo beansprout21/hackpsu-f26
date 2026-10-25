@@ -220,7 +220,7 @@ export function SnapshotForm({
         <legend className="mb-3 text-lg font-semibold">What goes out, and what you have</legend>
         <MoneyField
           label="Fixed costs a month"
-          hint="Rent, utilities, phone, groceries, insurance."
+          hint="Rent, utilities, phone, groceries or meal plan, insurance. Eating out comes from your guilt-free money."
           value={draft.fixedCosts}
           onChange={(v) => edit("fixedCosts", { fixedCosts: v })}
           fromDoc={draft.fromDoc.fixedCosts}
