@@ -54,6 +54,19 @@ function leverCopy(goalId: GoalId, lever: GapLever) {
   }
 }
 
+// P1 lever button (DASHBOARD.md v3.1 order): turn_up_dial; else more_time only if <= 60 months;
+// else smaller_target; else the Big Win button when the plan has the Big Win step; else none.
+function pickLever(goalId: GoalId, levers: GapLever[], plan: Plan): { label: string; askSprout: string } | undefined {
+  const dial = levers.find((l) => l.kind === "turn_up_dial");
+  if (dial) return leverCopy(goalId, dial);
+  const time = levers.find((l) => l.kind === "more_time" && l.newHorizonMonths <= copy.MORE_TIME_MAX_MONTHS);
+  if (time) return leverCopy(goalId, time);
+  const smaller = levers.find((l) => l.kind === "smaller_target");
+  if (smaller) return leverCopy(goalId, smaller);
+  if (plan.steps.some((s) => /^Big Win/i.test(s.title))) return copy.LEVER_BIG_WIN;
+  return undefined;
+}
+
 const ACCOUNT_CATEGORIES: Product["category"][] = ["checking", "savings", "cd", "credit_card", "small_business"];
 const isAccount = (m: Match) => ACCOUNT_CATEGORIES.includes(products.get(m.productId)?.category ?? "education_tool");
 
@@ -129,21 +142,28 @@ export function buildOverview(plan: Plan, profile: GoalProfile, snapshot: Financ
       if (!a) return [];
       if (g.id === p1?.id) {
         if (a.onTrack) return [{ goalId: g.id, line: copy.goalOnTrack(g.id, a.monthlyAmount), tone: "on_track" }];
-        const first = a.levers[0];
+        const lever = pickLever(g.id, a.levers, plan);
         return [
           {
             goalId: g.id,
             line: copy.goalGap(g.id, a.requiredMonthly - a.monthlyAmount),
             tone: "gap",
-            ...(first ? { lever: leverCopy(g.id, first) } : {}),
+            ...(lever ? { lever } : {}),
           },
         ];
       }
-      if (a.monthlyAmount > 0 && a.monthsToTarget <= 2 * g.horizonMonths) {
-        return [{ goalId: g.id, line: copy.goalOnPath(g.id, a.monthsToTarget), tone: "on_path" }];
+      // v3.1: money going in says so; the pace only when it's within 2 x horizon.
+      if (a.monthlyAmount > 0) {
+        const pace = a.monthsToTarget <= 2 * g.horizonMonths ? a.monthsToTarget : null;
+        return [{ goalId: g.id, line: copy.goalGoingIn(g.id, a.monthlyAmount, pace), tone: "on_path" }];
       }
+      // $0 going in: the later match's unlock; else the cushion, if it isn't full yet; else the top goal.
       const laterMatch = plan.matches.find((m) => m.goalId === g.id && m.stage === "later" && m.unlockCondition);
-      const unlock = laterMatch?.unlockCondition ? copy.withoutWhen(laterMatch.unlockCondition) : copy.DEFAULT_UNLOCK;
+      const unlock = laterMatch?.unlockCondition
+        ? copy.withoutWhen(laterMatch.unlockCondition)
+        : met
+          ? copy.TOP_GOAL_UNLOCK
+          : copy.DEFAULT_UNLOCK;
       return [{ goalId: g.id, line: copy.goalLater(g.id, unlock), tone: "later" }];
     });
 

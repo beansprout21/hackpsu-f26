@@ -93,7 +93,8 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
 
   // Inside savings: safety cushion first (50/50) until it is met; existing savings count toward it.
   const cushionMet = snapshot.savingsBalance >= ctx.cushionTarget;
-  const emergencyMonthly = cushionMet ? 0 : Math.floor(savingsMonthly * 0.5);
+  // v3.1 values tilt: security/family top value puts 60% toward the cushion instead of 50%.
+  const emergencyMonthly = cushionMet ? 0 : Math.floor(savingsMonthly * (ctx.cushionFirst ? 0.6 : 0.5));
   const goalMonthly = savingsMonthly - emergencyMonthly;
   const cushionFillsInMonths =
     !cushionMet && emergencyMonthly > 0 ? monthsToTarget(ctx.cushionTarget, snapshot.savingsBalance, emergencyMonthly) : null;

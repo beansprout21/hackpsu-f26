@@ -13,7 +13,11 @@ export interface EngineContext {
   cushionTarget: number;
   // Rule set B: students / no steady income save 20% of income; steady income saves 10% + Future You.
   studentRules: boolean;
+  // Rule set B v3.1 values tilt: top value security or family -> 60/40 cushion split, cushion-first Step one.
+  cushionFirst: boolean;
 }
+
+const CUSHION_FIRST_VALUES: ValueTag[] = ["security", "family"];
 
 export function buildContext(profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers): EngineContext {
   const math = computeMath(snapshot);
@@ -29,6 +33,7 @@ export function buildContext(profile: GoalProfile, snapshot: FinancialSnapshot, 
     isStudent,
     studentRules,
     cushionTarget: math.safetyCushion,
+    cushionFirst: !!values[0] && CUSHION_FIRST_VALUES.includes(values[0]),
   };
 }
 

@@ -220,12 +220,15 @@ check(
   f.cushionMet.plan.cushionFillsInMonths === null && bucket(f.cushionMet.plan, "emergency_fund")?.monthlyAmount === 0 && /safety cushion is full/.test(bucket(f.cushionMet.plan, "emergency_fund")?.note ?? ""),
   "Cushion met: no emergency allocation, note says the safety cushion is full",
 );
-check(j.stepOne.title === "Move $20 into your home fund right now." && j.stepOne.detail === "You'll put $188 a month toward it. This starts it.", `Jordan Step one (row 5): "${j.stepOne.title}" / "${j.stepOne.detail}"`);
+check(j.stepOne.title === "Move $20 into savings right now." && j.stepOne.detail === "That starts your $4,950 safety cushion.", `Jordan Step one (row 4, v3.1 security tilt): "${j.stepOne.title}" / "${j.stepOne.detail}"`);
 
 console.log("\n=== Jordan + cross-plan checks");
 check(j.fixedShare > 0.6 && j.steps.some((s) => /Big Win/.test(s.title)), "Jordan: high-fixed branch with Big Win step");
 check(bucket(j, "emergency_fund")!.monthlyAmount + bucket(j, "goal_savings")!.monthlyAmount === 375 && bucket(j, "guilt_free")?.monthlyAmount === 375, "Jordan: savings 50% / guilt-free 50% of $750 surplus");
-check(j.cushionTarget === 4950 && j.cushionFillsInMonths === 21, "Jordan: safety cushion $4,950 (3 x $1,650), full in 21 months");
+check(
+  j.cushionTarget === 4950 && bucket(j, "emergency_fund")?.monthlyAmount === 225 && j.cushionFillsInMonths === 17,
+  "Jordan: safety cushion $4,950 (3 x $1,650), v3.1 tilt $225 of $375 (60%), full in 17 months",
+);
 check(j.futureYou.earmarkMonthly === null && /60%/.test(j.futureYou.unlockCondition ?? ""), "Jordan: Future You handoff until fixed costs < 60%");
 check(j.matches.filter((x) => x.stage === "later").every((x) => x.unlockTrigger?.kind !== "life_event"), "Jordan: later items use savings/credit triggers");
 check(j.notYet.some((n) => n.goalId === "first_home" && n.revisitWhen === "after your $4,950 safety cushion is full"), "Jordan: not-yet for first home until the safety cushion is full");
@@ -235,6 +238,24 @@ check(
 );
 check(oppositeDef.id === "family_first", `Opposite swipes persona = Family First (got ${oppositeDef.id})`);
 check(JSON.stringify(m) !== JSON.stringify(opp), "Maya vs opposite swipes: plans differ");
+// v3.1 proof moment: a family top value tilts the plan cushion-first, so the plan visibly changes.
+check(
+  opp.stepOne.title === "Move $20 into savings right now." && opp.stepOne.title !== m.stepOne.title,
+  `Opposite swipes: Step one "${opp.stepOne.title}" (row 4), not Maya's`,
+);
+check(
+  bucket(opp, "emergency_fund")?.monthlyAmount === 135 && bucket(opp, "goal_savings")?.monthlyAmount === 91 &&
+    bucket(opp, "emergency_fund")?.monthlyAmount !== bucket(m, "emergency_fund")?.monthlyAmount,
+  `Opposite swipes: savings $226 split 60/40 -> cushion $135, goals $91 (got ${bucket(opp, "emergency_fund")?.monthlyAmount} / ${bucket(opp, "goal_savings")?.monthlyAmount})`,
+);
+check(
+  JSON.stringify(opp.allocation.map((a) => a.monthlyAmount)) !== JSON.stringify(m.allocation.map((a) => a.monthlyAmount)),
+  `Opposite swipes: different goal amounts (${opp.allocation.map((a) => a.monthlyAmount).join(" / ")} vs ${m.allocation.map((a) => a.monthlyAmount).join(" / ")})`,
+);
+check(
+  [m, opp, j].every((p) => p.matches.every((x) => getProduct(x.productId)?.category !== "student_loan")),
+  "v3.1: no student loan in any match",
+);
 check(
   JSON.stringify(m.matches.map((x) => x.productId)) !== JSON.stringify(j.matches.map((x) => x.productId)),
   "Maya vs Jordan: different matches",

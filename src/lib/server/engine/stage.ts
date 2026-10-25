@@ -31,6 +31,8 @@ export const isMortgageLike = (p: Product) => MORTGAGE_LIKE.includes(p.category)
 export function isHardIneligible(p: Product, ctx: EngineContext): boolean {
   // Home equity needs an owned home; the snapshot has no homeowner field, so never offer it.
   if (p.category === "home_equity") return true;
+  // v3.1: Sprout never recommends student loans, at any stage (students handle loans with family).
+  if (p.category === "student_loan") return true;
   if (p.eligibility.studentOnly && !ctx.isStudent) return true;
   if (p.eligibility.lifeStages && !p.eligibility.lifeStages.includes(ctx.intake.lifeStage)) return true;
   const bands = p.eligibility.creditBands;
