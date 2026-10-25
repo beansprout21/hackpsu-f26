@@ -88,6 +88,7 @@ Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-prio
 - Habit step always present: **automate on payday**.
 - **Fit-first, fee-transparent:** recommend the FNB account that best fits the user's situation (not simply the cheapest). Every account card states its monthly fee and exactly how THIS user avoids it (e.g. "no monthly fee on Student Checking", "waived with direct deposit"). Framing: Sprout makes sure you never pay a fee you didn't see coming.
 - **No student loans (v3.1):** Sprout never recommends student loan products at any stage, including not-yet. Students usually handle loans with their family; Sprout stays on budgeting, saving, and credit. Mortgages and homebuyer programs for families are unaffected.
+- **No consumer loans (#118, Ben's default 2:15 AM):** Sprout never recommends consumer credit as a step: no CashPlease, auto loans, installment loans, personal or business lines of credit, business loans, or student loans, at any stage or in not-yet. The only lending products are **mortgages and homebuyer programs**, only for `first_home`, only as `later` with an unlock condition, never in Step one or step 2.
 - **Intro goal (v3.1):** `sproutSays` and `headline` templates talk about the **P1** goal, never a lower-priority goal picked by values.
 - Be honest about weak rates: if a product's published rate is low (e.g. a goal CD at 0.05% APY), the explanation sells the commitment, not the interest.
 

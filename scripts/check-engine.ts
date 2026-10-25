@@ -5,13 +5,15 @@ import familyProfile from "../src/data/mocks/profile.family.json";
 import { flipSwipes, jordan, maya, mayaOpposite, OPPOSITE_VALUES } from "../src/data/personas";
 import { deriveValues } from "../src/components/intake/draft";
 import { personaFromValues } from "../src/data/personaTaxonomy";
+import { scenarios } from "../src/data/scenarios";
+import { buildOverview } from "../src/lib/client/overview";
 import { fallbackProfile } from "../src/lib/ai/profile";
 import { wordCount, sentencesOf, TEXT_BUDGET } from "../src/lib/ai/plan";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { monthsToTarget } from "../src/lib/server/engine/math";
 import { getProduct, isCatalogId } from "../src/lib/server/catalog";
 import { GoalProfileSchema, PlanSchema } from "../src/types/schemas";
-import type { FinancialSnapshot, GoalAnswer, GoalProfile, IntakeAnswers, Plan } from "../src/types";
+import type { CreditBand, FinancialSnapshot, GoalAnswer, GoalId, GoalProfile, IntakeAnswers, Plan } from "../src/types";
 
 let failures = 0;
 const check = (ok: boolean, msg: string) => {
@@ -280,6 +282,79 @@ check(
 check(
   JSON.stringify(m.matches.map((x) => x.productId)) !== JSON.stringify(j.matches.map((x) => x.productId)),
   "Maya vs Jordan: different matches",
+);
+
+// #118: no consumer credit anywhere (matches, steps, not-yet, Overview guide); the only lending is a mortgage /
+// homebuyer program for first_home, always `later` with an unlock, never Step one or guide step 2.
+console.log("\n=== No consumer loans (#118): scenarios + a goal x credit x income x savings grid");
+const LENDING_CATEGORIES = ["mortgage", "home_equity", "personal_loan", "auto_loan", "student_loan"];
+const isLending = (id?: string) => {
+  const p = id ? getProduct(id) : undefined;
+  return !!p && (LENDING_CATEGORIES.includes(p.category) || (p.category === "small_business" && /\b(loan|line of credit)\b/i.test(p.name)));
+};
+const isMortgage = (id?: string) => !!id && getProduct(id)?.category === "mortgage";
+const lendingRuns: { name: string; plan: Plan; profile: GoalProfile; snapshot: FinancialSnapshot }[] = scenarios.map(
+  (sc: { name: string; profile: GoalProfile; snapshot: FinancialSnapshot; intake: IntakeAnswers }) => ({
+    name: sc.name,
+    plan: buildPlanSkeleton(sc.profile, sc.snapshot, sc.intake),
+    profile: sc.profile,
+    snapshot: sc.snapshot,
+  }),
+);
+const GRID_GOALS: GoalId[] = ["family", "emergency_fund", "first_home", "small_business", "education", "travel", "credit_building", "everyday_banking"];
+const GRID_BANDS: CreditBand[] = ["building", "fair", "good", "excellent"];
+for (const goal of GRID_GOALS)
+  for (const creditBand of GRID_BANDS)
+    for (const steady of [false, true])
+      for (const savingsBalance of [200, 12000]) {
+        const intake: IntakeAnswers = {
+          ...jordan.intake,
+          lifeStage: steady ? "young_family" : "student",
+          goals: [
+            { id: goal, priority: 1, horizonMonths: 24, targetAmount: 5000, why: "" },
+            ...(goal === "family" ? [] : [{ id: "family" as const, priority: 2 as const, horizonMonths: 36, targetAmount: 4000, why: "" }]),
+          ],
+        };
+        const snapshot: FinancialSnapshot = {
+          ...jordan.snapshot,
+          hasSteadyIncome: steady,
+          incomeSources: [{ kind: steady ? "job" : "gig", amount: 3200, frequency: "monthly" }],
+          monthlyFixedCosts: 1400,
+          monthlyDebtPayments: 100,
+          savingsBalance,
+          creditBand,
+        };
+        const profile = fallbackProfile(intake);
+        lendingRuns.push({ name: `grid ${goal}/${creditBand}/${steady ? "steady" : "irregular"}/${savingsBalance}`, plan: buildPlanSkeleton(profile, snapshot, intake), profile, snapshot });
+      }
+const lendingProblems: string[] = [];
+for (const r of lendingRuns) {
+  for (const m of r.plan.matches.filter((x) => isLending(x.productId))) {
+    if (!isMortgage(m.productId) || m.goalId !== "first_home" || m.stage !== "later" || !m.unlockCondition) {
+      lendingProblems.push(`${r.name}: match ${m.productId} (${m.goalId}, ${m.stage})`);
+    }
+  }
+  for (const n of r.plan.notYet.filter((x) => isLending(x.productId))) {
+    if (!isMortgage(n.productId) || n.goalId !== "first_home") lendingProblems.push(`${r.name}: not-yet ${n.productId}`);
+  }
+  for (const st of r.plan.steps.filter((x) => isLending(x.productId))) {
+    if (!isMortgage(st.productId) || st.stage !== "later") lendingProblems.push(`${r.name}: step ${st.order} ${st.productId} (${st.stage})`);
+  }
+  if (isLending(r.plan.stepOne.productId)) lendingProblems.push(`${r.name}: Step one ${r.plan.stepOne.productId}`);
+  const guide = buildOverview(r.plan, r.profile, r.snapshot).steps;
+  for (const g of guide.filter((x) => isLending(x.productId))) {
+    if (!isMortgage(g.productId) || g.stage !== "later" || g.n <= 2 || !g.unlock) lendingProblems.push(`${r.name}: guide step ${g.n} ${g.productId} (${g.stage})`);
+  }
+}
+check(
+  lendingProblems.length === 0,
+  `${lendingRuns.length} plans: no consumer loans; mortgages only for first_home, later, with an unlock${lendingProblems.length ? `: ${lendingProblems.slice(0, 5).join("; ")}${lendingProblems.length > 5 ? ` (+${lendingProblems.length - 5})` : ""}` : ""}`,
+);
+const steadyFull = lendingRuns.find((r) => r.name === "grid first_home/good/steady/12000");
+const homeMatch = steadyFull?.plan.matches.find((m) => isMortgage(m.productId));
+check(
+  homeMatch?.stage === "later" && homeMatch.unlockCondition === "When you're ready to buy (your safety cushion is already full)",
+  `Steady income + full safety cushion: homebuyer program stays later ("${homeMatch?.unlockCondition}")`,
 );
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
