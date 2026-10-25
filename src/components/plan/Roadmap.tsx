@@ -24,6 +24,7 @@ import { MatchRow, matchKey } from "./MatchRow";
 
 // Semantic stage colors: success = start here, brand = next, warning = later.
 // Growing icon sizes (seedling, shrub, tree) are a deliberate exception to "icon = line height".
+// Selected tints are mixed with the card color, not alpha, so the connector line can't show through a tile.
 const STAGES: {
   id: Stage;
   label: string;
@@ -46,7 +47,7 @@ const STAGES: {
     size: "size-5",
     dot: "bg-success-soft text-success",
     text: "text-success",
-    active: "ring-2 ring-success bg-success-soft/40",
+    active: "ring-2 ring-success bg-[color-mix(in_oklab,var(--color-success-soft)_40%,var(--color-card))]",
   },
   {
     id: "next",
@@ -70,7 +71,7 @@ const STAGES: {
     size: "size-7",
     dot: "bg-warning-soft text-warning",
     text: "text-warning",
-    active: "ring-2 ring-warning bg-warning-soft/40",
+    active: "ring-2 ring-warning bg-[color-mix(in_oklab,var(--color-warning-soft)_40%,var(--color-card))]",
   },
 ];
 
