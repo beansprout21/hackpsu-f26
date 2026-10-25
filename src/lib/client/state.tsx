@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { FinancialSnapshot, GoalProfile, IntakeAnswers, Plan } from "@/types";
+import type { ChatTurn, FinancialSnapshot, GoalProfile, IntakeAnswers, Plan } from "@/types";
 
 export interface AppState {
   intake?: IntakeAnswers;
   snapshot?: FinancialSnapshot;
   profile?: GoalProfile;
   plan?: Plan;
+  chat?: ChatTurn[]; // v2.3: Ask Sprout memory, last 6 turns (browser only)
 }
 
 // Key is part of the frozen contract (docs/CONTRACTS.md); the old product name is intentional.
