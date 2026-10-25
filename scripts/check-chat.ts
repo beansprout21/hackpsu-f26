@@ -180,6 +180,10 @@ async function gapClaims() {
   check(gapClaimsConsistent(`Japan is $${gap} a month away.`, mayaPlan), `real travel gap $${gap} accepted`);
   check(!gapClaimsConsistent(`Your home fund is $${home.monthlyAmount} a month away.`, mayaPlan), `home's monthly amount ($${home.monthlyAmount}) as a gap rejected`);
   check(gapClaimsConsistent("Your safety cushion fills in about 14 months.", mayaPlan), "text without a gap claim accepted");
+  // Cycle 8: "$N from on track" and "$N short of on track" are gap claims too.
+  check(gapClaimsConsistent(`Japan is $${gap} from on track.`, mayaPlan), `"$${gap} from on track" (real gap) accepted`);
+  check(!gapClaimsConsistent("Your home is $2 from on track.", mayaPlan), "\"$2 from on track\" (not a gap) rejected");
+  check(gapClaimsConsistent("You've saved $400, so you're $750 away from the SmartSecured card.", mayaPlan), "unlock dollars-to-go (\"$750 away\") is not a gap claim");
   // A plan whose AI sproutSays claims a wrong gap keeps the template.
   const ai = { headline: mayaPlan.headline, sproutSays: `Your home fund is $${home.monthlyAmount} a month away.`, explanations: [], steps: [], bankerSummary: mayaPlan.bankerSummary };
   const merged = mergeText(mayaPlan, ai, makeGuard(mayaPlan, mayaPlan));
