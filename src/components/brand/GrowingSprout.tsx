@@ -2,7 +2,12 @@
 
 // Money-tree loader (#96): a seed sprouts, grows a trunk and branches, then fills with coin leaves.
 // `growth` (0..1) comes from the real progress of the plan build, so the tree only grows as calls finish.
-// Pure SVG + CSS transitions. With reduced motion it shows the finished tree, still.
+// Pure SVG + CSS transitions on transform, opacity and stroke-dashoffset only. With reduced motion it shows the
+// finished tree, still.
+//
+// Smooth motion (#164): `growth` arrives in small steps (about every 250 ms). Each part eases in and out over its
+// own range (smoothstep), and a short linear transition a little longer than one step bridges consecutive updates,
+// so the browser animates one continuous motion at frame rate instead of restarting an ease-out every tick.
 import { useSyncExternalStore, type CSSProperties } from "react";
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -18,8 +23,14 @@ const useReducedMotion = () =>
     () => false,
   );
 
-// Local progress of one part that grows between `from` and `to` (fractions of overall growth).
-const phase = (g: number, from: number, to: number) => Math.min(1, Math.max(0, (g - from) / (to - from)));
+// Local progress of one part that grows between `from` and `to` (fractions of overall growth), eased in and out.
+const smoothstep = (p: number) => p * p * (3 - 2 * p);
+const phase = (g: number, from: number, to: number) => smoothstep(Math.min(1, Math.max(0, (g - from) / (to - from))));
+
+// Bridges the ~250 ms growth updates (slightly longer, linear, so motion never stalls between them);
+// the last step to the finished tree is bigger, so it gets a longer ease-in-out.
+const BRIDGE = "320ms linear";
+const FINISH = "900ms cubic-bezier(0.45, 0, 0.55, 1)";
 
 const TRUNK = "#8a6a4b";
 const LEAF = "#7ebc89";
@@ -41,15 +52,18 @@ const COINS = [
 export function GrowingSprout({ growth, className }: { growth: number; className?: string }) {
   const reduced = useReducedMotion();
   const g = reduced ? 1 : Math.min(1, Math.max(0, growth));
-  const ease = reduced ? undefined : "transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms ease-out, stroke-dashoffset 700ms ease-out";
+  const timing = g >= 1 ? FINISH : BRIDGE;
+  const ease = reduced ? "none" : `transform ${timing}, opacity ${timing}, stroke-dashoffset ${timing}`;
 
   // Scale a part in from a fixed point (SVG user units).
   const grow = (p: number, ox: number, oy: number): CSSProperties => ({
     transform: `scale(${p})`,
     transformOrigin: `${ox}px ${oy}px`,
     transformBox: "view-box",
-    opacity: p > 0 ? 1 : 0,
+    // Fade in with the first part of the growth instead of popping to full opacity.
+    opacity: Math.min(1, p * 4),
     transition: ease,
+    willChange: reduced ? undefined : "transform, opacity",
   });
   // Draw a stroke along its length (paths use pathLength=1).
   const draw = (p: number): CSSProperties => ({
