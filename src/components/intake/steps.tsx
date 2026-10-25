@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { PersonaArt } from "@/components/sprout/PersonaArt";
+import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
 import { personaFromValues } from "@/data/personaTaxonomy";
 import { cn } from "@/lib/utils";
 import type { GoalId, LifeStage, ValueTag } from "@/types";
@@ -48,10 +48,13 @@ const withArticle = (label: string) => `${article(label)} ${label}`;
 
 export function PersonaReveal({ values }: { values: ValueTag[] }) {
   const persona = personaFromValues(values);
+  const Icon = PERSONA_ICONS[persona.id];
   return (
     // Desktop: a tall, narrow "profile card" rather than a wide banner.
     <div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-2xl border border-border bg-secondary px-6 py-8 text-center duration-500 lg:w-full lg:max-w-md lg:gap-5 lg:py-12">
-      <PersonaArt id={persona.id} label={persona.label} className="size-24 lg:size-32" />
+      <span className="flex size-16 items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-sm ring-2 ring-white lg:size-20">
+        <Icon className="size-8 lg:size-10" aria-hidden />
+      </span>
       <p className="text-sm font-semibold tracking-wide text-highlight uppercase">You&apos;re {article(persona.label)}</p>
       <h2 className="-mt-3 text-3xl font-semibold tracking-tight">{persona.label}</h2>
       <p className="max-w-md text-muted-foreground">{persona.tagline}</p>
