@@ -16,6 +16,7 @@ import { LIFE_STAGE_OPTIONS, goalMeta } from "./copy";
 import { EMPTY_DRAFT, deriveValues, draftFromIntake, intakeFromDraft, moneyFirst, type IntakeDraft } from "./draft";
 import { GoalTimeline } from "./GoalTimeline";
 import { SwipeDeck } from "./SwipeDeck";
+import { TiltCard } from "./TiltCard";
 import { FinishSummary, GoalsStep, LifeStageStep, PersonaReveal, RichLifeStep, WhyStep } from "./steps";
 
 const STEPS = ["intro", "lifeStage", "swipes", "persona", "goals", "timeline", "why", "richLife", "finish"] as const;
@@ -32,15 +33,17 @@ function IntroStep() {
   return (
     <ol className="grid gap-4 sm:grid-cols-2" aria-label="What we'll cover">
       {INTRO_ITEMS.map(({ icon: Icon, label, detail }, i) => (
-        <li key={label} className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card lg:flex-col lg:items-start lg:gap-4 lg:p-6">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 lg:size-12">
-            <Icon className="size-5 lg:size-6" aria-hidden />
-          </span>
-          <span className="flex flex-col gap-1">
-            <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">Part {i + 1}</span>
-            <span className="text-body font-semibold lg:text-lead">{label}</span>
-            <span className="hidden text-small text-muted-foreground lg:block">{detail}</span>
-          </span>
+        <li key={label} className="flex">
+          <TiltCard className="flex flex-1 items-center gap-4 rounded-2xl bg-card p-4 shadow-card lg:flex-col lg:items-start lg:gap-4 lg:p-6">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 lg:size-12">
+              <Icon className="size-5 lg:size-6" aria-hidden />
+            </span>
+            <span className="flex flex-col gap-1">
+              <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">Part {i + 1}</span>
+              <span className="text-body font-semibold lg:text-lead">{label}</span>
+              <span className="hidden text-small text-muted-foreground lg:block">{detail}</span>
+            </span>
+          </TiltCard>
         </li>
       ))}
     </ol>

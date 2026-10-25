@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Sprout, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SwipeAnswer, SwipeCard } from "@/types";
+import { TiltCard } from "./TiltCard";
 
 type Side = SwipeAnswer["choice"];
 type Point = { x: number; y: number };
@@ -213,12 +214,21 @@ export function SwipeDeck({
                 transitionDuration: dragging ? "0ms" : `${DROP_MS}ms`,
               }}
               className={cn(
-                "animate-in fade-in zoom-in-90 relative z-20 flex h-40 w-32 cursor-grab touch-none flex-col items-center justify-center gap-2 rounded-2xl bg-primary text-primary-foreground outline-none select-none transition-[transform,opacity,box-shadow] ease-out focus-visible:ring-4 focus-visible:ring-ring/50 active:cursor-grabbing sm:w-36",
-                dragging ? "shadow-2xl" : "shadow-lg",
+                "animate-in fade-in zoom-in-90 relative z-20 flex h-40 w-32 cursor-grab touch-none rounded-2xl outline-none select-none transition-[transform,opacity] ease-out focus-visible:ring-4 focus-visible:ring-ring/50 active:cursor-grabbing sm:w-36",
               )}
             >
-              <Sprout className="size-10" aria-hidden />
-              <span className="text-xs font-semibold">Drag me</span>
+              {/* Pointer capture during a drag fires pointerleave here, so the hover tilt flattens while dragging. */}
+              <TiltCard
+                strength={0.85}
+                glare="none"
+                className={cn(
+                  "flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-primary text-primary-foreground transition-[transform,box-shadow]",
+                  dragging ? "shadow-2xl" : "shadow-lg",
+                )}
+              >
+                <Sprout className="size-10" aria-hidden />
+                <span className="text-xs font-semibold">Drag me</span>
+              </TiltCard>
             </div>
           </div>
 
