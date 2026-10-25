@@ -1,37 +1,53 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { CalendarCheck, CalendarClock, Check, Hourglass, Quote, Sprout } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { CalendarCheck, Check, Quote, Sprout } from "lucide-react";
 import { toast } from "sonner";
-import { SproutSays } from "@/components/sprout/SproutSays";
-import { goalMeta } from "@/components/intake/copy";
 import { cn } from "@/lib/utils";
-import type { GoalProfile, NotYet, Plan, PlanStep } from "@/types";
-import { productName } from "./format";
+import type { GoalProfile, Plan, PlanStep } from "@/types";
+import { formatMonths, productName, usd } from "./format";
 import { STEP_ICONS } from "./icons";
 
 const BANKER_URL = "https://www.fnb-online.com/schedule-an-appointment";
 
-export function PlanHero({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
+export function SummaryHeader({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
+  const onTrack = plan.allocation.filter((a) => a.onTrack).length;
+  const steps = plan.steps.some((s) => s.order === plan.stepOne.order && s.title === plan.stepOne.title)
+    ? plan.steps.length
+    : plan.steps.length + 1;
+  const stats = [
+    { label: "To work with", value: `${usd(Math.max(plan.monthlySurplus, 0))}/mo`, accent: true },
+    {
+      label: "Cushion full in",
+      value: plan.cushionFillsInMonths !== null ? formatMonths(plan.cushionFillsInMonths) : "Covered",
+    },
+    { label: "Goals on track", value: `${onTrack} of ${plan.allocation.length}` },
+    { label: "Roadmap", value: `${steps} steps` },
+  ];
+
   return (
     <section aria-labelledby="plan-headline" className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-100 px-3 py-1 text-small font-semibold text-brand-700">
-            <Sprout className="size-5" aria-hidden />
-            {profile.persona.label}
-          </span>
-          <p className="text-small text-muted-foreground">{profile.persona.description}</p>
-        </div>
-        <h1 id="plan-headline" className="text-title font-semibold text-balance">
+      <div className="flex flex-col gap-3">
+        <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-100 px-3 py-1 text-small font-semibold text-brand-700">
+          <Sprout className="size-5" aria-hidden />
+          {profile.persona.label}
+        </span>
+        <h1 id="plan-headline" className="text-lead font-semibold text-balance sm:text-title">
           {plan.headline}
         </h1>
-        <blockquote className="flex gap-3 text-lead text-brand-700 italic">
-          <Quote className="size-7 shrink-0 text-brand-400" aria-hidden />
-          {profile.richLifeStatement}
+        <blockquote className="flex gap-2 text-body text-brand-700 italic">
+          <Quote className="size-6 shrink-0 text-brand-400" aria-hidden />
+          <span className="line-clamp-2 sm:line-clamp-none">{profile.richLifeStatement}</span>
         </blockquote>
       </div>
-      <SproutSays>{plan.sproutSays}</SproutSays>
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="flex flex-col gap-1 rounded-2xl bg-card p-4 shadow-card">
+            <dt className="text-caption text-muted-foreground">{s.label}</dt>
+            <dd className={cn("text-lead font-semibold tabular-nums", s.accent && "text-brand-700")}>{s.value}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
@@ -39,22 +55,17 @@ export function PlanHero({ plan, profile }: { plan: Plan; profile: GoalProfile }
 export function StepOneCard({ step }: { step: PlanStep }) {
   const Icon = STEP_ICONS[step.kind];
   return (
-    <article
-      aria-labelledby="step-one"
-      className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card ring-2 ring-success/30"
-    >
-      <span className="flex items-center gap-2 text-small font-semibold tracking-wide text-success uppercase">
+    <article aria-labelledby="step-one" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-card ring-2 ring-success/30">
+      <span className="flex items-center gap-2 text-caption font-semibold tracking-wide text-success uppercase">
         <Icon className="size-5" aria-hidden />
         Start here this week
       </span>
-      <div className="flex flex-col gap-2">
-        <h3 id="step-one" className="text-lead font-semibold">
-          {step.title}
-        </h3>
-        <p className="text-body text-muted-foreground">{step.detail}</p>
-      </div>
+      <h3 id="step-one" className="text-lead font-semibold">
+        {step.title}
+      </h3>
+      <p className="text-small text-muted-foreground">{step.detail}</p>
       {step.productId && (
-        <span className="self-start rounded-full bg-brand-100 px-3 py-1 text-small font-medium text-brand-700">
+        <span className="self-start rounded-full bg-brand-100 px-3 py-1 text-caption font-semibold text-brand-700">
           {productName(step.productId)}
         </span>
       )}
@@ -62,33 +73,7 @@ export function StepOneCard({ step }: { step: PlanStep }) {
   );
 }
 
-export function NotYetCard({ items }: { items: NotYet[] }) {
-  if (items.length === 0) return null;
-  return (
-    <section aria-labelledby="not-yet" className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card">
-      <h2 id="not-yet" className="flex items-center gap-2 text-lead font-semibold">
-        <Hourglass className="size-7 text-warning" aria-hidden />
-        Not yet, on purpose
-      </h2>
-      <ul className="flex flex-col gap-6">
-        {items.map((n, i) => (
-          <li key={i} className="flex flex-col gap-1">
-            <span className="text-body font-semibold">
-              {n.productId ? productName(n.productId) : n.goalId ? goalMeta(n.goalId).label : "Holding off"}
-            </span>
-            <span className="text-small">{n.reason}</span>
-            <span className="flex items-center gap-1 text-caption text-muted-foreground">
-              <CalendarClock className="size-4" aria-hidden />
-              Revisit {n.revisitWhen}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-export function BankerCta({ summary }: { summary: string }) {
+export function BankerCta({ summary, children }: { summary: string; children?: ReactNode }) {
   const [chip, setChip] = useState<"hidden" | "in" | "out">("hidden");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -112,17 +97,17 @@ export function BankerCta({ summary }: { summary: string }) {
   return (
     <section
       aria-labelledby="banker"
-      className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-card sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card"
     >
       <div className="flex flex-col gap-1">
         <h2 id="banker" className="text-lead font-semibold">
-          Want a second set of eyes?
+          Talk it through with a person
         </h2>
         <p className="text-small text-muted-foreground">
           We&apos;ll copy a summary of this plan so an FNB banker knows your goals before you meet.
         </p>
       </div>
-      <div className="relative shrink-0">
+      <div className="relative">
         {chip !== "hidden" && (
           <span
             role="status"
@@ -139,12 +124,13 @@ export function BankerCta({ summary }: { summary: string }) {
         <button
           type="button"
           onClick={book}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-body font-semibold text-primary-foreground shadow-card transition-[background-color,box-shadow,transform] duration-200 outline-none select-none hover:bg-primary-hover hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-px active:bg-primary-active disabled:pointer-events-none disabled:opacity-50 sm:w-auto motion-reduce:transition-none"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-body font-semibold text-primary-foreground shadow-card transition-[background-color,box-shadow,transform] duration-200 outline-none select-none hover:bg-primary-hover hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-px active:bg-primary-active disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
         >
           <CalendarCheck className="size-6" aria-hidden />
           Book with an FNB banker
         </button>
       </div>
+      {children}
     </section>
   );
 }
