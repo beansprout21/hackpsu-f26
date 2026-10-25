@@ -338,7 +338,7 @@ export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string 
 ### POST /api/extract (v2.3, P1): document upload
 - Request: `multipart/form-data`, one field `file`: `application/pdf`, `image/png`, `image/jpeg`, or `image/webp`, <= 4 MB. One file per request (UI may send up to 3 in sequence).
 - Response data: `ExtractedSnapshot`.
-- Auth0 session required (same as other APIs). The file is read in memory, sent to the Anthropic API for this request only, and **never stored or logged** (log route, ok/error, ms, size bucket only). `notes` must never contain account numbers or full names.
+- No session required (v2.5). The file is read in memory, sent to the Anthropic API for this request only, and **never stored or logged** (log route, ok/error, ms, size bucket only). `notes` must never contain account numbers or full names.
 - AI: `ANTHROPIC_MODEL` with the file as a document/image block, 25 s timeout. Only values visible in the document; anything not shown is `null`, never estimated. Fallback: `{ ok: false, error: "Couldn't read that file. You can type your numbers instead." }`.
 - The UI pre-fills the snapshot form from it with a "From your document" marker on each filled field; the user reviews and edits before building. A later file fills only fields still empty; `incomeSources` merge without duplicates.
 
@@ -357,7 +357,7 @@ All require an Auth0 session. Storage: Upstash Redis (`@upstash/redis`, approved
 - `GET /api/banker/plans` -> `SharedPlanSummary[]`, newest first, max 50; skips ids whose plan has expired.
 - `GET /api/banker/plans/[id]` -> `SharedPlan`, or `{ ok: false, error: "Not found" }` (404).
 - Both require the **banker role** (below): signed out -> 401 "Sign in required"; signed in without the role -> 403 "Banker access only".
-- Pages: `/banker` (list) and `/banker/[id]` (detail). Login-gated by `src/proxy.ts` like `/plan`; server-side role check before rendering any data.
+- Pages: `/banker` (list) and `/banker/[id]` (detail). Login-gated by `src/proxy.ts` (v2.5: `/plan` is public); server-side role check before rendering any data.
 
 ### Consent text v1 (shown verbatim before sharing)
 > **Share my plan with FNB.** An FNB banker will see your name, email, goals, money snapshot, and Sprout plan so they can prepare for a conversation with you. Sprout keeps it for 30 days. You can stop sharing anytime, which deletes it.
@@ -367,10 +367,10 @@ All require an Auth0 session. Storage: Upstash Redis (`@upstash/redis`, approved
 Changing this text means bumping `consentVersion`.
 
 ## Auth
-- Auth0 session required for `/snapshot`, `/plan`, and all `/api/*` except none (all API routes require session).
+- **v2.5 (Sun 8:40 AM, Ben): sign-in at the end.** `/snapshot`, `/plan`, `/api/profile`, `/api/plan`, `/api/chat` and `/api/extract` are public. An Auth0 session is required only for Save for my banker (PDF), `/api/share` (all methods) and `/banker/**` + `/api/banker/**` (plus the banker role). Signed-out PDF or Share sends the user to `/auth/login?returnTo=/plan?export=1` (or `share=1`).
 - **Banker role (v2.2):** Auth0 RBAC role `banker`, added to the ID token by a post-login Action as the custom claim `https://sprout-demo/roles` (string array). Server helper `requireBanker()` in `src/lib/server/auth.ts` checks that claim. Fallback for demo reliability: env `BANKER_EMAILS` (comma-separated, server-only) also grants the role. Verify in the `@auth0/nextjs-auth0` v4 README whether custom ID token claims reach `session.user` (v4 may filter claims; if so, keep the claim via `beforeSessionSaved`).
 - With `DEMO_AUTH_BYPASS=1` the demo session is treated as a banker (emergency demo switch only; shared data in the demo is persona data).
-- `/banker` and `/banker/[id]` are login-gated like `/snapshot` and `/plan`.
+- `/banker` and `/banker/[id]` are login-gated (v2.5: the only gated pages).
 - Env: see `.env.example`.
 
 ## Client state (sessionStorage key `waypoint:v1`)
