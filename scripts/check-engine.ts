@@ -7,6 +7,7 @@ import { deriveValues } from "../src/components/intake/draft";
 import { personaFromValues } from "../src/data/personaTaxonomy";
 import { scenarios } from "../src/data/scenarios";
 import { buildOverview } from "../src/lib/client/overview";
+import { explain } from "../src/lib/ai/chat";
 import { fallbackProfile } from "../src/lib/ai/profile";
 import { wordCount, sentencesOf, TEXT_BUDGET } from "../src/lib/ai/plan";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
@@ -478,6 +479,28 @@ for (let i = 0; i < 2000; i++) {
   }
 }
 check(fitProblems.length === 0, "2,000 users: no retirement account, no credit card or CardGuard for the safety cushion" + (fitProblems.length ? " (" + fitProblems.length + ", e.g. " + fitProblems.slice(0, 2).join("; ") + ")" : ""));
+
+// #139: the Ask Sprout when-unlock "Meanwhile" line reads right with plural product names ("Mortgage calculators").
+console.log("\n=== Ask Sprout when-unlock wording (#139): every later match in scenarios + the #118 grid");
+const meanwhileProblems: string[] = [];
+let meanwhileLines = 0;
+for (const r of lendingRuns) {
+  for (const x of r.plan.matches.filter((y) => y.stage === "later")) {
+    const t = explain({ kind: "when_unlock", productId: x.productId }, "When can I get it?", r.profile, r.plan, r.snapshot)?.template ?? "";
+    const line = t.match(/Meanwhile, [^.]*\./)?.[0];
+    if (!line) continue;
+    meanwhileLines++;
+    if (/\bgets you ready\b/.test(line)) meanwhileProblems.push(r.name + ": " + line);
+  }
+}
+check(
+  meanwhileLines > 0 && meanwhileProblems.length === 0,
+  meanwhileLines + ' when-unlock answers: no singular "gets you ready" after a product name' +
+    (meanwhileProblems.length ? " (" + meanwhileProblems.length + ", e.g. " + meanwhileProblems.slice(0, 2).join("; ") + ")" : ""),
+);
+const jordanHome =
+  explain({ kind: "when_unlock", productId: "fnb-home-ownership-program" }, "When can I get the Home Ownership Program?", jordanProfile, j, jordan.snapshot)?.template ?? "";
+check(/Meanwhile, Mortgage calculators can get you ready\./.test(jordanHome), 'Jordan when-unlock: "Meanwhile, Mortgage calculators can get you ready." (got: ' + jordanHome.slice(-60) + ")");
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
