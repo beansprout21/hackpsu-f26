@@ -40,6 +40,9 @@ Amounts are floored to whole dollars; leftover dollars go to `guilt_free`.
 **High fixed costs (fixedShare > 60%) and surplus > 0:** savings = 50% of surplus, guilt-free = 50% of surplus, each at least 5% of income when the surplus allows. Future You shows handoff only ("unlocks when fixed costs drop below 60% of income"). Add a **Big Win** step: "Review your biggest fixed cost" (housing, car, phone).
 
 **Surplus ≤ 0:** savings and guilt-free are 0; plan is `budget` and `habit` steps plus $0 products. Sprout: "First we find your breathing room."
+- **v3.3 (#109, lead 3:20 AM Sun) what "$0 products" means:** with surplus ≤ 0, a match may be `now` or `next` only if (a) it is an `education_tool`, or (b) its `minOpeningDeposit` is exactly 0, or (c) it is an everyday checking or savings account (the habit or Step-2 FNB fit) whose `minOpeningDeposit` ≤ the user's `savingsBalance` (opening it moves money they already have; it costs nothing new). Everything else (CDs, any card including SmartSecured, business products, a deposit account they can't fund from savings) is `later` with the unlock "when money is coming in each month" (surplus > 0). `null` deposit counts as not $0. The stress invariant is updated to this exact rule.
+- **v3.3 (#107) no money goals:** if the user chose only habits, the whole savings share goes to the safety cushion (no 50/50 or 60/40 split). If the cushion is already met, the savings share stays in the bar labeled "Savings" and the headline reads "$X a month in savings, ready for your next goal". Never write "your savings goal" or put money in a "Goals" segment when no money goal exists.
+- **v3.3 (#130) products never matched:** retirement accounts (IRA Savings, IRA CD) for any goal (investing and taxes are an FNB advisor's job); any credit card or loan for the safety cushion (the cushion is savings, never borrowing); CardGuard is a habit tool, not a cushion product (drop its `emergency_fund` tag).
 
 **Inside savings:**
 - **Habits cost time, not money (v3.2):** `everyday_banking` and `credit_building` are habits. They get **no** savings allocation and no `Allocation` row; `goal_savings` is split only among money goals (P1/P2/P3 weights 60/25/15 by their priority order, renormalized). Habits become steps: credit building → "Check your free credit report" (learn) now, the secured card as its `later` match (unlock unchanged: 1 month of costs + deposit, or first paycheck); everyday banking → "Turn on low-balance alerts" (habit) plus the best-fit checking `now` match.
@@ -49,6 +52,8 @@ Amounts are floored to whole dollars; leftover dollars go to `guilt_free`.
 - Until the cushion is met: 50% `emergency_fund`, 50% `goal_savings`. **v3.1 values tilt:** if the user's top value (`profile.topValues[0]`) is `security` or `family`, the split is **60% cushion / 40% goals**. After the cushion is met: 100% `goal_savings`. (Maya's top value is experiences, so her numbers are unchanged; her opposite-swipes version gets a visibly different plan.)
 - User-facing name is always **"safety cushion"** (never "starter cushion" or "full cushion"); an `emergency_fund` goal *is* the safety cushion and is labeled that way.
 - `goal_savings` split by priority: **P1 60%, P2 25%, P3 15%**, renormalized to the goals present; leftover dollars to P1.
+
+**v3.3 (#105) duplicate goal ids:** the engine keeps the first occurrence (highest priority) of each goal id, drops the rest, and renumbers priorities 1..n before any rule runs. No contract change; `/api/profile` and `/api/plan` accept the input and return a valid plan.
 
 ## Rule set C: goal feasibility and gap levers
 
