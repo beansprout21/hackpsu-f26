@@ -6,6 +6,7 @@ import { jordan, maya } from "../src/data/personas";
 import { buildOverview, overviewSteps, type OverviewModel } from "../src/lib/client/overview";
 import { ASK_SPROUT_STARTERS } from "../src/lib/client/planCopy";
 import { aboutTime, timeSpan } from "../src/lib/client/time";
+import { fallbackProfile } from "../src/lib/ai/profile";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { GoalProfileSchema } from "../src/types/schemas";
 import type { FinancialSnapshot, GoalProfile, IntakeAnswers } from "../src/types";
@@ -126,6 +127,50 @@ for (const [name, o] of [["Maya", m], ["Surplus <= 0", broke], ["Cushion met", f
   check(!all.some((t) => /(?<!safety )\bcushion\b/i.test(t)), `${name}: always "safety cushion"`);
   check(!all.some((t) => /10\+/.test(t)), `${name}: no "10+ years"`);
   check(!o.goals.some((g) => /(credit building|everyday banking):.*\$/i.test(g.line)), `${name}: no dollars on habit lines`);
+}
+
+// #107 (SPROUT.md v3.3): habits only -> the whole savings share goes to the safety cushion; once the cushion is met the
+// share stays as "Savings". Never "your savings goal", never a "Goals" segment with no money goal.
+console.log("\n=== Habits only (#107)");
+{
+  const habitsOnly = (lifeStage: IntakeAnswers["lifeStage"], goals: IntakeAnswers["goals"], snapshot: FinancialSnapshot) => {
+    const intake: IntakeAnswers = { ...maya.intake, lifeStage, values: ["simplicity"], goals };
+    const profile = fallbackProfile(intake);
+    const plan = buildPlanSkeleton(profile, snapshot, intake);
+    return { plan, o: buildOverview(plan, profile, snapshot) };
+  };
+  const savingsGoalText = (plan: ReturnType<typeof buildPlanSkeleton>, o: OverviewModel) =>
+    [plan.headline, plan.sproutSays, ...plan.spendingPlan.map((b) => b.note), o.month.sentence, ...o.goals.map((g) => g.line)].some((t) =>
+      /your savings goal/i.test(t),
+    );
+
+  // Browser reproduction: credit building + everyday banking, $900/mo work-study, $500 fixed, $300 saved (cushion $1,500 not met).
+  const notMet = habitsOnly(
+    "student",
+    [
+      { id: "credit_building", priority: 1, horizonMonths: 12, why: "" },
+      { id: "everyday_banking", priority: 2, horizonMonths: 12, why: "" },
+    ],
+    { hasSteadyIncome: false, incomeSources: [{ kind: "work_study", amount: 900, frequency: "monthly" }], monthlyFixedCosts: 500, monthlyDebtPayments: 0, savingsBalance: 300, creditBand: "building", isFnbCustomer: false },
+  );
+  check(
+    notMet.o.month.bar.cushion === 180 && notMet.o.month.bar.goals === 0 && notMet.plan.allocation.length === 0,
+    "habits only, cushion not met: all $180 of savings to the safety cushion, $0 goals (got cushion $" + notMet.o.month.bar.cushion + ", goals $" + notMet.o.month.bar.goals + ")",
+  );
+  check(notMet.plan.headline === "$180 a month toward your safety cushion" && !savingsGoalText(notMet.plan, notMet.o), 'habits only, cushion not met: headline "' + notMet.plan.headline + '", no "your savings goal"');
+  check(notMet.o.month.goalsLabel === "Savings", 'habits only: the goals segment is labeled "Savings" (got "' + notMet.o.month.goalsLabel + '")');
+
+  // Cushion-met reproduction (gen-253): young family, credit building only, $5,885/mo, $1,211 fixed, $20,529 saved.
+  const met = habitsOnly(
+    "young_family",
+    [{ id: "credit_building", priority: 1, horizonMonths: 15, why: "" }],
+    { hasSteadyIncome: true, incomeSources: [{ kind: "family", amount: 5885, frequency: "monthly" }], monthlyFixedCosts: 1211, monthlyDebtPayments: 0, savingsBalance: 20529, creditBand: "excellent", isFnbCustomer: true },
+  );
+  check(
+    met.plan.headline === "$" + met.o.month.bar.goals + " a month in savings, ready for your next goal" && met.o.month.bar.cushion === 0 && !savingsGoalText(met.plan, met.o),
+    'habits only, cushion met: headline "' + met.plan.headline + '", no "your savings goal"',
+  );
+  check(run(maya.snapshot).month.goalsLabel === "Goals", 'Maya (money goals): the goals segment stays "Goals"');
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
