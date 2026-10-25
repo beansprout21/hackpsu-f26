@@ -1,5 +1,4 @@
-// /banker list (#54): one card per shared plan, newest first. Server component; read-only.
-import type { ReactNode } from "react";
+// /banker list (#54, layout #181): one card per shared plan, newest first. Server component; read-only.
 import Link from "next/link";
 import { ChevronRight, Inbox } from "lucide-react";
 import { LIFE_STAGES } from "@/components/intake/copy";
@@ -8,18 +7,9 @@ import { listSummaries } from "@/lib/server/share";
 import type { SharedPlanSummary } from "@/types";
 import { bankerAccess } from "./access";
 import { BankerNotice } from "./Notice";
-import { shortDate } from "./format";
+import { BADGE, shortDate } from "./format";
 
 const lifeStageLabel = (id: SharedPlanSummary["lifeStage"]) => LIFE_STAGES.find((s) => s.id === id)?.label ?? id;
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col">
-      <dt className="text-caption text-muted-foreground">{label}</dt>
-      <dd className="text-small font-medium break-words">{children}</dd>
-    </div>
-  );
-}
 
 export async function BankerList() {
   const access = await bankerAccess();
@@ -42,31 +32,44 @@ export async function BankerList() {
   }
 
   return (
-    <ul className="flex flex-col gap-4" aria-label="Shared plans">
-      {plans.map((p) => (
-        <li key={p.id}>
-          <Link
-            href={`/banker/${p.id}`}
-            className="group flex flex-col gap-4 rounded-2xl bg-card p-5 shadow-card outline-none transition-shadow hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/40 motion-reduce:transition-none"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-lead font-semibold">{p.contactName || "Unnamed customer"}</span>
-              <span className="flex items-center gap-1 text-caption text-muted-foreground">
+    <div className="flex flex-col gap-3">
+      <p className="text-small font-semibold">
+        {plans.length} shared {plans.length === 1 ? "plan" : "plans"}
+      </p>
+      <ul className="flex flex-col gap-4" aria-label="Shared plans">
+        {plans.map((p) => (
+          <li key={p.id}>
+            <Link
+              href={`/banker/${p.id}`}
+              className="group flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-card outline-none transition-shadow hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/40 motion-reduce:transition-none"
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <span className="min-w-0 text-lead font-semibold break-words">{p.contactName || "Unnamed customer"}</span>
+                <span className="text-lead font-semibold tabular-nums">
+                  {usd(p.monthlySurplus)}/mo <span className="text-small font-normal text-muted-foreground">to work with</span>
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <span className={BADGE}>{p.persona.label}</span>
+                <span className={BADGE}>{lifeStageLabel(p.lifeStage)}</span>
+                <span className={BADGE}>{p.isFnbCustomer ? "FNB customer" : "New to FNB"}</span>
+              </div>
+              <div className="flex min-w-0 flex-col gap-0.5 text-small">
+                <p className="truncate">
+                  <span className="text-muted-foreground">Top goal:</span> {p.topGoalLabel || "Not set"}
+                </p>
+                <p className="truncate">
+                  <span className="text-muted-foreground">Step one:</span> {p.stepOneTitle}
+                </p>
+              </div>
+              <span className="flex items-center gap-1 self-end text-caption text-muted-foreground">
                 Shared {shortDate(p.sharedAt)}
-                <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
               </span>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-              <Field label="Life stage">{lifeStageLabel(p.lifeStage)}</Field>
-              <Field label="Persona">{p.persona.label}</Field>
-              <Field label="Top goal">{p.topGoalLabel || "Not set"}</Field>
-              <Field label="Monthly surplus">{usd(p.monthlySurplus)}</Field>
-              <Field label="Step one">{p.stepOneTitle}</Field>
-              <Field label="FNB customer">{p.isFnbCustomer ? "Yes" : "No"}</Field>
-            </dl>
-          </Link>
-        </li>
-      ))}
-    </ul>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
