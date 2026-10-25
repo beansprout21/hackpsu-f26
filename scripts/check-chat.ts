@@ -48,13 +48,13 @@ async function mayaDemo() {
   const starters = starterChips(mayaPlan, mayaProfile, maya.snapshot);
   check(
     JSON.stringify(starters.map((c) => c.label)) ===
-      JSON.stringify(["Why is this my first move?", "How do I close the $118 gap for my travel fund?", "When can I get the SmartSecured card?"]),
+      JSON.stringify(["Why is this my first move?", "How do I close the $129 gap for my travel fund?", "When can I get the SmartSecured card?"]),
     `Starters: ${labels(starters)}`,
   );
 
   check(mayaPlan.stepOne.title === "Move $20 into your travel fund right now.", `Engine Step one is rule D5: ${mayaPlan.stepOne.title}`);
   const first = await askChip(starters[0], mayaPlan, mayaProfile, maya.snapshot);
-  check(first.route === "explain" && first.answer.includes("$91") && /top goal/.test(first.answer), `Tap 1 (D5): ${first.answer}`);
+  check(first.route === "explain" && first.answer.includes("$80") && /top goal/.test(first.answer), `Tap 1 (D5): ${first.answer}`);
   let history: ChatTurn[] = [
     { role: "user", text: starters[0].question },
     { role: "sprout", text: first.answer },
@@ -63,13 +63,13 @@ async function mayaDemo() {
   check(afterFirst.length > 0 && afterFirst.length <= 2, `Follow-ups after tap 1: ${labels(afterFirst)}`);
 
   const gap = await askChip(starters[1], mayaPlan, mayaProfile, maya.snapshot, history);
-  check(gap.answer.includes("$118") && gap.answer.includes("$139"), `Gap answer: ${gap.answer}`);
+  check(gap.answer.includes("$129") && gap.answer.includes("$128"), `Gap answer: ${gap.answer}`);
   history = [...history, { role: "user", text: starters[1].question }, { role: "sprout", text: gap.answer }];
   const afterGap = followUpChips(starters[1].intent, mayaPlan, mayaProfile, maya.snapshot, history);
-  const lever = afterGap.find((c) => c.label === "What if I move $118 from guilt-free?");
+  const lever = afterGap.find((c) => c.label === "What if I move $129 from guilt-free?");
   check(!!lever, `Gap follow-ups: ${labels(afterGap)}`);
   const moved = lever ? await askChip(lever, mayaPlan, mayaProfile, maya.snapshot, history) : null;
-  check(!!moved && moved.route === "what_if" && moved.answer.includes("on track") && moved.answer.includes("$139"), `Lever what-if: ${moved?.answer}`);
+  check(!!moved && moved.route === "what_if" && moved.answer.includes("on track") && moved.answer.includes("$128"), `Lever what-if: ${moved?.answer}`);
 }
 
 async function memory() {
@@ -105,8 +105,8 @@ function blocks() {
   check(b.path.now?.[0]?.label === "Why Student Checking?", `Path now: ${b.path.now?.[0]?.label}`);
   check(b.month[0]?.label === "How did you split my money?", "Your month: How did you split my money?");
   check(b.cushion.map((c) => c.label).join("|") === "Why 3 months?|How can I fill it faster?", `Cushion: ${labels(b.cushion)}`);
-  check(b.goals.travel?.[0]?.label === "What if I move $118 a month from guilt-free to my travel fund?", `P1 lever: ${b.goals.travel?.[0]?.label}`);
-  check(b.goals.travel?.[0]?.intent.kind === "what_if" && b.goals.travel?.[0]?.intent.amount === 118, "P1 lever intent: what_if, amount 118");
+  check(b.goals.travel?.[0]?.label === "What if I move $129 a month from guilt-free to my travel fund?", `P1 lever: ${b.goals.travel?.[0]?.label}`);
+  check(b.goals.travel?.[0]?.intent.kind === "what_if" && b.goals.travel?.[0]?.intent.amount === 129, "P1 lever intent: what_if, amount 129");
   check(b.goals.first_home?.[0]?.label === "When does my home fund start growing?", `Other goal: ${b.goals.first_home?.[0]?.label}`);
   check(b.path.later?.[0]?.label === "What unlocks the SmartSecured card?", `Path later: ${b.path.later?.[0]?.label}`);
   check(!!b.path.now?.[0] && !!b.path.next?.[0], `Path now/next: ${b.path.now?.[0]?.label} · ${b.path.next?.[0]?.label}`);
