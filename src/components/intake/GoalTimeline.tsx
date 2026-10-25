@@ -34,7 +34,7 @@ export function GoalTimeline({
         onMove={(id, horizonMonths) => patch(goals.findIndex((g) => g.id === id), { horizonMonths })}
       />
 
-      <ol className="flex flex-col gap-3">
+      <ol className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {goals.map((g, i) => {
           const meta = goalMeta(g.id);
           const estimate = estimateTarget(g.id);

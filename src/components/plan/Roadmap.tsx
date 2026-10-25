@@ -106,20 +106,29 @@ export function stagesFor(plan: Plan): StageInfo[] {
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 // Three connected tiles. Used as the Roadmap tab's stage picker and as the Overview's mini roadmap.
+// rail: on xl screens the tiles stack into a vertical rail beside the stage panel.
 export function StageTiles({
   stages,
   selected,
   done,
+  rail = false,
   onSelect,
 }: {
   stages: StageInfo[];
   selected?: Stage;
   done?: Set<string>;
+  rail?: boolean;
   onSelect: (stage: Stage) => void;
 }) {
   return (
-    <ol className="relative grid grid-cols-3 gap-2 sm:gap-4">
-      <span className="absolute inset-x-[16%] top-10 h-0.5 rounded-full bg-border" aria-hidden />
+    <ol className={cn("relative grid grid-cols-3 gap-2 sm:gap-4", rail && "xl:grid-cols-1 xl:gap-3")}>
+      <span
+        className={cn(
+          "absolute inset-x-[16%] top-10 h-0.5 rounded-full bg-border",
+          rail && "xl:top-[15%] xl:right-auto xl:bottom-[15%] xl:left-10 xl:h-auto xl:w-0.5",
+        )}
+        aria-hidden
+      />
       {stages.map((s) => {
         const finished = done ? s.steps.filter((x) => done.has(stepKey(x))).length : 0;
         return (
@@ -130,15 +139,18 @@ export function StageTiles({
               onClick={() => onSelect(s.id)}
               className={cn(
                 "flex w-full flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-card outline-none transition-[box-shadow,background-color] duration-200 hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/30",
+                rail && "xl:flex-row xl:gap-3 xl:text-left",
                 selected === s.id && s.active,
               )}
             >
-              <span className={cn("flex size-12 items-center justify-center rounded-full", s.dot)} aria-hidden>
+              <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-full", s.dot)} aria-hidden>
                 {s.steps.length > 0 && finished === s.steps.length ? <Check className="size-6" /> : <s.icon className={s.size} />}
               </span>
-              <span className={cn("text-small font-semibold", s.text)}>{s.label}</span>
-              <span className="text-caption text-muted-foreground">
-                {finished > 0 ? `${finished} of ${s.steps.length} done` : s.when ?? count(s.steps.length, "task")}
+              <span className="flex flex-col gap-1">
+                <span className={cn("text-small font-semibold", s.text)}>{s.label}</span>
+                <span className="text-caption text-muted-foreground">
+                  {finished > 0 ? `${finished} of ${s.steps.length} done` : s.when ?? count(s.steps.length, "task")}
+                </span>
               </span>
             </button>
           </li>
@@ -328,8 +340,10 @@ export function Roadmap({
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <StageTiles stages={stages} selected={stage} done={done} onSelect={go} />
+    <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[13rem_minmax(0,1fr)] xl:items-start">
+      <div className="xl:sticky xl:top-36">
+        <StageTiles stages={stages} selected={stage} done={done} rail onSelect={go} />
+      </div>
 
       <section
         key={s.id}

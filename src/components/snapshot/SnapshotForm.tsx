@@ -83,18 +83,20 @@ export function SnapshotForm({
   const missing = missingAnswers(draft);
 
   return (
+    // Desktop (lg+): inputs on the left, the live readout pinned on the right. Grid placement keeps
+    // the phone order (readout right after the costs) unchanged.
     <form
-      className="flex flex-col gap-8"
+      className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-x-12"
       onSubmit={(e) => {
         e.preventDefault();
         if (missing.length === 0) onSubmit();
       }}
     >
-      <Button type="button" variant="outline" disabled className="h-11 justify-center gap-2">
+      <Button type="button" variant="outline" disabled className="h-11 justify-center gap-2 lg:col-start-1 lg:row-start-1">
         <Link2 aria-hidden /> Connect your bank (coming soon, via Plaid)
       </Button>
 
-      <fieldset className="flex flex-col gap-3">
+      <fieldset className="flex flex-col gap-3 lg:col-start-1 lg:row-start-2">
         <legend className="mb-3 text-lg font-semibold">Is your income steady each month?</legend>
         <div className="flex flex-wrap gap-2">
           <Choice on={draft.steady === true} onClick={() => set({ steady: true })}>
@@ -177,7 +179,7 @@ export function SnapshotForm({
         )}
       </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-3">
+      <fieldset className="grid gap-4 sm:grid-cols-3 lg:col-start-1 lg:row-start-3">
         <legend className="mb-3 text-lg font-semibold">What goes out, and what you have</legend>
         <MoneyField
           label="Fixed costs a month"
@@ -194,9 +196,11 @@ export function SnapshotForm({
         <MoneyField label="Savings today" hint="Money you can reach easily." value={draft.savings} onChange={(v) => set({ savings: v })} />
       </fieldset>
 
-      <SurplusReadout snapshot={snapshotFromDraft(draft)} />
+      <div className="lg:sticky lg:top-24 lg:col-start-2 lg:row-span-6 lg:row-start-1 lg:self-start">
+        <SurplusReadout snapshot={snapshotFromDraft(draft)} />
+      </div>
 
-      <fieldset className="flex flex-col gap-3">
+      <fieldset className="flex flex-col gap-3 lg:col-start-1 lg:row-start-4">
         <legend className="mb-3 text-lg font-semibold">Your credit range, as far as you know</legend>
         <div className="flex flex-wrap gap-2">
           {CREDIT_BANDS.map((b) => (
@@ -207,7 +211,7 @@ export function SnapshotForm({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-3">
+      <fieldset className="flex flex-col gap-3 lg:col-start-1 lg:row-start-5">
         <legend className="mb-3 text-lg font-semibold">Already bank with FNB?</legend>
         <div className="flex flex-wrap gap-2">
           <Choice on={draft.isFnbCustomer} onClick={() => set({ isFnbCustomer: true })}>
@@ -219,7 +223,7 @@ export function SnapshotForm({
         </div>
       </fieldset>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-6">
         {missing.length > 0 && (
           <p className="text-sm text-muted-foreground" aria-live="polite">
             Almost there: tell Sprout {missing.join(", ")}.

@@ -90,7 +90,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
 
   return (
     <AskSproutProvider plan={plan} profile={profile} onCite={cite}>
-      <div className="grid items-start gap-8 pb-24 lg:grid-cols-[minmax(0,1fr)_24rem] lg:pb-0 print:hidden">
+      <div className="grid items-start gap-8 pb-24 lg:grid-cols-[minmax(0,1fr)_24rem] lg:pb-0 xl:grid-cols-[minmax(0,1fr)_28rem] print:hidden">
         <div className="flex min-w-0 flex-col gap-8">
           <SummaryHeader plan={plan} profile={profile} />
           <AskSproutMobile />

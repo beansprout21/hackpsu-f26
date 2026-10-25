@@ -20,7 +20,7 @@ export function LifeStageStep({
   onPick: (stage: LifeStage) => void;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 lg:grid-cols-3">
       {LIFE_STAGES.map((s) => (
         <button
           key={s.id}
@@ -75,7 +75,7 @@ export function GoalsStep({
   const full = selected.length >= 3;
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
         {GOALS.map(({ id, label, icon: Icon }) => {
           const on = selected.includes(id);
           return (
@@ -116,7 +116,7 @@ export function WhyStep({
   const patch = (i: number, p: Partial<GoalDraft>) =>
     onChange(goals.map((g, j) => (j === i ? { ...g, ...p } : g)));
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid gap-4 lg:grid-cols-2">
       {goals.map((g, i) => {
         const meta = goalMeta(g.id);
         return (

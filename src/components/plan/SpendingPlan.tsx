@@ -10,8 +10,11 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
   const { futureYou } = plan;
 
   return (
-    <section aria-labelledby="spending" className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-card">
-      <div className="flex flex-col gap-1">
+    <section
+      aria-labelledby="spending"
+      className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-card xl:grid xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:gap-x-10"
+    >
+      <div className="flex flex-col gap-1 xl:col-start-1">
         <h2 id="spending" className="text-small font-semibold tracking-wide text-muted-foreground uppercase">
           Your spending plan
         </h2>
@@ -26,9 +29,11 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         </p>
       </div>
 
-      <SpendingBar buckets={plan.spendingPlan} />
+      <div className="xl:col-start-1">
+        <SpendingBar buckets={plan.spendingPlan} />
+      </div>
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid gap-4 sm:grid-cols-2 xl:col-start-1">
         {plan.spendingPlan.map((b) => (
           <li key={b.bucket} className="flex gap-3">
             <span className={cn("mt-2 size-2 shrink-0 rounded-full", BUCKETS[b.bucket].color)} aria-hidden />
@@ -43,7 +48,7 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         ))}
       </ul>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:col-start-2 xl:row-span-4 xl:row-start-1 xl:grid-cols-1 xl:self-start">
         <div className="flex gap-3 rounded-xl bg-brand-50 p-4">
           <ShieldCheck className="size-5 shrink-0 text-brand-600" aria-hidden />
           <p className="text-small">
@@ -69,7 +74,7 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 xl:col-start-1">
         <AskChip question="What if I save $50 more?" />
         <AskChip question="Why is my guilt-free money this amount?" />
       </div>

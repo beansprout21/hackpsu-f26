@@ -108,7 +108,7 @@ function GoalRow({ a }: { a: Allocation }) {
 export function GoalsProgress({ allocation }: { allocation: Allocation[] }) {
   if (allocation.length === 0) return null;
   return (
-    <ul className="flex flex-col gap-4" aria-label="Your goals">
+    <ul className="flex flex-col gap-4 xl:grid xl:grid-cols-2" aria-label="Your goals">
       {allocation.map((a) => (
         <GoalRow key={a.goalId} a={a} />
       ))}
