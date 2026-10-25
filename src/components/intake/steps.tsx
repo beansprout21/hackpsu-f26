@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
 import { personaFromValues } from "@/data/personaTaxonomy";
@@ -17,7 +18,7 @@ import {
   goalMeta,
   richLifeChips,
 } from "./copy";
-import type { GoalDraft } from "./draft";
+import { MAX_MONEY_GOALS, isHabit, moneyFirst, type GoalDraft } from "./draft";
 
 const RICH_LIFE_MAX = 500;
 const WHY_TEXT_MAX = 120;
@@ -30,7 +31,7 @@ export function LifeStageStep({
   onPick: (key: string, stage: LifeStage) => void;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       {LIFE_STAGE_OPTIONS.map((s) => (
         <button
           key={s.key}
@@ -38,7 +39,7 @@ export function LifeStageStep({
           aria-pressed={value === s.key}
           onClick={() => onPick(s.key, s.stage)}
           className={cn(
-            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             value === s.key ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
           )}
         >
@@ -85,7 +86,16 @@ export function GoalsStep({
   selected: GoalId[];
   onToggle: (id: GoalId) => void;
 }) {
-  const full = selected.length >= 3;
+  const moneyCount = selected.filter((id) => !isHabit(id)).length;
+  const moneyFull = moneyCount >= MAX_MONEY_GOALS;
+  // A 4th money goal isn't silently disabled: tapping it says why.
+  const [blocked, setBlocked] = useState(false);
+  const pick = (id: GoalId) => {
+    const adding = !selected.includes(id);
+    if (adding && !isHabit(id) && moneyFull) return setBlocked(true);
+    setBlocked(false);
+    onToggle(id);
+  };
   return (
     <div className="flex flex-col gap-3">
       {GOAL_GROUPS.map((group) => (
@@ -94,16 +104,18 @@ export function GoalsStep({
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
             {GOALS.filter((g) => g.group === group.id).map(({ id, label, hint, icon: Icon }) => {
               const on = selected.includes(id);
+              const atLimit = !on && group.id === "money" && moneyFull;
               return (
                 <button
                   key={id}
                   type="button"
                   aria-pressed={on}
-                  disabled={!on && full}
-                  onClick={() => onToggle(id)}
+                  aria-disabled={atLimit || undefined}
+                  onClick={() => pick(id)}
                   className={cn(
-                    "flex min-h-24 flex-col items-start justify-between gap-2 rounded-2xl border-2 p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
+                    "flex min-h-24 flex-col items-start justify-between gap-2 rounded-2xl border-2 p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                     on ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
+                    atLimit && "opacity-50",
                   )}
                 >
                   <span className="flex w-full items-center justify-between">
@@ -121,8 +133,13 @@ export function GoalsStep({
         </section>
       ))}
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {selected.length} of 3 picked{full && ". Unpick one to swap it."}
+        Up to 3 money goals, plus any habits. {moneyCount} of {MAX_MONEY_GOALS} money goals picked.
       </p>
+      {blocked && (
+        <p role="alert" className="text-sm font-medium text-warning">
+          That&apos;s 3 money goals. Unpick one to swap it.
+        </p>
+      )}
     </div>
   );
 }
@@ -183,9 +200,18 @@ export function RichLifeStep({
   values: ValueTag[];
   onChange: (v: string) => void;
 }) {
-  // A chip fills the box (or adds to what's there); the text stays editable.
+  // A chip fills the box (or adds to what's there); tapping it again takes its text back out. The text stays editable.
   const addChip = (chip: string) =>
     onChange((value.trim() ? `${value.trim().replace(/[.!]?$/, ".")} ${chip}` : chip).slice(0, RICH_LIFE_MAX));
+  const removeChip = (chip: string) =>
+    onChange(
+      value
+        .replace(chip, "")
+        .replace(/^\s*[.!]\s*/, "") // chip was first: drop the period that joined it to the next one
+        .replace(/\s*[.!]\s*([.!])/g, "$1") // chip was in the middle: collapse ". ." into "."
+        .replace(/\s{2,}/g, " ")
+        .trim(),
+    );
   return (
     <div className="flex flex-col gap-3">
       <p className="text-muted-foreground">{RICH_LIFE.explainer}</p>
@@ -196,7 +222,7 @@ export function RichLifeStep({
       </ul>
       <div className="flex flex-wrap gap-2">
         {richLifeChips(values).map((chip) => (
-          <Chip key={chip} selected={value.includes(chip)} onClick={() => !value.includes(chip) && addChip(chip)}>
+          <Chip key={chip} selected={value.includes(chip)} onClick={() => (value.includes(chip) ? removeChip(chip) : addChip(chip))}>
             {chip}
           </Chip>
         ))}
@@ -227,12 +253,18 @@ export function FinishSummary({ values, goals }: { values: ValueTag[]; goals: Go
         You&apos;re {withArticle(persona.label)}, working toward:
       </p>
       <ol className="flex flex-col gap-2">
-        {goals.map((g, i) => {
+        {moneyFirst(goals).map((g, i) => {
           const meta = goalMeta(g.id);
+          const habit = isHabit(g.id);
           return (
             <li key={g.id} className="flex items-center gap-3">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-highlight text-xs font-semibold text-highlight-foreground">
-                {i + 1}
+              <span
+                className={cn(
+                  "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                  habit ? "bg-secondary text-foreground" : "bg-highlight text-highlight-foreground",
+                )}
+              >
+                {habit ? <Check className="size-3.5" aria-label="Habit" /> : i + 1}
               </span>
               <span className="font-medium">{meta.label}</span>
               <span className="text-sm text-muted-foreground">in {formatHorizon(g.horizonMonths)}</span>

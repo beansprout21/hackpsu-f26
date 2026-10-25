@@ -15,7 +15,7 @@ export const SWIPE_CARDS: SwipeCard[] = [
     id: "swipe-02",
     prompt: PROMPT,
     left: { label: "I want room to say yes to spontaneous plans.", value: "freedom" },
-    right: { label: "I want room to help out the people in my life.", value: "family" },
+    right: { label: "I'd rather keep extra savings for surprises.", value: "security" },
   },
   {
     id: "swipe-03",
