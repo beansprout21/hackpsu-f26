@@ -277,11 +277,23 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
     record("buckets sum to income", u, Math.abs(total - plan.effectiveMonthlyIncome) < 1, `buckets ${total} vs income ${plan.effectiveMonthlyIncome}`);
   }
   // Every goal-savings dollar lands on a money goal (no orphan goal money when only habits or a cushion goal remain).
+  // SPROUT.md v3.3 (#107): habits only -> the whole savings share goes to the cushion; once the cushion is met it
+  // may stay as "Savings", but no text ever says "your savings goal".
   const goalAlloc = plan.allocation.filter((a) => a.goalId !== "emergency_fund").reduce((s, a) => s + a.monthlyAmount, 0);
   const efAlloc = plan.allocation.find((a) => a.goalId === "emergency_fund")?.monthlyAmount ?? 0;
   const goalBucket = bucket("goal_savings");
-  const homed = goalAlloc === goalBucket || (efAlloc > 0 && goalAlloc === 0 && efAlloc === bucket("emergency_fund") + goalBucket);
-  record("goal bucket lands on money goals", u, homed, `goal bucket $${goalBucket}, money-goal allocations $${goalAlloc}, goals: ${profile.goals.map((g) => g.id).join(", ")}`);
+  const hasMoneyGoal = profile.goals.some((g) => !isHabit(g.id));
+  const cushionMetNow = u.snapshot.savingsBalance >= plan.cushionTarget;
+  const homed = hasMoneyGoal
+    ? goalAlloc === goalBucket || (efAlloc > 0 && goalAlloc === 0 && efAlloc === bucket("emergency_fund") + goalBucket)
+    : goalBucket === 0 || cushionMetNow;
+  const savingsGoalText = [plan.headline, plan.sproutSays, ...strings(o, "overview").map(([, s]) => s)].filter((s) => /your savings goal/i.test(s));
+  record(
+    "goal bucket lands on money goals",
+    u,
+    homed && savingsGoalText.length === 0,
+    `goal bucket $${goalBucket}, money-goal allocations $${goalAlloc}, goals: ${profile.goals.map((g) => g.id).join(", ")}${savingsGoalText.length ? `; text: "${savingsGoalText[0]}"` : ""}`,
+  );
 
   const costs = u.snapshot.monthlyFixedCosts + u.snapshot.monthlyDebtPayments;
   const cushion = Math.max(1000, Math.round(3 * costs * 100) / 100);
@@ -301,11 +313,30 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
   const unknown = productIds.filter((id) => !isCatalogId(id));
   record("every product id is in the catalog", u, unknown.length === 0, unknown.join(", "));
 
-  // Rule set B: with no surplus the plan is budget/habit steps plus $0 products (null = deposit not published).
+  // SPROUT.md v3.3 (#130): no retirement accounts for any goal; the cushion is savings, never a card, loan or CardGuard.
+  const retirement = productIds.filter((id) => /^ira-/.test(id) || /\bIRA\b/.test(getProduct(id)?.name ?? ""));
+  const cushionBorrowing = plan.matches.filter(
+    (m) => m.goalId === "emergency_fund" && (/credit_card|loan/.test(getProduct(m.productId)?.category ?? "") || m.productId === "cardguard"),
+  );
+  record(
+    "no IRA; no card, loan or CardGuard for the cushion",
+    u,
+    retirement.length === 0 && cushionBorrowing.length === 0,
+    [...new Set(retirement)].concat(cushionBorrowing.map((m) => `emergency_fund:${m.productId}`)).join(", "),
+  );
+
+  // Rule set B, SPROUT.md v3.3 (#109): with no surplus, a now/next match is an education tool, a $0-to-open product,
+  // or an everyday checking/savings account the user can fund from savings (null deposit counts as not $0).
+  const fundable = (id: string) => {
+    const p = getProduct(id);
+    if (!p) return false;
+    if (p.category === "education_tool" || p.minOpeningDeposit === 0) return true;
+    return (p.category === "checking" || p.category === "savings") && p.minOpeningDeposit !== null && p.minOpeningDeposit <= u.snapshot.savingsBalance;
+  };
   if (plan.monthlySurplus <= 0) {
-    const costly = plan.matches.filter((m) => m.stage !== "later" && (getProduct(m.productId)?.minOpeningDeposit ?? 0) > 0);
+    const costly = plan.matches.filter((m) => m.stage !== "later" && !fundable(m.productId));
     record(
-      "no surplus: only $0 products now/next",
+      "no surplus: only $0 products now/next (v3.3)",
       u,
       costly.length === 0,
       costly.map((m) => `${m.stage} ${m.productId} ($${getProduct(m.productId)?.minOpeningDeposit} to open)`).join(", "),
