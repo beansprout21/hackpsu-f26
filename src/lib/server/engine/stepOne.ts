@@ -15,6 +15,20 @@ const FUND_NAMES: Partial<Record<GoalId, string>> = {
   emergency_fund: "safety cushion",
 };
 
+// v3.2 habit steps (templates shared with rule D rows 2 and 3): habits cost time, not money.
+export const HABIT_STEPS = {
+  credit_building: {
+    kind: "learn" as const,
+    title: "Check your free credit report",
+    detail: "5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score.",
+  },
+  everyday_banking: {
+    kind: "habit" as const,
+    title: "Turn on low-balance alerts",
+    detail: "No surprise fees, ever.",
+  },
+};
+
 // The best-fit everyday checking account for a non-customer (the "FNB fit" shown under Step one).
 export function fitCheckingId(ctx: EngineContext): string {
   return ctx.isStudent ? "student-checking" : "freestyle-checking";
@@ -22,9 +36,11 @@ export function fitCheckingId(ctx: EngineContext): string {
 
 export function chooseStepOne(ctx: EngineContext, spending: SpendingResult): PlanStep {
   const base = { order: 1, stage: "now" as const, startMonth: 0 };
-  const { math, profile } = ctx;
+  const { math } = ctx;
   const amount = usd(math.monthlySurplus < 100 ? 10 : 20);
-  const p1 = [...profile.goals].sort((a, b) => a.priority - b.priority)[0];
+  // v3.2: P1 = the top money goal; habits are never P1.
+  const p1 = ctx.moneyGoals[0];
+  const habit = (id: string) => ctx.habits.some((g) => g.id === id);
 
   // Row 1: no breathing room yet.
   if (math.monthlySurplus <= 0) {
@@ -35,26 +51,26 @@ export function chooseStepOne(ctx: EngineContext, spending: SpendingResult): Pla
       detail: "That's where we'll find your breathing room.",
     };
   }
-  // Row 2: credit building first.
-  if (p1?.id === "credit_building") {
+  // Row 2 (v3.2): no money goals, credit building habit chosen.
+  if (!p1 && habit("credit_building")) {
     return {
       ...base,
       kind: "learn",
       title: "Check your free credit report now.",
-      detail: "5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score.",
+      detail: HABIT_STEPS.credit_building.detail,
     };
   }
-  // Row 3: everyday banking first.
-  if (p1?.id === "everyday_banking") {
+  // Row 3 (v3.2): no money goals, everyday banking habit chosen.
+  if (!p1 && habit("everyday_banking")) {
     return {
       ...base,
       kind: "habit",
       title: "Turn on low-balance alerts in your bank app.",
-      detail: "No surprise fees, ever.",
+      detail: HABIT_STEPS.everyday_banking.detail,
     };
   }
-  // Row 4: the safety cushion is the goal, there are no goals, or (v3.1) a security/family top value
-  // while the cushion isn't met.
+  // Row 4: the safety cushion is the P1 money goal, there are no money goals, or (v3.1) a security/family
+  // top value while the cushion isn't met.
   const cushionMet = ctx.snapshot.savingsBalance >= ctx.cushionTarget;
   if (!p1 || p1.id === "emergency_fund" || (ctx.cushionFirst && !cushionMet)) {
     return {

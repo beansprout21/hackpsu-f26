@@ -21,7 +21,7 @@ import { buildNotYet } from "./notYet";
 import { candidateFor, selectMatches, type Candidate } from "./select";
 import { buildSpending, type SpendingResult } from "./spending";
 import { isMortgageLike } from "./stage";
-import { chooseStepOne, fitCheckingId } from "./stepOne";
+import { chooseStepOne, fitCheckingId, HABIT_STEPS } from "./stepOne";
 
 export const DISCLAIMER = "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB.";
 const MAX_STEPS = 8;
@@ -179,6 +179,12 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
       startMonth: 0,
     });
   }
+  // v3.2: each habit is a step (unless it is already Step one, rule D rows 2 and 3).
+  for (const h of ctx.habits) {
+    const t = HABIT_STEPS[h.id as keyof typeof HABIT_STEPS];
+    if (!t || (stepOne.kind === t.kind && stepOne.detail === t.detail)) continue;
+    now.push({ stage: "now", kind: t.kind, title: t.title, detail: t.detail, startMonth: 0 });
+  }
   for (const m of rest.filter((m) => m.staging.stage === "now")) {
     const learn = m.product.category === "education_tool";
     now.push({
@@ -235,6 +241,8 @@ function bankerSummary(ctx: EngineContext, matches: Candidate[], spending: Spend
   const goals = [...profile.goals]
     .sort((a, b) => a.priority - b.priority)
     .map((g) => {
+      // v3.2: habits cost time, not money, so no target or monthly amount.
+      if (ctx.habits.includes(g)) return `${GOAL_LABELS[g.id]} (habit, P${g.priority})`;
       const a = spending.allocation.find((x) => x.goalId === g.id);
       const status = a ? (a.onTrack ? "on track" : `${usd(a.monthlyAmount)}/mo of ${usd(a.requiredMonthly)}/mo needed`) : "";
       return `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${g.horizonMonths} months, P${g.priority}${status ? `, ${status}` : ""})`;
@@ -256,8 +264,8 @@ function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
   if (math.monthlySurplus <= 0) {
     return "Right now your costs use up all of your income, and that's okay. First we find your breathing room, starting with one free step right now.";
   }
-  // Lever wording (v3.1): lead with the P1 goal's turn-up-the-dial lever when there is one.
-  const focus = [...ctx.profile.goals].sort((a, b) => a.priority - b.priority)[0]?.id;
+  // Lever wording (v3.1): lead with the P1 money goal's turn-up-the-dial lever when there is one.
+  const focus = ctx.moneyGoals[0]?.id;
   const a = focus ? spending.allocation.find((x) => x.goalId === focus) : undefined;
   const dial = a?.levers.find((l) => l.kind === "turn_up_dial");
   const first =
@@ -288,12 +296,12 @@ export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnaps
     (a, b) => b.score - a.score || isAccount(a) - isAccount(b),
   );
   const { math } = ctx;
-  const p1 = [...profile.goals].sort((a, b) => a.priority - b.priority)[0];
+  const p1 = ctx.moneyGoals[0]; // v3.2: habits are never P1
 
   // Headline: at most 10 words (docs/DASHBOARD.md text budget).
   const headline =
     math.monthlySurplus > 0
-      ? profile.goals.length > 1 && p1
+      ? ctx.moneyGoals.length > 1 && p1
         ? `${usd(spending.goalMonthly)} a month toward your goals, starting with ${GOAL_LABELS[p1.id]}`
         : `${usd(spending.goalMonthly)} a month toward your ${p1 ? GOAL_LABELS[p1.id] : "savings"} goal`
       : "First, let's find your breathing room";

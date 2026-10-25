@@ -1,10 +1,12 @@
 // Every Overview string (docs/DASHBOARD.md "Copy rules"), in one place so Ben can edit text here.
 // Components render these via buildOverview() (src/lib/client/overview.ts); they never write plan text.
-// Numbers come from the engine (docs/SPROUT.md v3); these functions only format them.
+// Numbers come from the engine (docs/SPROUT.md v3.2); these functions only format them.
+// Durations always go through src/lib/client/time.ts (DASHBOARD.md v2: specific months/years, never "10+").
 import type { GoalId } from "@/types";
+import { aboutTime, timeSpan } from "./time";
 
 export const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
-export const months = (n: number) => (n === 1 ? "1 month" : `${n} months`);
+export const months = timeSpan;
 
 // Ask Sprout starter questions (DASHBOARD.md).
 export const ASK_SPROUT_STARTERS = ["Why this first?", "What if I save $50 more a month?", "When can I get a credit card?"] as const;
@@ -16,6 +18,7 @@ export const CREDIT_REPORT_LINK_LABEL = "Open annualcreditreport.com";
 
 // Overview block titles and controls (DASHBOARD.md block order). Components render these as-is.
 export const BLOCK_TITLES = {
+  steps: "Your step-by-step plan", // v2: replaces "Your next move" + "Your path"
   nextMove: "Your next move",
   month: "Your month",
   cushion: "Your safety cushion",
@@ -29,7 +32,7 @@ export const FNB_FIT_LABEL = "Your FNB fit";
 export const DETAILS_LABEL = "Details";
 export const OPEN_ROADMAP_LABEL = "Open roadmap";
 export const MILESTONE_LABEL = "1 month covered";
-export const MONTH_BAR_LABELS = { cushion: "Safety cushion", goals: "Goals", guiltFree: "Guilt-free" } as const;
+export const MONTH_BAR_LABELS = { fixed: "Fixed costs", cushion: "Safety cushion", goals: "Goals", guiltFree: "Guilt-free" } as const;
 export const PATH_STAGE_LABELS = { now: "Now", next: "Next", later: "Later" } as const;
 
 // Fund names, lowercase for use mid-sentence ("my travel fund"); fund() capitalizes for line starts.
@@ -51,10 +54,28 @@ export const fnbFitLine = (name: string, category: string, feeLine: string) =>
   `No ${ACCOUNT_NOUN[category] ?? "account"} yet? ${name} opens online in minutes, ${lowerFirst(feeLine)}.`;
 export const HUB_BRANCH = "At Penn State? The FNB branch in the HUB is at 288 Pollock Road.";
 
-// 2. Your month.
-export const monthSentence = (surplus: number) =>
+// 1. Your step-by-step plan (v2): Step one, the FNB account that holds it, the next product, what unlocks later.
+export const SEE_AT_FNB_LABEL = "See it at FNB";
+export const stepOpenToHold = (name: string) => `Open ${name} to hold it`;
+export const stepUseFor = (name: string, id: GoalId) => `Use ${name} for your ${FUND_NAME[id]}`;
+export const stepOpenFor = (name: string, id: GoalId) => `Open ${name} for your ${FUND_NAME[id]}`;
+export const stepUnlock = (name: string) => `Unlock ${name}`;
+export const WHY_THIS_ACCOUNT = "Why this account?";
+export const whyThisProduct = (shortName: string) => `Why ${shortName}?`;
+// Habit steps (SPROUT.md v3.2): habits cost time, not money. Same text as rule D rows 2 and 3.
+export const HABIT_STEP: Partial<Record<GoalId, { title: string; detail: string; url?: string }>> = {
+  credit_building: {
+    title: "Check your free credit report",
+    detail: "5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score.",
+    url: CREDIT_REPORT_URL,
+  },
+  everyday_banking: { title: "Turn on low-balance alerts", detail: "No surprise fees, ever." },
+};
+
+// 2. Your month (v2: shows fixed costs).
+export const monthSentence = (income: number, fixed: number, surplus: number) =>
   surplus > 0
-    ? `You have ${usd(surplus)} a month to work with.`
+    ? `Your ${usd(income)} a month: ${usd(fixed)} for fixed costs, ${usd(surplus)} to work with.`
     : "Right now your costs use everything coming in. Your next move finds some breathing room.";
 
 // 3. Your safety cushion.
@@ -74,10 +95,15 @@ export const cushionProgress = (saved: number, target: number, milestoneInMonths
 // 4. Your goals (the emergency_fund goal is the cushion block, not a line here).
 export const goalOnTrack = (id: GoalId, monthly: number) => `${fund(id)} is on track: ${usd(monthly)} a month gets you there.`;
 export const goalGap = (id: GoalId, gap: number) => `${fund(id)} is ${usd(gap)} a month away.`;
-export const goalOnPath = (id: GoalId, monthsAtPace: number) => `${fund(id)}: on your path, about ${months(monthsAtPace)} at your pace.`;
+export const goalOnPath = (id: GoalId, monthsAtPace: number) => `${fund(id)}: on your path, ${aboutTime(monthsAtPace)} at your pace.`;
 // v3.1: a non-P1 goal with money going in says so; the pace part only when it's within 2 x horizon.
 export const goalGoingIn = (id: GoalId, monthly: number, monthsAtPace: number | null) =>
-  `${fund(id)}: ${usd(monthly)} a month going in${monthsAtPace !== null ? `, about ${months(monthsAtPace)} at your pace` : ""}.`;
+  `${fund(id)}: ${usd(monthly)} a month going in${monthsAtPace !== null ? `, ${aboutTime(monthsAtPace)} at your pace` : ""}.`;
+// v3.2 habits: they cost time, not money, so no dollar amounts.
+export const HABIT_LINE: Partial<Record<GoalId, string>> = {
+  credit_building: "Credit building: costs time, not money. Start by checking your free credit report.",
+  everyday_banking: "Everyday banking: costs time, not money. Start by turning on low-balance alerts.",
+};
 export const goalLater = (id: GoalId, unlock: string) => `${fund(id)}: starts growing after ${unlock}.`;
 export const DEFAULT_UNLOCK = "your safety cushion is full";
 // v3.1: the $0-going-in unlock when the cushion is already full.

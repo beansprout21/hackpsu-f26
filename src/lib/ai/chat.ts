@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, IncomeKind, Match, Plan, Product, SpendingBucketId, ValueTag } from "@/types";
 import { fnbFitMatch, fundName, p1GoalId, productShortName } from "@/lib/client/chatCopy";
+import { aboutTime } from "@/lib/client/time";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
 import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { monthsToTarget } from "@/lib/server/engine/math";
@@ -200,7 +201,11 @@ function whatIfTemplate(w: WhatIf): string {
   const lead = more
     ? `Saving ${usd(w.deltaMonthly)} more a month gives your ${name} ${usd(w.newMonthly)} a month.`
     : `Saving ${usd(-w.deltaMonthly)} less a month leaves your ${name} ${usd(w.newMonthly)} a month.`;
-  const timing = `That reaches ${usd(w.targetAmount)} in ${w.newMonthsToTarget} months, instead of ${w.currentMonthsToTarget}.`;
+  // DASHBOARD.md v2: specific times ("from about 16 years to about 12 years"), one shared formatter.
+  const timing =
+    w.currentMonthsToTarget > 0
+      ? `That takes your ${usd(w.targetAmount)} goal from ${aboutTime(w.currentMonthsToTarget)} to ${aboutTime(w.newMonthsToTarget)}.`
+      : `That reaches ${usd(w.targetAmount)} in ${aboutTime(w.newMonthsToTarget)}.`;
   const status = w.cushion ? "" : w.onTrackAfter ? "That puts it on track." : `It needs ${usd(w.requiredMonthly)} a month to stay on schedule.`;
   const source = more
     ? w.guiltFreeStaysAbove10Percent

@@ -71,7 +71,7 @@ function futureYouFor(ctx: EngineContext, earmark: number, highFixed: boolean): 
 }
 
 export function buildSpending(ctx: EngineContext): SpendingResult {
-  const { math, snapshot, profile } = ctx;
+  const { math, snapshot } = ctx;
   const income = math.effectiveMonthlyIncome;
   const surplus = math.monthlySurplus;
   const highFixed = surplus > 0 && math.fixedShare > HIGH_FIXED_SHARE;
@@ -103,7 +103,8 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
       ? monthsToTarget(math.monthlyCosts, snapshot.savingsBalance, emergencyMonthly)
       : null;
 
-  const goals = [...profile.goals].sort((a, b) => a.priority - b.priority);
+  // v3.2: habits (everyday banking, credit building) cost time, not money: no allocation row.
+  const goals = ctx.moneyGoals;
   const otherGoals = goals.filter((g) => g.id !== "emergency_fund");
   const split = splitByPriority(otherGoals.length ? goalMonthly : 0, otherGoals);
 

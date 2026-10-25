@@ -100,7 +100,7 @@ Sprout does not recommend investments, funds, or amounts per product. It shows o
 
 ## Golden test: Maya (must match exactly)
 
-> v3.2: credit building is now a habit with no allocation, so Maya's goal money splits travel/home only. The builder regenerates the numbers below from the engine (expected: travel about $91, home about $22, Japan gap about $118) and updates this table in the same PR.
+> v3.2 (regenerated from the engine in #94): credit building is a habit with no allocation, so Maya's goal money splits travel/home only: travel $91, home $22, Japan gap $118.
 
 Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester; family $300 monthly; fixed $650; debt $0; savings $400; credit building; not an FNB customer; values [experiences, freedom] → **Experience Collector**. Goals: travel P1 $2,500 in 12 months ("study abroad in Japan"); credit_building P2 12 months; first_home P3 84 months.
 
@@ -108,12 +108,13 @@ Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester
 |---|---|
 | Effective income | $1,133 (300 + 500 + 333) |
 | Fixed share | 57% (normal case) |
-| Savings 20% | $226 → cushion $113, goals $113 → Japan $69, credit $28, home $16 |
+| Savings 20% | $226 → cushion $113, goals $113 → Japan $91, home $22 (credit building is a habit: no allocation) |
 | Guilt-free | $257 (23%) |
-| Japan | needs $209/mo, has $69 → off track |
-| Levers | turn_up_dial: move $140 (guilt-free stays $117 = 10.3%); more_time: 37 months; smaller_target: $828 |
+| Japan | needs $209/mo, has $91 → off track ($118 a month away) |
+| Levers | turn_up_dial: move $118 (guilt-free stays $139 = 12.3%); more_time: 28 months; smaller_target: $1,092 |
 | Safety cushion | target $1,950 (3 × $650), $400 counted, $113/mo, full in 14 months; milestone "1 month covered" ($650) in 3 months |
-| Step one | "Move $20 into your travel fund right now." / "You'll put $69 a month toward it. This starts it." (rule D5) |
+| Step one | "Move $20 into your travel fund right now." / "You'll put $91 a month toward it. This starts it." (rule D5) |
+| Habit steps | credit building → "Check your free credit report" (learn, now); SmartSecured stays its `later` match |
 | FNB fit | FNB Student Checking (top `now` match; HUB branch), fee line first |
 | Now | Student Checking, Learning Center modules, FNB scholarship entry if in catalog |
 | Next | Savers Goal CD for the Japan fund |

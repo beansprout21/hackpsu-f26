@@ -1,5 +1,5 @@
 // Runs the engine on the demo personas plus Step one fixtures, validates every plan, and checks
-// the Maya golden test from docs/SPROUT.md v3 row by row. Run: npx tsx scripts/check-engine.ts
+// the Maya golden test from docs/SPROUT.md v3.2 row by row. Run: npx tsx scripts/check-engine.ts
 import studentProfile from "../src/data/mocks/profile.student.json";
 import familyProfile from "../src/data/mocks/profile.family.json";
 import { flipSwipes, jordan, maya, mayaOpposite, OPPOSITE_VALUES } from "../src/data/personas";
@@ -44,15 +44,25 @@ const noGoalsProfile: GoalProfile = { ...fallbackProfile(maya.intake), goals: []
 
 const fixtures = {
   row1: fixture("Row 1: surplus <= 0 (fixed $1,200)", maya.intake, withSnapshot({ monthlyFixedCosts: 1200 })),
-  row2: fixture(
-    "Row 2: P1 credit building",
+  row2: fixture("Row 2: no money goals, credit building habit", withGoals([{ id: "credit_building", priority: 1, horizonMonths: 12, why: "" }]), maya.snapshot),
+  creditFirst: fixture(
+    "Credit habit ranked first, travel second (habits are never P1)",
     withGoals([
       { id: "credit_building", priority: 1, horizonMonths: 12, why: "" },
       { id: "travel", priority: 2, horizonMonths: 12, targetAmount: 2500, why: "study abroad in Japan" },
     ]),
     maya.snapshot,
   ),
-  row3: fixture("Row 3: P1 everyday banking", withGoals([{ id: "everyday_banking", priority: 1, horizonMonths: 6, why: "" }]), maya.snapshot),
+  bothHabits: fixture(
+    "Both habits + travel",
+    withGoals([
+      { id: "travel", priority: 1, horizonMonths: 12, targetAmount: 2500, why: "study abroad in Japan" },
+      { id: "credit_building", priority: 2, horizonMonths: 12, why: "" },
+      { id: "everyday_banking", priority: 3, horizonMonths: 6, why: "" },
+    ]),
+    maya.snapshot,
+  ),
+  row3: fixture("Row 3: no money goals, everyday banking habit", withGoals([{ id: "everyday_banking", priority: 1, horizonMonths: 6, why: "" }]), maya.snapshot),
   row4: fixture("Row 4: P1 emergency fund", withGoals([{ id: "emergency_fund", priority: 1, horizonMonths: 12, why: "" }]), maya.snapshot),
   noGoals: fixture("Row 4: no goals", noGoalsIntake, maya.snapshot, noGoalsProfile),
   tenDollar: fixture("Row 5 with $10 (surplus $83)", maya.intake, withSnapshot({ monthlyFixedCosts: 1050 })),
@@ -136,7 +146,7 @@ const alloc = (p: Plan, id: string) => p.allocation.find((a) => a.goalId === id)
 const stageOf = (p: Plan, id: string) => p.matches.find((x) => x.productId === id)?.stage;
 const japan = alloc(m, "travel");
 
-console.log("\n=== Maya golden test (docs/SPROUT.md v3)");
+console.log("\n=== Maya golden test (docs/SPROUT.md v3.2)");
 check(Math.floor(m.effectiveMonthlyIncome) === 1133, `Effective income $1,133 (got ${m.effectiveMonthlyIncome})`);
 check(Math.round(m.fixedShare * 100) === 57 && !m.steps.some((s) => /Big Win/.test(s.title)), "Fixed share 57%, normal case");
 check(
@@ -144,21 +154,21 @@ check(
   "Savings $226 -> cushion $113, goals $113",
 );
 check(
-  [alloc(m, "travel")?.monthlyAmount, alloc(m, "credit_building")?.monthlyAmount, alloc(m, "first_home")?.monthlyAmount].join() === "69,28,16",
-  "Goals -> Japan $69, credit $28, home $16",
+  [alloc(m, "travel")?.monthlyAmount, alloc(m, "first_home")?.monthlyAmount].join() === "91,22" && !alloc(m, "credit_building"),
+  "Goals -> Japan $91, home $22; credit building is a habit with no allocation (v3.2)",
 );
 check(bucket(m, "guilt_free")?.monthlyAmount === 257 && Math.round(bucket(m, "guilt_free")?.percent ?? 0) === 23, "Guilt-free $257 (23%)");
-check(japan?.requiredMonthly === 209 && japan.onTrack === false, "Japan needs $209/mo, has $69 -> off track");
+check(japan?.requiredMonthly === 209 && japan.onTrack === false, "Japan needs $209/mo, has $91 -> off track");
 check(
   JSON.stringify(japan?.levers) ===
     JSON.stringify([
-      { kind: "turn_up_dial", moveFromGuiltFree: 140 },
-      { kind: "more_time", newHorizonMonths: 37 },
-      { kind: "smaller_target", reachableAmount: 828 },
+      { kind: "turn_up_dial", moveFromGuiltFree: 118 },
+      { kind: "more_time", newHorizonMonths: 28 },
+      { kind: "smaller_target", reachableAmount: 1092 },
     ]),
-  "Levers: turn_up_dial $140 first, more_time 37 months, smaller_target $828",
+  "Levers: turn_up_dial $118 first, more_time 28 months, smaller_target $1,092",
 );
-check((257 - 140) / m.effectiveMonthlyIncome >= 0.1, "turn_up_dial keeps guilt-free at $117 (>= 10% of income)");
+check((257 - 118) / m.effectiveMonthlyIncome >= 0.1, "turn_up_dial keeps guilt-free at $139 (>= 10% of income)");
 check(
   m.cushionTarget === 1950 && m.emergencyFundTarget === 1950 && m.cushionFillsInMonths === 14,
   `Safety cushion: target $1,950 (3 x $650), $400 counted, $113/mo, full in 14 months (got ${m.cushionTarget}, ${m.cushionFillsInMonths})`,
@@ -167,7 +177,7 @@ check(monthsToTarget(650, 400, 113) === 3 && /in 3 months/.test(m.sproutSays), '
 check(
   m.stepOne.kind === "save" &&
     m.stepOne.title === "Move $20 into your travel fund right now." &&
-    m.stepOne.detail === "You'll put $69 a month toward it. This starts it.",
+    m.stepOne.detail === "You'll put $91 a month toward it. This starts it.",
   `Step one (rule D5): "${m.stepOne.title}" / "${m.stepOne.detail}"`,
 );
 check(m.matches.find((x) => x.stage === "now")?.productId === "student-checking", "FNB fit: Student Checking is the top now match");
@@ -205,11 +215,21 @@ check(
 );
 check(m.futureYou.earmarkMonthly === null && /first full-time paycheck/.test(m.futureYou.unlockCondition ?? ""), "Future You: handoff only, unlocks with first full-time paycheck");
 check(m.notYet.some((n) => n.revisitWhen === "after a steady income and 3 months saved"), "Not yet: mortgage pre-approval after steady income and 3 months saved");
-check(/\$140 a month away/.test(m.sproutSays), "sproutSays leads with the top-value goal's dial lever");
+check(/\$118 a month away/.test(m.sproutSays), "sproutSays leads with the P1 goal's dial lever ($118)");
+check(m.steps.some((s) => s.kind === "learn" && s.title === "Check your free credit report" && s.stage === "now"), 'v3.2: credit building habit step "Check your free credit report" (learn, now)');
+check(/credit building \(habit, P2\)/.test(m.bankerSummary) && !/credit building \(\$/.test(m.bankerSummary), "v3.2: banker summary lists credit building as a habit (no target or $)");
+check(m.allocation.every((a) => a.goalId !== "credit_building" && a.goalId !== "everyday_banking"), "v3.2: no Allocation row for any habit");
 
 console.log("\n=== Step one fixtures (rule D rows) + cushion edge cases");
 const f = fixtures;
 check(f.row1.plan.monthlySurplus <= 0 && f.row1.plan.stepOne.kind === "budget" && f.row1.plan.stepOne.title === "Open your bank app and find last week's 3 biggest buys." && f.row1.plan.stepOne.detail === "That's where we'll find your breathing room.", `Row 1: "${f.row1.plan.stepOne.title}"`);
+check(f.creditFirst.plan.stepOne.title === "Move $20 into your travel fund right now." && !f.creditFirst.plan.allocation.some((a) => a.goalId === "credit_building"), `Habit ranked first is never P1: "${f.creditFirst.plan.stepOne.title}"`);
+check(
+  f.bothHabits.plan.steps.some((s) => s.title === "Check your free credit report") &&
+    f.bothHabits.plan.steps.some((s) => s.title === "Turn on low-balance alerts") &&
+    f.bothHabits.plan.allocation.map((a) => a.goalId).join() === "travel",
+  "Both habits: two habit steps, allocation is travel only",
+);
 check(f.row2.plan.stepOne.kind === "learn" && f.row2.plan.stepOne.title === "Check your free credit report now." && /annualcreditreport\.com/.test(f.row2.plan.stepOne.detail), `Row 2: "${f.row2.plan.stepOne.title}"`);
 check(f.row3.plan.stepOne.kind === "habit" && f.row3.plan.stepOne.title === "Turn on low-balance alerts in your bank app." && f.row3.plan.stepOne.detail === "No surprise fees, ever.", `Row 3: "${f.row3.plan.stepOne.title}"`);
 check(f.row4.plan.stepOne.kind === "save" && f.row4.plan.stepOne.title === "Move $20 into savings right now." && f.row4.plan.stepOne.detail === "That starts your $1,950 safety cushion.", `Row 4: "${f.row4.plan.stepOne.title}" / "${f.row4.plan.stepOne.detail}"`);
