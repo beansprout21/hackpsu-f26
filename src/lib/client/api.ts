@@ -1,7 +1,7 @@
 // Client wrappers for the Sprout API routes. Every call returns the route's `data` or throws an
 // ApiError with a message that is safe to show the user. A 401 means the Auth0 session ended,
 // so we send the user back through login (returning to /snapshot).
-import type { ApiResponse, FinancialSnapshot, GoalProfile, IntakeAnswers, Plan } from "@/types";
+import type { ApiResponse, FinancialSnapshot, GoalProfile, IntakeAnswers, Plan, ShareStatus } from "@/types";
 import { GoalProfileSchema, PlanSchema } from "@/types/schemas";
 import studentProfileMock from "@/data/mocks/profile.student.json";
 import familyProfileMock from "@/data/mocks/profile.family.json";
@@ -24,13 +24,13 @@ export class ApiError extends Error {
   }
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function send<T>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      method,
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch (error) {
@@ -53,6 +53,8 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return json.data;
 }
 
+const post = <T>(path: string, body: unknown) => send<T>("POST", path, body);
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function getProfile(intake: IntakeAnswers): Promise<GoalProfile> {
@@ -73,4 +75,17 @@ export async function getPlan(profile: GoalProfile, snapshot: FinancialSnapshot,
 
 export async function askSprout(question: string, profile: GoalProfile, plan: Plan): Promise<{ answer: string; citedProductIds: string[] }> {
   return post("/api/chat", { question, profile, plan });
+}
+
+// Share with FNB (v2.2). The server takes the contact from the Auth0 session, never from here.
+export function getShareStatus(): Promise<ShareStatus> {
+  return send<ShareStatus>("GET", "/api/share");
+}
+
+export function sharePlan(data: { intake: IntakeAnswers; snapshot: FinancialSnapshot; profile: GoalProfile; plan: Plan }): Promise<ShareStatus> {
+  return post<ShareStatus>("/api/share", { consent: true, ...data });
+}
+
+export function stopSharing(): Promise<ShareStatus> {
+  return send<ShareStatus>("DELETE", "/api/share");
 }
