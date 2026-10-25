@@ -14,8 +14,8 @@ export const SWIPE_CARDS: SwipeCard[] = [
   {
     id: "swipe-02",
     prompt: PROMPT,
-    left: { label: "I want to be able to say yes to a last-minute trip.", value: "freedom" },
-    right: { label: "The people I take care of come first.", value: "family" },
+    left: { label: "I want room to say yes to spontaneous plans.", value: "freedom" },
+    right: { label: "I want room to help out the people in my life.", value: "family" },
   },
   {
     id: "swipe-03",
@@ -33,7 +33,7 @@ export const SWIPE_CARDS: SwipeCard[] = [
     id: "swipe-05",
     prompt: PROMPT,
     left: { label: "I'd pick a concert over a new gadget.", value: "experiences" },
-    right: { label: "I want to be there for the people I love.", value: "family" },
+    right: { label: "I'd pick a gift for someone over something for me.", value: "family" },
   },
   {
     id: "swipe-06",
@@ -44,13 +44,13 @@ export const SWIPE_CARDS: SwipeCard[] = [
   {
     id: "swipe-07",
     prompt: PROMPT,
-    left: { label: "I'll spend on anything that helps me level up.", value: "growth" },
-    right: { label: "I want my money on autopilot.", value: "simplicity" },
+    left: { label: "Learning something new is worth paying for.", value: "growth" },
+    right: { label: "I'd rather my money run itself so I don't have to think about it.", value: "simplicity" },
   },
   {
     id: "swipe-08",
     prompt: PROMPT,
-    left: { label: "My favorite purchases were trips and nights out.", value: "experiences" },
-    right: { label: "Family plans shape my money plans.", value: "family" },
+    left: { label: "My best memories cost money: trips, shows, nights out.", value: "experiences" },
+    right: { label: "My money plans include other people: a partner, family, or friends.", value: "family" },
   },
 ];

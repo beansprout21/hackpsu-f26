@@ -12,7 +12,7 @@ import { SWIPE_CARDS } from "@/data/swipeCards";
 import { useAppState } from "@/lib/client/state";
 import { cn } from "@/lib/utils";
 import type { GoalId } from "@/types";
-import { goalMeta } from "./copy";
+import { LIFE_STAGE_OPTIONS, goalMeta } from "./copy";
 import { EMPTY_DRAFT, deriveValues, draftFromIntake, intakeFromDraft, type IntakeDraft } from "./draft";
 import { GoalTimeline } from "./GoalTimeline";
 import { SwipeDeck } from "./SwipeDeck";
@@ -48,7 +48,7 @@ function IntroStep() {
 }
 
 const SPROUT_LINES: Record<Step, string> = {
-  intro: "Hi, I'm Sprout. Most banks start with your credit score. I'd rather start with your life. Takes about a minute.",
+  intro: "Hi, I'm Sprout. Most banks start with your credit score. I'd rather start with your life. Takes about 3 minutes.",
   lifeStage: "First, where are you in life right now?",
   swipes: "Quick gut checks. Pick the one that sounds more like you. There are no wrong answers.",
   persona: "Here's what I'm hearing from you.",
@@ -66,6 +66,11 @@ export function IntakeWizard() {
     app.intake ? draftFromIntake(app.intake) : EMPTY_DRAFT,
   );
   const [stepIndex, setStepIndex] = useState(0);
+  // Several life stage options share one LifeStage; remember which one was tapped.
+  const [pickedStageKey, setPickedStageKey] = useState<string>();
+  const lifeStageKey =
+    LIFE_STAGE_OPTIONS.find((o) => o.key === pickedStageKey && o.stage === draft.lifeStage)?.key ??
+    LIFE_STAGE_OPTIONS.find((o) => o.stage === draft.lifeStage)?.key;
   const [error, setError] = useState<string | null>(null);
   const stepRef = useRef<HTMLDivElement>(null);
   const step = STEPS[stepIndex];
@@ -162,8 +167,11 @@ export function IntakeWizard() {
           {step === "intro" && <IntroStep />}
           {step === "lifeStage" && (
             <LifeStageStep
-              value={draft.lifeStage}
-              onPick={(lifeStage) => setDraft((d) => ({ ...d, lifeStage }))}
+              value={lifeStageKey}
+              onPick={(key, lifeStage) => {
+                setPickedStageKey(key);
+                setDraft((d) => ({ ...d, lifeStage }));
+              }}
             />
           )}
           {step === "swipes" && (
@@ -189,6 +197,7 @@ export function IntakeWizard() {
           {step === "richLife" && (
             <RichLifeStep
               value={draft.richLifeText}
+              values={values}
               onChange={(richLifeText) => setDraft((d) => ({ ...d, richLifeText }))}
             />
           )}

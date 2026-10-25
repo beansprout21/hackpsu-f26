@@ -5,11 +5,10 @@ import { GripVertical, Sprout } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { estimateTarget } from "@/lib/server/engine/defaults";
 import { cn } from "@/lib/utils";
-import { formatHorizon, formatUsd, goalMeta } from "./copy";
+import { ESTIMATE_BASIS, costMax, formatHorizon, formatUsd, goalMeta } from "./copy";
 import type { GoalDraft } from "./draft";
 import { TimelineTrack } from "./TimelineTrack";
 
-const COST_MAX = 15000;
 const COST_STEP = 250;
 // Same motion as the swipe cards: follow the pointer instantly, glide into place with this ease-out.
 const SETTLE_MS = 240;
@@ -127,6 +126,8 @@ export function GoalTimeline({
       <ol ref={listRef} className="flex flex-col gap-3" aria-label="Your goals, most important first">
         {goals.map((g, i) => {
           const meta = goalMeta(g.id);
+          const costCap = costMax(g.id);
+          const basis = ESTIMATE_BASIS[g.id];
           const estimate = estimateTarget(g.id);
           const isEstimate = g.targetAmount === undefined;
           const amount = g.targetAmount ?? estimate;
@@ -179,43 +180,48 @@ export function GoalTimeline({
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Roughly how much?</span>
-                  <span className="text-lg font-semibold tabular-nums">
-                    {formatUsd(amount)}
-                    {amount >= COST_MAX && "+"}
-                  </span>
-                </div>
-                <Slider
-                  min={0}
-                  max={COST_MAX}
-                  step={COST_STEP}
-                  value={[Math.min(amount, COST_MAX)]}
-                  onValueChange={(v) => patch(i, { targetAmount: Array.isArray(v) ? v[0] : v })}
-                  aria-label={`Rough cost for ${meta.label}`}
-                  className="py-2"
-                />
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>$0</span>
-                  {isEstimate ? (
-                    <span className="flex items-center gap-1 font-medium text-highlight">
-                      <Sprout className="size-3.5" aria-hidden />
-                      Sprout&apos;s estimate
+              {meta.group === "habit" ? (
+                <p className="text-sm text-muted-foreground">{meta.hint}</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">Roughly how much?</span>
+                    <span className="text-lg font-semibold tabular-nums">
+                      {formatUsd(amount)}
+                      {amount >= costCap && "+"}
                     </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => patch(i, { targetAmount: undefined })}
-                      className="flex items-center gap-1 rounded font-medium text-highlight underline-offset-2 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                    >
-                      <Sprout className="size-3.5" aria-hidden />
-                      Use Sprout&apos;s estimate ({formatUsd(estimate)})
-                    </button>
-                  )}
-                  <span>{formatUsd(COST_MAX)}+</span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={costCap}
+                    step={COST_STEP}
+                    value={[Math.min(amount, costCap)]}
+                    onValueChange={(v) => patch(i, { targetAmount: Array.isArray(v) ? v[0] : v })}
+                    aria-label={`Rough cost for ${meta.label}`}
+                    className="py-2"
+                  />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>$0</span>
+                    {isEstimate ? (
+                      <span className="flex items-center gap-1 font-medium text-highlight">
+                        <Sprout className="size-3.5" aria-hidden />
+                        Sprout&apos;s estimate
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => patch(i, { targetAmount: undefined })}
+                        className="flex items-center gap-1 rounded font-medium text-highlight underline-offset-2 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                      >
+                        <Sprout className="size-3.5" aria-hidden />
+                        Use Sprout&apos;s estimate ({formatUsd(estimate)})
+                      </button>
+                    )}
+                    <span>{formatUsd(costCap)}+</span>
+                  </div>
+                  {basis && <p className="text-xs text-muted-foreground">{basis}</p>}
                 </div>
-              </div>
+              )}
             </li>
           );
         })}
