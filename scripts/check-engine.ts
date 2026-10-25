@@ -2,7 +2,8 @@
 // from docs/SPROUT.md v2 row by row. Run: npx tsx scripts/check-engine.ts
 import studentProfile from "../src/data/mocks/profile.student.json";
 import familyProfile from "../src/data/mocks/profile.family.json";
-import { jordan, maya, mayaOpposite, OPPOSITE_VALUES } from "../src/data/personas";
+import { flipSwipes, jordan, maya, mayaOpposite, OPPOSITE_VALUES } from "../src/data/personas";
+import { deriveValues } from "../src/components/intake/draft";
 import { personaFromValues } from "../src/data/personaTaxonomy";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { getProduct, isCatalogId } from "../src/lib/server/catalog";
@@ -151,6 +152,11 @@ check(bucket(j, "emergency_fund")!.monthlyAmount + bucket(j, "goal_savings")!.mo
 check(j.futureYou.earmarkMonthly === null && /60%/.test(j.futureYou.unlockCondition ?? ""), "Jordan: Future You handoff until fixed costs < 60%");
 check(j.matches.filter((x) => x.stage === "later").every((x) => x.unlockTrigger?.kind !== "life_event"), "Jordan: later items use savings/credit triggers");
 check(j.notYet.some((n) => n.goalId === "first_home"), "Jordan: not-yet for first home");
+check(
+  JSON.stringify(OPPOSITE_VALUES) === JSON.stringify(deriveValues(flipSwipes(maya.intake.swipes))),
+  `Opposite fixture values = intake-derived values from flipped swipes (${OPPOSITE_VALUES.join(", ")})`,
+);
+check(oppositeDef.id === "family_first", `Opposite swipes persona = Family First (got ${oppositeDef.id})`);
 check(JSON.stringify(m) !== JSON.stringify(opp), "Maya vs opposite swipes: plans differ");
 check(
   JSON.stringify(m.matches.map((x) => x.productId)) !== JSON.stringify(j.matches.map((x) => x.productId)),
