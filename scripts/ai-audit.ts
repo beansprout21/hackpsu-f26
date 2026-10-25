@@ -139,7 +139,8 @@ const productNames = catalog.flatMap((p) => {
 const PERSONA_LABELS = Object.values(PERSONA_BY_VALUE).map((d) => d.label);
 const BANNED = /\b(only|just|behind|should have|can['’]t afford|cannot afford|waste)\b/gi;
 const INVEST = /\b(invest(ing|ment|ments|or)?|stocks?|etfs?|index funds?|mutual funds?|roth|401\(?k\)?|crypto|bitcoin|brokerage|tax(es)?)\b/i;
-const FNB_NAMING = /First National Bank|F\.N\.B\.|\bFnb\b|\bfnb\b/;
+// Sprout is a prototype built for FNB, not FNB: "our <FNB product>" is a naming slip too.
+const FNB_NAMING = /First National Bank|F\.N\.B\.|\bFnb\b|\bfnb\b|\b[Oo]ur (?:FNB|free|Mortgage|Credit|Learning|Student|FirstRate|Savers|Freestyle|SmartSecured|Knowledge|Home Ownership|CardGuard)\b/;
 const numbersIn = (s: string) => (s.match(/\d[\d,]*(?:\.\d+)?/g) ?? []).map((t) => Number(t.replace(/,/g, ""))).filter(Number.isFinite);
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 const sentences = (s: string) => s.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -204,12 +205,28 @@ function textFlags(field: string, text: string, planProductIds: Set<string>, all
 
 // "on track" said about the P1 goal the engine has off track (no conditional); "$N a month away" that isn't a real gap.
 const CONDITIONAL = /\b(if|would|could|move|moving|turn|get|put|puts|stay|keep|once|by|when|to be|away from|from being)\b/i;
+// Goal words used to tell which goal an "on track" clause is about.
+const GOAL_WORDS: [GoalId, RegExp][] = [
+  ["travel", /\b(travel|trip|japan|abroad|vacation)\b/i],
+  ["first_home", /\b(home|house|place)\b/i],
+  ["education", /\b(education|school|course)/i],
+  ["small_business", /\b(business|shop)\b/i],
+  ["family", /\bfamily\b/i],
+  ["emergency_fund", /\bcushion\b/i],
+];
+
 function trackFlags(field: string, text: string, p1OnTrack: boolean | null, plan?: Plan): Flag[] {
   const out: Flag[] = [];
   if (plan && !gapClaimsConsistent(text, plan)) out.push({ type: "contradiction: on track vs gap", detail: `${field} claims a gap the engine doesn't have: "${clip(text)}"` });
   if (p1OnTrack === null) return out;
-  for (const s of sentences(text)) {
-    if (!p1OnTrack && /\bon track\b/i.test(s) && !CONDITIONAL.test(s)) out.push({ type: "contradiction: on track vs gap", detail: `${field} says on track, engine has a gap: "${clip(s)}"` });
+  // Clause-aware: "first home is $4 a month away, and your small business goal is on track" is about two goals.
+  for (const clause of text.split(/(?<=[.!?])\s+|,\s*|;\s*|\s+(?:and|but)\s+/)) {
+    if (!/\bon track\b/i.test(clause) || CONDITIONAL.test(clause)) continue;
+    const named = GOAL_WORDS.filter(([, re]) => re.test(clause)).map(([id]) => id);
+    const offTrack = named.length
+      ? named.some((id) => plan?.allocation.find((a) => a.goalId === id)?.onTrack === false)
+      : !p1OnTrack;
+    if (offTrack) out.push({ type: "contradiction: on track vs gap", detail: `${field} says on track, engine has a gap: "${clip(clause)}"` });
   }
   return out;
 }
