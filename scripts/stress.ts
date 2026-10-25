@@ -331,6 +331,8 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
     const p = getProduct(id);
     if (!p) return false;
     if (p.category === "education_tool" || p.minOpeningDeposit === 0) return true;
+    // Clarified 4:25 AM: everyday checking with an unpublished (null) deposit and "no minimum balance" (Student Checking).
+    if (p.category === "checking" && p.minOpeningDeposit === null && p.keyTerms.some((t) => /no minimum balance/i.test(t))) return true;
     return (p.category === "checking" || p.category === "savings") && p.minOpeningDeposit !== null && p.minOpeningDeposit <= u.snapshot.savingsBalance;
   };
   if (plan.monthlySurplus <= 0) {

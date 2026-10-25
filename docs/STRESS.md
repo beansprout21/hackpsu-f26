@@ -309,3 +309,19 @@ Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH
   - 375 px: no overflow.
 - **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
 - **Issues:** opened #139. Updated #107, #109, #112, #130.
+
+### Cycle 4 (4:38 AM ET, seed 97704, main `7733632`)
+
+- **Main moved 4 commits:** #139 fix (Meanwhile line), #141 docs (Student Checking null-deposit clarification), #105 fix (engine merges duplicate goal ids), #106 fix (goal weights by rank; Maya golden regenerated).
+- **Harness:** no-surplus check updated to the 4:25 AM clarification (null-deposit checking with "no minimum balance" is allowed). 514 users, 0.8 s, 0 crashes, 0 API problems. `check-engine`, `check-overview`, `check-chat` and `check-proxy` all pass.
+  - Duplicate goal ids: the edge case now passes every invariant (#105 verified)
+  - goal bucket lands on money goals (v3.3): 78 fail, all with "your savings goal" (#107)
+  - no surplus: only $0 products now/next (v3.3): 154 of 204 fail (#109)
+  - Ask Sprout templates: 690 answers, 0 problems
+- **Browser (no income, 1280 + 375 px):** seeded intake/snapshot → plan → gap chip → Save PDF.
+  - Step one D1; the month line uses the no-room sentence.
+  - Step 3 still says "Open Savers Goal CD" (#109).
+  - New: the gap chip answers "needs $209 and gets $0" with no next step (**#144**, P1).
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** opened #144. Updated #107, #109.
