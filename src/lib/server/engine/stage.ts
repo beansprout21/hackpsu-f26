@@ -27,12 +27,17 @@ export const isSecuredCard = (p: Product) =>
   p.category === "credit_card" && (p.eligibility.creditBands?.includes("building") ?? false);
 export const isMortgageLike = (p: Product) => MORTGAGE_LIKE.includes(p.category);
 
+// Rule set E (#118): Sprout never recommends consumer credit as a step (personal loans and lines of credit,
+// CashPlease, auto loans, student loans, home equity, business loans and lines). The only lending allowed is
+// mortgages and homebuyer programs, for the first_home goal only, always `later` (see stageFor / candidateFor).
+const CONSUMER_LENDING: Product["category"][] = ["personal_loan", "auto_loan", "student_loan", "home_equity"];
+export const isConsumerLending = (p: Product) =>
+  CONSUMER_LENDING.includes(p.category) || (p.category === "small_business" && /\b(loan|line of credit)\b/i.test(p.name));
+
 // Hard eligibility: failing these can't be fixed by saving, waiting, or a life event.
 export function isHardIneligible(p: Product, ctx: EngineContext): boolean {
-  // Home equity needs an owned home; the snapshot has no homeowner field, so never offer it.
-  if (p.category === "home_equity") return true;
-  // v3.1: Sprout never recommends student loans, at any stage (students handle loans with family).
-  if (p.category === "student_loan") return true;
+  // #118 (includes v3.1 student loans; home equity also needs an owned home): no consumer credit, ever.
+  if (isConsumerLending(p)) return true;
   if (p.eligibility.studentOnly && !ctx.isStudent) return true;
   if (p.eligibility.lifeStages && !p.eligibility.lifeStages.includes(ctx.intake.lifeStage)) return true;
   const bands = p.eligibility.creditBands;
@@ -58,8 +63,15 @@ export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
 
   if (isMortgageLike(p)) {
     // Rule set E (v3): mortgages and homebuyer programs wait for a full-time job + the safety cushion.
-    if (steady && snapshot.savingsBalance >= ctx.cushionTarget) return { stage: "next" };
+    // #118: always `later`, even once both are true; then the unlock is the user's own decision to buy.
     const amount = ctx.cushionTarget;
+    if (steady && snapshot.savingsBalance >= amount) {
+      return {
+        stage: "later",
+        unlockTrigger: { kind: "savings_threshold", amount },
+        unlockCondition: "When you're ready to buy (your safety cushion is already full)",
+      };
+    }
     return {
       stage: "later",
       unlockTrigger: { kind: "savings_threshold", amount },
