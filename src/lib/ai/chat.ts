@@ -468,7 +468,7 @@ function explainUnlock(plan: Plan, profile: GoalProfile, snapshot: FinancialSnap
     template: [
       `The ${short} unlocks ${lowerFirst(match.unlockCondition).replace(/\.$/, "")}.`,
       distance,
-      meanwhileName ? `Meanwhile, ${meanwhileName} gets you ready.` : `Meanwhile, start with: ${plan.stepOne.title}`,
+      meanwhileName ? `Meanwhile, ${meanwhileName} can get you ready.` : `Meanwhile, start with: ${plan.stepOne.title}`,
     ]
       .filter(Boolean)
       .join(" "),
