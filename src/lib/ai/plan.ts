@@ -10,7 +10,7 @@ import { PlanSchema } from "@/types/schemas";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
 import { aboutTime } from "@/lib/client/time";
 import { describeAiError, getClient, getModel } from "./client";
-import { goalWord, voiceNormalize, voiceSafe } from "./voice";
+import { gapClaimsConsistent, goalWord, voiceNormalize, voiceSafe } from "./voice";
 
 const PLAN_TIMEOUT_MS = 20_000;
 
@@ -108,6 +108,7 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
         timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null,
         requiredMonthly: a?.requiredMonthly ?? null,
         onTrack: a?.onTrack ?? null,
+        gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null,
         levers: a?.levers ?? [],
       };
     }),
@@ -158,7 +159,7 @@ function userPrompt(facts: ReturnType<typeof planFacts>): string {
     "",
     "Rewrite ONLY the wording:",
     `- headline: at most ${TEXT_BUDGET.headlineWords} words, optimistic, about what this plan gets them.`,
-    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total. If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Mention when the safety cushion fills if cushionFillsInMonths is set. Call it the "safety cushion".`,
+    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total. If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". Mention when the safety cushion fills if cushionFillsInMonths is set. Call it the "safety cushion".`,
     "- stepOne is FINAL: do not write a title or detail for it. Step 1 in steps is the same action; leave it as given.",
     `- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. The first sentence is at most ${TEXT_BUDGET.explanationFirstSentenceWords} words (it is shown on its own). Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it.`,
     "- steps: one per order number above except order 1; short imperative title and a 1-sentence detail. Keep the same action, product, and amount.",
@@ -205,7 +206,7 @@ function allowedNumbers(facts: unknown): Set<string> {
 // Number guard + voice guard + text budget: an AI string survives only if every number it cites came
 // from the engine, it uses no banned voice words ("just" is removed; others keep the template text),
 // and it fits the field's budget when one applies.
-export function makeGuard(facts: unknown) {
+export function makeGuard(facts: unknown, plan?: Plan) {
   const allowed = allowedNumbers(facts);
   let rejected = 0;
   let overBudget = 0;
@@ -220,6 +221,11 @@ export function makeGuard(facts: unknown) {
       return fallback;
     }
     const voiced = voiceNormalize(safetyCushionName(safe));
+    // A "$N a month away" that isn't a real off-track gap contradicts the engine: keep the template.
+    if (plan && !gapClaimsConsistent(voiced, plan)) {
+      rejected++;
+      return fallback;
+    }
     if (within && !within(voiced)) {
       overBudget++;
       return fallback;
@@ -279,7 +285,7 @@ export async function generatePlan(skeleton: Plan, profile: GoalProfile, audit: 
     const facts = planFacts(safeSkeleton, profile);
     const ai = await aiPlanText(facts);
     audit.onRaw?.(ai, facts);
-    const guard = makeGuard(facts);
+    const guard = makeGuard(facts, safeSkeleton);
     const plan = PlanSchema.parse(dropUnknownProducts(mergeText(safeSkeleton, ai, guard)));
     if (guard.rejected() > 0) console.log(`[ai/plan] number/voice guard kept template text for ${guard.rejected()} field(s)`);
     if (guard.overBudget() > 0) console.log(`[ai/plan] text budget kept template text for ${guard.overBudget()} field(s)`);

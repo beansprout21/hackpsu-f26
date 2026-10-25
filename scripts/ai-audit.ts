@@ -10,7 +10,7 @@ import { SWIPE_CARDS } from "../src/data/swipeCards";
 import { answerQuestion, whatIfFor } from "../src/lib/ai/chat";
 import { getModel } from "../src/lib/ai/client";
 import { generatePlan, type AiPlanText } from "../src/lib/ai/plan";
-import { voiceNormalize } from "../src/lib/ai/voice";
+import { gapClaimsConsistent, voiceNormalize } from "../src/lib/ai/voice";
 import { generateProfile } from "../src/lib/ai/profile";
 import { blockChips, followUpChips, starterChips, type Chip } from "../src/lib/client/chatCopy";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
@@ -195,14 +195,14 @@ function textFlags(field: string, text: string, planProductIds: Set<string>, all
   return out;
 }
 
-// "on track" said about a goal the engine has off track (no conditional), or a gap said about an on-track one.
+// "on track" said about the P1 goal the engine has off track (no conditional); "$N a month away" that isn't a real gap.
 const CONDITIONAL = /\b(if|would|could|move|moving|turn|get|put|puts|stay|keep|once|by|when|to be|away from|from being)\b/i;
-function trackFlags(field: string, text: string, p1OnTrack: boolean | null): Flag[] {
-  if (p1OnTrack === null) return [];
+function trackFlags(field: string, text: string, p1OnTrack: boolean | null, plan?: Plan): Flag[] {
   const out: Flag[] = [];
+  if (plan && !gapClaimsConsistent(text, plan)) out.push({ type: "contradiction: on track vs gap", detail: `${field} claims a gap the engine doesn't have: "${clip(text)}"` });
+  if (p1OnTrack === null) return out;
   for (const s of sentences(text)) {
     if (!p1OnTrack && /\bon track\b/i.test(s) && !CONDITIONAL.test(s)) out.push({ type: "contradiction: on track vs gap", detail: `${field} says on track, engine has a gap: "${clip(s)}"` });
-    if (p1OnTrack && /\b(a month away|needs a boost|gap)\b/i.test(s)) out.push({ type: "contradiction: on track vs gap", detail: `${field} says gap, engine has on track: "${clip(s)}"` });
   }
   return out;
 }
@@ -268,7 +268,7 @@ async function auditPlan(user: User): Promise<PlanItem> {
     ["bankerSummary", plan.bankerSummary],
   ];
   for (const [field, text] of shown) flags.push(...textFlags(field, text, productIds));
-  flags.push(...trackFlags("headline", plan.headline, p1OnTrack), ...trackFlags("sproutSays", plan.sproutSays, p1OnTrack));
+  flags.push(...trackFlags("headline", plan.headline, p1OnTrack, plan), ...trackFlags("sproutSays", plan.sproutSays, p1OnTrack, plan));
   if (words(plan.headline) > 10) flags.push({ type: "headline > 10 words", detail: `"${clip(plan.headline)}"` });
   if (words(plan.sproutSays) > 35) flags.push({ type: "sproutSays > 35 words", detail: `${words(plan.sproutSays)} words` });
   for (const m of plan.matches) {
@@ -386,7 +386,7 @@ async function auditChat(item: PlanItem, intent: ChatIntent["kind"], question: s
   const goalId = chipIntent?.goalId;
   if (intent === "goal_gap" && goalId) {
     const a = plan.allocation.find((x) => x.goalId === goalId);
-    if (a) flags.push(...trackFlags("answer", r.answer, a.onTrack));
+    if (a) flags.push(...trackFlags("answer", r.answer, a.onTrack, plan));
   }
   if (intent === "what_if" && chipIntent?.amount !== undefined) {
     const w = whatIfFor(goalId, Math.round(chipIntent.amount), profile, plan, user.snapshot);

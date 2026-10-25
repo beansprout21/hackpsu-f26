@@ -8,8 +8,8 @@ import { jordan, maya } from "../src/data/personas";
 import { blockChips, followUpChips, starterChips, type BlockChips, type Chip } from "../src/lib/client/chatCopy";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { answerQuestion } from "../src/lib/ai/chat";
-import { generatePlan } from "../src/lib/ai/plan";
-import { specificTimes, voiceNormalize } from "../src/lib/ai/voice";
+import { generatePlan, makeGuard, mergeText } from "../src/lib/ai/plan";
+import { gapClaimsConsistent, specificTimes, voiceNormalize } from "../src/lib/ai/voice";
 import { scenarios } from "../src/data/scenarios";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalProfile, Plan } from "../src/types";
 
@@ -167,6 +167,20 @@ async function voiceNormalizer() {
   }
 }
 
+async function gapClaims() {
+  console.log("\n=== Gap claims match the engine (#121): \"$N a month away\" only for a real off-track gap");
+  const travel = mayaPlan.allocation.find((a) => a.goalId === "travel")!;
+  const home = mayaPlan.allocation.find((a) => a.goalId === "first_home")!;
+  const gap = Math.round(travel.requiredMonthly - travel.monthlyAmount);
+  check(gapClaimsConsistent(`Japan is $${gap} a month away.`, mayaPlan), `real travel gap $${gap} accepted`);
+  check(!gapClaimsConsistent(`Your home fund is $${home.monthlyAmount} a month away.`, mayaPlan), `home's monthly amount ($${home.monthlyAmount}) as a gap rejected`);
+  check(gapClaimsConsistent("Your safety cushion fills in about 14 months.", mayaPlan), "text without a gap claim accepted");
+  // A plan whose AI sproutSays claims a wrong gap keeps the template.
+  const ai = { headline: mayaPlan.headline, sproutSays: `Your home fund is $${home.monthlyAmount} a month away.`, explanations: [], steps: [], bankerSummary: mayaPlan.bankerSummary };
+  const merged = mergeText(mayaPlan, ai, makeGuard(mayaPlan, mayaPlan));
+  check(merged.sproutSays === voiceNormalize(mayaPlan.sproutSays), "wrong gap in AI sproutSays falls back to the template");
+}
+
 async function boundary() {
   console.log("\n=== Advice boundary");
   const invest = await ask("Should I put money in index funds or a Roth IRA?", mayaPlan, mayaProfile, maya.snapshot);
@@ -181,6 +195,7 @@ async function main() {
   await templates();
   await boundary();
   await voiceNormalizer();
+  await gapClaims();
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
 }
