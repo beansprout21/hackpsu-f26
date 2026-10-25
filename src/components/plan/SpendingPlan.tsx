@@ -1,6 +1,7 @@
 import { ShieldCheck, Sparkles } from "lucide-react";
+import { AskChip } from "@/components/chat/AskSprout";
 import { cn } from "@/lib/utils";
-import type { Plan } from "@/types";
+import type { Plan, SpendingBucket } from "@/types";
 import { BUCKETS, formatMonths, usd } from "./format";
 
 export function SpendingPlan({ plan }: { plan: Plan }) {
@@ -9,8 +10,11 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
   const { futureYou } = plan;
 
   return (
-    <section aria-labelledby="spending" className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-card">
-      <div className="flex flex-col gap-1">
+    <section
+      aria-labelledby="spending"
+      className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-card xl:grid xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:gap-x-10"
+    >
+      <div className="flex flex-col gap-1 xl:col-start-1">
         <h2 id="spending" className="text-small font-semibold tracking-wide text-muted-foreground uppercase">
           Your spending plan
         </h2>
@@ -25,17 +29,11 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         </p>
       </div>
 
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label="Spending plan split">
-        {plan.spendingPlan.map((b) => (
-          <span
-            key={b.bucket}
-            className={cn("h-full", BUCKETS[b.bucket].color)}
-            style={{ width: `${Math.max(b.percent, 0)}%` }}
-          />
-        ))}
+      <div className="xl:col-start-1">
+        <SpendingBar buckets={plan.spendingPlan} />
       </div>
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid gap-4 sm:grid-cols-2 xl:col-start-1">
         {plan.spendingPlan.map((b) => (
           <li key={b.bucket} className="flex gap-3">
             <span className={cn("mt-2 size-2 shrink-0 rounded-full", BUCKETS[b.bucket].color)} aria-hidden />
@@ -50,7 +48,7 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         ))}
       </ul>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:col-start-2 xl:row-span-4 xl:row-start-1 xl:grid-cols-1 xl:self-start">
         <div className="flex gap-3 rounded-xl bg-brand-50 p-4">
           <ShieldCheck className="size-5 shrink-0 text-brand-600" aria-hidden />
           <p className="text-small">
@@ -75,6 +73,39 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
           </p>
         </div>
       </div>
+
+      <div className="flex flex-wrap gap-2 xl:col-start-1">
+        <AskChip question="What if I save $50 more?" />
+        <AskChip question="Why is my guilt-free money this amount?" />
+      </div>
     </section>
+  );
+}
+
+export function SpendingBar({ buckets }: { buckets: SpendingBucket[] }) {
+  return (
+    <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label="Spending plan split">
+      {buckets.map((b) => (
+        <span key={b.bucket} className={cn("h-full", BUCKETS[b.bucket].color)} style={{ width: `${Math.max(b.percent, 0)}%` }} />
+      ))}
+    </div>
+  );
+}
+
+// Overview version: the bar plus one line per bucket.
+export function SpendingSummary({ plan }: { plan: Plan }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <SpendingBar buckets={plan.spendingPlan} />
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {plan.spendingPlan.map((b) => (
+          <li key={b.bucket} className="flex items-center gap-2 text-small">
+            <span className={cn("size-2 shrink-0 rounded-full", BUCKETS[b.bucket].color)} aria-hidden />
+            <span className="text-muted-foreground">{BUCKETS[b.bucket].label}</span>
+            <span className="ml-auto font-semibold tabular-nums">{usd(b.monthlyAmount)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

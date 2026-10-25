@@ -20,7 +20,7 @@ export function LifeStageStep({
   onPick: (stage: LifeStage) => void;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 lg:grid-cols-3">
       {LIFE_STAGES.map((s) => (
         <button
           key={s.id}
@@ -28,7 +28,7 @@ export function LifeStageStep({
           aria-pressed={value === s.id}
           onClick={() => onPick(s.id)}
           className={cn(
-            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left lg:min-h-32 lg:items-start transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             value === s.id ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
           )}
         >
@@ -75,7 +75,7 @@ export function GoalsStep({
   const full = selected.length >= 3;
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
         {GOALS.map(({ id, label, icon: Icon }) => {
           const on = selected.includes(id);
           return (
@@ -116,7 +116,7 @@ export function WhyStep({
   const patch = (i: number, p: Partial<GoalDraft>) =>
     onChange(goals.map((g, j) => (j === i ? { ...g, ...p } : g)));
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid gap-4 lg:grid-cols-2">
       {goals.map((g, i) => {
         const meta = goalMeta(g.id);
         return (

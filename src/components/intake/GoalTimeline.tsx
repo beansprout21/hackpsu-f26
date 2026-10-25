@@ -41,7 +41,10 @@ export function GoalTimeline({
           const isEstimate = g.targetAmount === undefined;
           const amount = g.targetAmount ?? estimate;
           return (
-            <li key={g.id} className="flex flex-col gap-4 rounded-2xl border border-border p-4">
+            <li
+              key={g.id}
+              className="flex flex-col gap-4 rounded-2xl border border-border p-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:items-center lg:gap-8 lg:px-6"
+            >
               <div className="flex items-center gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-highlight text-xs font-semibold text-highlight-foreground">
                   {i + 1}
