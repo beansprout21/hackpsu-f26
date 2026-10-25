@@ -8,9 +8,9 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { GoalProfile, Plan } from "@/types";
 import { PlanSchema } from "@/types/schemas";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
-import { GOAL_LABELS } from "@/lib/server/engine/defaults";
+import { aboutTime } from "@/lib/client/time";
 import { describeAiError, getClient, getModel } from "./client";
-import { voiceSafe } from "./voice";
+import { goalWord, voiceNormalize, voiceSafe } from "./voice";
 
 const PLAN_TIMEOUT_MS = 20_000;
 
@@ -32,7 +32,8 @@ const PLAN_SYSTEM = [
   "You are Sprout, a warm, optimistic money coach for college students and young families, built as a prototype for FNB. Follow the voice rules.",
   "You receive a finished plan from Sprout's engine. You only write words. Never change any number, stage, lever, or product. Step one is final, text included: never write it.",
   "Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say an FNB advisor can help. Output JSON only.",
-  'Always call the emergency savings the "safety cushion", never just "cushion".',
+  'Always call the emergency savings the "safety cushion", never just "cushion" and never "emergency fund".',
+  "Durations: under 24 months say months; from 24 months say whole years, written the way the JSON's *Time fields are (\"about 4 years\"). Never write 24 or more months.",
   "",
   VOICE_RULES,
 ].join("\n");
@@ -45,7 +46,7 @@ const AiPlanTextSchema = z.object({
   steps: z.array(z.object({ order: z.number(), title: z.string(), detail: z.string() })),
   bankerSummary: z.string(),
 });
-type AiPlanText = z.infer<typeof AiPlanTextSchema>;
+export type AiPlanText = z.infer<typeof AiPlanTextSchema>;
 
 export interface PlanResult {
   plan: Plan;
@@ -96,13 +97,15 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       const a = skeleton.allocation.find((x) => x.goalId === g.id);
       return {
         id: g.id,
-        label: GOAL_LABELS[g.id],
+        label: goalWord(g.id),
         priority: g.priority,
         why: g.why,
         motivation: g.motivation,
         targetAmount: g.targetAmount,
         horizonMonths: g.horizonMonths,
+        horizonTime: aboutTime(g.horizonMonths),
         monthlyAmount: a?.monthlyAmount ?? 0,
+        timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null,
         requiredMonthly: a?.requiredMonthly ?? null,
         onTrack: a?.onTrack ?? null,
         levers: a?.levers ?? [],
@@ -114,6 +117,7 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       fixedSharePercent: Math.round(skeleton.fixedShare * 100),
       cushionTarget: skeleton.cushionTarget,
       cushionFillsInMonths: skeleton.cushionFillsInMonths,
+      cushionFillsInTime: skeleton.cushionFillsInMonths ? aboutTime(skeleton.cushionFillsInMonths) : null,
       threeMonthCushion: skeleton.emergencyFundTarget,
       spendingPlan: skeleton.spendingPlan.map((b) => ({ bucket: b.bucket, monthlyAmount: b.monthlyAmount, percent: Math.round(b.percent) })),
       futureYou: skeleton.futureYou,
@@ -124,7 +128,7 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       return {
         productId: m.productId,
         product: p?.name,
-        goal: GOAL_LABELS[m.goalId],
+        goal: goalWord(m.goalId),
         stage: m.stage,
         unlockCondition: m.unlockCondition ?? null,
         termsToKnow: m.termsToKnow,
@@ -205,7 +209,8 @@ export function makeGuard(facts: unknown) {
   const allowed = allowedNumbers(facts);
   let rejected = 0;
   let overBudget = 0;
-  const pick = (ai: string | undefined, fallback: string, max: number, within?: (text: string) => boolean) => {
+  const pick = (ai: string | undefined, template: string, max: number, within?: (text: string) => boolean) => {
+    const fallback = voiceNormalize(template);
     const text = clean(ai, max);
     if (!text) return fallback;
     const numbers = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
@@ -214,7 +219,7 @@ export function makeGuard(facts: unknown) {
       rejected++;
       return fallback;
     }
-    const voiced = safetyCushionName(safe);
+    const voiced = voiceNormalize(safetyCushionName(safe));
     if (within && !within(voiced)) {
       overBudget++;
       return fallback;
@@ -249,17 +254,37 @@ export function mergeText(skeleton: Plan, ai: AiPlanText, guard: ReturnType<type
   };
 }
 
-export async function generatePlan(skeleton: Plan, profile: GoalProfile): Promise<PlanResult> {
+// Full fallback: the engine's template wording, with the same voice normalization AI text gets
+// ("safety cushion", specific times). Numbers, stages, and products are untouched; Step one stays exact.
+function normalizedTemplates(plan: Plan): Plan {
+  return {
+    ...plan,
+    headline: voiceNormalize(plan.headline),
+    sproutSays: voiceNormalize(plan.sproutSays),
+    matches: plan.matches.map((m) => ({ ...m, explanation: voiceNormalize(m.explanation) })),
+    steps: plan.steps.map((s) => (s.order === 1 ? s : { ...s, title: voiceNormalize(s.title), detail: voiceNormalize(s.detail) })),
+    notYet: plan.notYet.map((n) => ({ ...n, reason: voiceNormalize(n.reason), revisitWhen: voiceNormalize(n.revisitWhen) })),
+    bankerSummary: voiceNormalize(plan.bankerSummary),
+  };
+}
+
+// Audit hook (scripts/ai-audit.ts): the AI's raw wording and the facts it saw, before any guard runs.
+export interface PlanAudit {
+  onRaw?: (ai: AiPlanText, facts: unknown) => void;
+}
+
+export async function generatePlan(skeleton: Plan, profile: GoalProfile, audit: PlanAudit = {}): Promise<PlanResult> {
   const safeSkeleton = dropUnknownProducts(skeleton);
   try {
     const facts = planFacts(safeSkeleton, profile);
     const ai = await aiPlanText(facts);
+    audit.onRaw?.(ai, facts);
     const guard = makeGuard(facts);
     const plan = PlanSchema.parse(dropUnknownProducts(mergeText(safeSkeleton, ai, guard)));
     if (guard.rejected() > 0) console.log(`[ai/plan] number/voice guard kept template text for ${guard.rejected()} field(s)`);
     if (guard.overBudget() > 0) console.log(`[ai/plan] text budget kept template text for ${guard.overBudget()} field(s)`);
     return { plan, aiUsed: true, rejectedFields: guard.rejected() + guard.overBudget() };
   } catch (error) {
-    return { plan: { ...safeSkeleton, aiUsed: false }, aiUsed: false, fallbackReason: describeAiError(error) };
+    return { plan: { ...normalizedTemplates(safeSkeleton), aiUsed: false }, aiUsed: false, fallbackReason: describeAiError(error) };
   }
 }

@@ -1,8 +1,37 @@
 // Voice guard for AI-written text (docs/SPROUT.md voice rule 3), shared by /api/chat and /api/plan.
 // "just" is dropped (meaning-safe); any other banned word means the caller keeps its template text.
+import type { GoalId } from "@/types";
+import { aboutTime, timeSpan } from "@/lib/client/time";
+import { GOAL_LABELS } from "@/lib/server/engine/defaults";
+
 const BANNED_OTHER = /\b(only|behind|should have|can't afford|cannot afford|waste)\b/i;
 
 export function voiceSafe(text: string): string | null {
   const softened = text.replace(/\bjust\s+/gi, "").replace(/\s+/g, " ").trim();
   return BANNED_OTHER.test(softened) ? null : softened;
+}
+
+// The user-facing name of a goal in AI facts and answers: the emergency_fund goal IS the safety cushion
+// (SPROUT.md), so the model never sees "emergency fund" to repeat it.
+export const goalWord = (id: GoalId) => (id === "emergency_fund" ? "safety cushion" : GOAL_LABELS[id]);
+
+// DASHBOARD.md v2 "Time is always specific": 24+ months read as whole years ("about 4 years"), via the shared
+// formatter. Ranges such as a CD's "3 to 48 months" are product terms and stay as published.
+export function specificTimes(text: string): string {
+  return text.replace(/(\b(?:about|around|roughly)\s+)?\b(\d[\d,]*)(\s+|-)(months?)\b/gi, (match, about: string | undefined, num: string, sep: string, ...rest) => {
+    const offset = rest[rest.length - 2] as number;
+    const whole = rest[rest.length - 1] as string;
+    const n = Number(num.replace(/,/g, ""));
+    if (!Number.isFinite(n) || n < 24) return match;
+    if (/\d\s*(?:to|-|–|and)\s*$/.test(whole.slice(Math.max(0, offset - 12), offset))) return match;
+    if (sep === "-") return `${about ?? ""}${Math.round(n / 12)}-year`;
+    const span = timeSpan(n);
+    return span.startsWith("more than") ? span : about ? `${about}${span}` : aboutTime(n);
+  });
+}
+
+// Applied to every AI string after the number guard (so derived year counts can't trip it), and to template
+// text shown through /api/plan and /api/chat: "safety cushion", never "emergency fund"; specific times.
+export function voiceNormalize(text: string): string {
+  return specificTimes(text.replace(/\b(e)mergency fund\b/gi, (_m, e: string) => (e === "E" ? "Safety cushion" : "safety cushion")));
 }
