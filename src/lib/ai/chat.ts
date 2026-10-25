@@ -384,8 +384,8 @@ function fitReasons(m: Match): string[] {
   ].filter((r): r is string => !!r);
 }
 
-function explainProduct(kind: "why_product" | "product_fees", plan: Plan, productId?: string): Explained | null {
-  const match = plan.matches.find((m) => m.productId === productId) ?? (productId ? undefined : fnbFitMatch(plan));
+function explainProduct(kind: "why_product" | "product_fees", plan: Plan, profile: GoalProfile, snapshot?: FinancialSnapshot, productId?: string): Explained | null {
+  const match = plan.matches.find((m) => m.productId === productId) ?? (productId ? undefined : fnbFitMatch(plan, profile, snapshot));
   if (!match) return null;
   const product = getProduct(match.productId);
   const name = product?.name ?? productShortName(match.productId);
@@ -512,7 +512,7 @@ function explain(intent: ChatIntent, question: string, profile: GoalProfile, pla
       return explainCushion(plan, snapshot);
     case "why_product":
     case "product_fees":
-      return explainProduct(intent.kind, plan, intent.productId);
+      return explainProduct(intent.kind, plan, profile, snapshot, intent.productId);
     case "when_unlock":
       return explainUnlock(plan, profile, snapshot, intent) ?? explainGap(plan, profile, question, intent.goalId);
     case "goal_gap":

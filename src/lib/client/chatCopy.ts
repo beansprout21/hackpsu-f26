@@ -1,7 +1,11 @@
 // Ask Sprout chips (docs/ASK_SPROUT.md, #76). Ben owns every chip's text: change wording here only.
 // Pure functions of the user's plan, so the same chips can be built on the server and in checks.
+// Fund names, the FNB fit, the path and the lever text come from the Overview's own model (#67), so a
+// block's chip always names what that block shows.
 import rawCatalog from "@/data/catalog.json";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, Match, Plan, Product, Stage } from "@/types";
+import { buildOverview } from "./overview";
+import { FUND_NAME, leverMoreTime, leverSmallerTarget, leverTurnUpDial } from "./planCopy";
 
 export interface Chip {
   label: string; // what the chip shows
@@ -24,19 +28,7 @@ const NUDGE = 50; // the "+$50" in the spec's what-if chips
 
 const catalog = new Map((rawCatalog as unknown as Product[]).map((p) => [p.id, p]));
 
-// SPROUT.md rule D fund names. Credit and everyday banking have none in the spec, so they use plain words.
-const FUND_NAMES: Record<GoalId, string> = {
-  travel: "travel fund",
-  first_home: "home fund",
-  education: "education fund",
-  small_business: "business fund",
-  family: "family fund",
-  emergency_fund: "safety cushion",
-  credit_building: "credit",
-  everyday_banking: "everyday banking",
-};
-
-export const fundName = (goalId: GoalId) => FUND_NAMES[goalId];
+export const fundName = (goalId: GoalId) => FUND_NAME[goalId];
 
 // "FNB SmartSecured Credit Card" -> "SmartSecured card", "Credit Center (credit score and report)" -> "Credit Center".
 export function productShortName(productId: string) {
@@ -55,16 +47,21 @@ export function p1GoalId(profile: GoalProfile): GoalId | undefined {
   return [...profile.goals].sort((a, b) => a.priority - b.priority)[0]?.id;
 }
 
-// The FNB fit under Step one: the highest-scoring `now` match.
-export function fnbFitMatch(plan: Plan): Match | undefined {
-  return plan.matches.filter((m) => m.stage === "now").sort((a, b) => b.score - a.score)[0];
+// The FNB fit under Step one, exactly as the Overview picks it; without a snapshot, the top-scoring `now` match.
+export function fnbFitMatch(plan: Plan, profile?: GoalProfile, snapshot?: FinancialSnapshot): Match | undefined {
+  const id = profile && snapshot ? buildOverview(plan, profile, snapshot).fnbFit?.productId : undefined;
+  return (
+    (id && plan.matches.find((m) => m.productId === id)) ||
+    plan.matches.filter((m) => m.stage === "now").sort((a, b) => b.score - a.score)[0]
+  );
 }
 
-export function pathMatches(plan: Plan): Partial<Record<Stage, Match>> {
+// "Your path" (DASHBOARD.md): Now = the FNB fit, Next and Later = the first match of each stage.
+export function pathMatches(plan: Plan, profile?: GoalProfile, snapshot?: FinancialSnapshot): Partial<Record<Stage, Match>> {
   return {
-    now: fnbFitMatch(plan),
+    now: fnbFitMatch(plan, profile, snapshot),
     next: plan.matches.find((m) => m.stage === "next"),
-    later: plan.matches.find((m) => m.stage === "later" && m.unlockCondition),
+    later: plan.matches.find((m) => m.stage === "later"),
   };
 }
 
@@ -84,27 +81,21 @@ const fillFaster = () => chip("How can I fill it faster?", { kind: "what_if", am
 const whyProduct = (question: string, productId: string) => chip(question, { kind: "why_product", productId });
 const productFees = (productId: string) => chip("Any fees I should know?", { kind: "product_fees", productId });
 
-// The P1 goal's lever button text (DASHBOARD.md "Your goals"), first lever only.
+// The P1 goal's lever, first lever only, with the Overview's own askSprout text (planCopy.ts).
 function leverChip(plan: Plan, goalId: GoalId): Chip | undefined {
   const lever = plan.allocation.find((a) => a.goalId === goalId)?.levers[0];
   if (!lever) return undefined;
-  const fund = fundName(goalId);
   switch (lever.kind) {
     case "turn_up_dial":
-      return chip(`What if I move ${usd(lever.moveFromGuiltFree)} a month from guilt-free to my ${fund}?`, {
-        kind: "what_if",
-        amount: lever.moveFromGuiltFree,
-        goalId,
-      });
+      return chip(leverTurnUpDial(goalId, lever.moveFromGuiltFree).askSprout, { kind: "what_if", amount: lever.moveFromGuiltFree, goalId });
     case "more_time":
-      return chip(`What if I give my ${fund} ${lever.newHorizonMonths} months?`, { kind: "goal_gap", goalId });
+      return chip(leverMoreTime(goalId, lever.newHorizonMonths).askSprout, { kind: "goal_gap", goalId });
     case "smaller_target":
-      return chip(`What if my ${fund} target were ${usd(lever.reachableAmount)}?`, { kind: "goal_gap", goalId });
+      return chip(leverSmallerTarget(goalId, lever.reachableAmount).askSprout, { kind: "goal_gap", goalId });
   }
 }
 
 export function starterChips(plan: Plan, profile: GoalProfile, snapshot?: FinancialSnapshot, history: ChatTurn[] = []): Chip[] {
-  void snapshot;
   const chips: Chip[] = [whyStepOne("Why is this my first move?")];
 
   const p1 = p1GoalId(profile);
@@ -118,7 +109,7 @@ export function starterChips(plan: Plan, profile: GoalProfile, snapshot?: Financ
     );
   }
 
-  const later = pathMatches(plan).later;
+  const later = pathMatches(plan, profile, snapshot).later;
   chips.push(
     later
       ? chip(`When can I get the ${productShortName(later.productId)}?`, { kind: "when_unlock", productId: later.productId })
@@ -129,8 +120,8 @@ export function starterChips(plan: Plan, profile: GoalProfile, snapshot?: Financ
 
 export function blockChips(plan: Plan, profile: GoalProfile, snapshot?: FinancialSnapshot, history: ChatTurn[] = []): BlockChips {
   void history; // block chips stay put; asking one again is the user's call
-  const fit = fnbFitMatch(plan);
-  const path = pathMatches(plan);
+  const fit = fnbFitMatch(plan, profile, snapshot);
+  const path = pathMatches(plan, profile, snapshot);
   const p1 = p1GoalId(profile);
 
   const goals: Partial<Record<GoalId, Chip[]>> = {};
@@ -178,7 +169,7 @@ export function followUpChips(
   const chips: (Chip | undefined)[] = [];
   switch (last.kind) {
     case "why_step_one": {
-      const after = fnbFitMatch(plan) ?? pathMatches(plan).next;
+      const after = fnbFitMatch(plan, profile, snapshot) ?? pathMatches(plan).next;
       chips.push(after && whyProduct("What comes after that?", after.productId), howSplit());
       break;
     }

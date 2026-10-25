@@ -22,12 +22,7 @@ const allBlockChips = (b: BlockChips) =>
   [b.nextMove, b.fnbFit, b.month, b.cushion, ...Object.values(b.goals), ...Object.values(b.path)].flatMap((c) => c ?? []);
 
 const mayaProfile = studentProfile as GoalProfile;
-const mayaPlanEngine = buildPlanSkeleton(mayaProfile, maya.snapshot, maya.intake);
-// SPROUT.md v3 Step one (rule D5), so the D5 explanation is checked whatever engine version is on main.
-const mayaPlan: Plan = {
-  ...mayaPlanEngine,
-  stepOne: { order: 1, stage: "now", kind: "save", title: "Move $20 into your travel fund right now.", detail: "You'll put $69 a month toward it. This starts it.", startMonth: 0 },
-};
+const mayaPlan: Plan = buildPlanSkeleton(mayaProfile, maya.snapshot, maya.intake);
 const ask = (question: string, plan: Plan, profile: GoalProfile, snapshot: FinancialSnapshot, intent?: ChatIntent, history: ChatTurn[] = []) =>
   answerQuestion(question, profile, plan, { snapshot, intent, history });
 const askChip = (c: Chip, plan: Plan, profile: GoalProfile, snapshot: FinancialSnapshot, history: ChatTurn[] = []) =>
@@ -54,6 +49,7 @@ async function mayaDemo() {
     `Starters: ${labels(starters)}`,
   );
 
+  check(mayaPlan.stepOne.title === "Move $20 into your travel fund right now.", `Engine Step one is rule D5: ${mayaPlan.stepOne.title}`);
   const first = await askChip(starters[0], mayaPlan, mayaProfile, maya.snapshot);
   check(first.route === "explain" && first.answer.includes("$69") && /top goal/.test(first.answer), `Tap 1 (D5): ${first.answer}`);
   let history: ChatTurn[] = [
@@ -102,6 +98,8 @@ function blocks() {
   const b = blockChips(mayaPlan, mayaProfile, maya.snapshot);
   check(b.nextMove[0]?.label === "Why this first?", "Your next move: Why this first?");
   check(b.fnbFit.map((c) => c.label).join("|") === "Why this account for me?|Any fees I should know?", `FNB fit: ${labels(b.fnbFit)}`);
+  check(b.fnbFit[0]?.intent.productId === "student-checking", `FNB fit product = Overview's fit: ${b.fnbFit[0]?.intent.productId}`);
+  check(b.path.now?.[0]?.label === "Why Student Checking?", `Path now: ${b.path.now?.[0]?.label}`);
   check(b.month[0]?.label === "How did you split my money?", "Your month: How did you split my money?");
   check(b.cushion.map((c) => c.label).join("|") === "Why 3 months?|How can I fill it faster?", `Cushion: ${labels(b.cushion)}`);
   check(b.goals.travel?.[0]?.label === "What if I move $140 a month from guilt-free to my travel fund?", `P1 lever: ${b.goals.travel?.[0]?.label}`);
