@@ -2,6 +2,7 @@
 // safety cushion fill time and milestone, and the Future You row.
 import type { Allocation, FutureYou, GapLever, GoalId, ProfiledGoal, SpendingBucket } from "@/types";
 import { usd, type EngineContext } from "./context";
+import { timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "./defaults";
 import { monthsToTarget, round2 } from "./math";
 
@@ -128,13 +129,13 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   const pct = (amount: number) => (income > 0 ? Math.min(100, round2((100 * amount) / income)) : 0);
   const fixed = round2(math.monthlyFixedCosts + math.monthlyDebtPayments);
   const noRoom = surplus <= 0;
-  const goalNames = otherGoals.length ? otherGoals.map((g) => GOAL_LABELS[g.id]).join(", ") : "your emergency fund";
+  const goalNames = otherGoals.length ? otherGoals.map((g) => GOAL_LABELS[g.id]).join(", ") : "your safety cushion";
 
   const emergencyNote = noRoom
     ? "First we find your breathing room, then this starts growing."
     : cushionMet
       ? "Your safety cushion is full, so all savings go to your goals."
-      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${cushionFillsInMonths} months` : ""}. After that, your goals get the full amount.`;
+      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${timeSpan(cushionFillsInMonths)}` : ""}. After that, your goals get the full amount.`;
 
   const spendingPlan: SpendingBucket[] = [
     {

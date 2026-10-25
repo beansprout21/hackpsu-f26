@@ -357,5 +357,35 @@ check(
   `Steady income + full safety cushion: homebuyer program stays later ("${homeMatch?.unlockCondition}")`,
 );
 
+// #124: user-facing engine text says "safety cushion" (never "emergency fund") and 24+ month durations as years.
+console.log("\n=== Engine template wording (#124): scenarios + the #118 grid");
+const userFacing = (p: Plan) => [
+  p.headline,
+  p.sproutSays,
+  p.stepOne.title,
+  p.stepOne.detail,
+  p.bankerSummary,
+  p.futureYou.handoff,
+  p.futureYou.unlockCondition ?? "",
+  ...p.spendingPlan.map((b) => b.note),
+  ...p.matches.flatMap((m) => [m.explanation, m.unlockCondition ?? ""]),
+  ...p.steps.flatMap((x) => [x.title, x.detail]),
+  ...p.notYet.flatMap((n) => [n.reason, n.revisitWhen]),
+];
+const wordingProblems: string[] = [];
+for (const r of lendingRuns) {
+  for (const t of userFacing(r.plan)) {
+    if (/emergency fund/i.test(t)) wordingProblems.push(r.name + ': "emergency fund" in "' + t.slice(0, 90) + '"');
+    const long = [...t.matchAll(/\b(\d+) months\b/g)].find((m) => Number(m[1]) >= 24);
+    if (long) wordingProblems.push(r.name + ': "' + long[0] + '" in "' + t.slice(0, 90) + '"');
+  }
+}
+check(
+  wordingProblems.length === 0,
+  lendingRuns.length + " plans: no \"emergency fund\" and no 24+ \"N months\" in user-facing engine text" +
+    (wordingProblems.length ? ": " + wordingProblems.slice(0, 4).join("; ") + (wordingProblems.length > 4 ? " (+" + (wordingProblems.length - 4) + ")" : "") : ""),
+);
+check(/first home \(\$15,000 in 5 years, P1/.test(j.bankerSummary), "Jordan banker summary: first home in 5 years (not 60 months)");
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

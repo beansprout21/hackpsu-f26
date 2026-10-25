@@ -16,7 +16,7 @@ export const GOAL_TARGET_DEFAULTS: Record<GoalId, number> = {
 export const GOAL_LABELS: Record<GoalId, string> = {
   first_home: "first home",
   travel: "travel",
-  emergency_fund: "emergency fund",
+  emergency_fund: "safety cushion", // SPROUT.md: the user-facing name is always "safety cushion" (#124)
   small_business: "small business",
   education: "education",
   family: "family",

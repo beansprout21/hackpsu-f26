@@ -14,6 +14,7 @@ import type {
 } from "@/types";
 import { getProduct } from "@/lib/server/catalog";
 import { buildContext, usd, type EngineContext } from "./context";
+import { timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "./defaults";
 import { feeNote, termsWithFee } from "./fees";
 import { monthsToTarget } from "./math";
@@ -245,7 +246,7 @@ function bankerSummary(ctx: EngineContext, matches: Candidate[], spending: Spend
       if (ctx.habits.includes(g)) return `${GOAL_LABELS[g.id]} (habit, P${g.priority})`;
       const a = spending.allocation.find((x) => x.goalId === g.id);
       const status = a ? (a.onTrack ? "on track" : `${usd(a.monthlyAmount)}/mo of ${usd(a.requiredMonthly)}/mo needed`) : "";
-      return `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${g.horizonMonths} months, P${g.priority}${status ? `, ${status}` : ""})`;
+      return `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${timeSpan(g.horizonMonths)}, P${g.priority}${status ? `, ${status}` : ""})`;
     })
     .join("; ");
   const names = (stage: string) =>
@@ -275,10 +276,13 @@ function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
   // Second sentence: the early win (1 month covered) when it's still ahead, else the full cushion.
   const fills = spending.cushionFillsInMonths;
   const milestone = spending.milestoneInMonths;
-  const fullOnly = `${usd(spending.emergencyMonthly)} a month fills your safety cushion in ${fills} months, then your goals get the full amount.`;
+  // DASHBOARD.md v2: durations of 24+ months read as years (#124); shorter ones keep the plain month count.
+  const span = (m: number) => (m < 24 ? `${m} months` : timeSpan(m));
+  const bare = (m: number) => (m < 24 ? String(m) : timeSpan(m));
+  const fullOnly = `${usd(spending.emergencyMonthly)} a month fills your safety cushion in ${span(fills ?? 0)}, then your goals get the full amount.`;
   const second = fills
     ? milestone && milestone < fills
-      ? `${usd(spending.emergencyMonthly)} a month covers one month of costs in ${milestone} months and fills your safety cushion in ${fills}.`
+      ? `${usd(spending.emergencyMonthly)} a month covers one month of costs in ${span(milestone)} and fills your safety cushion in ${bare(fills)}.`
       : fullOnly
     : "Let's give every dollar a job, beginning with one easy step right now.";
   // Text budget (DASHBOARD.md): <= 35 words; a long P1 name drops the milestone clause.
