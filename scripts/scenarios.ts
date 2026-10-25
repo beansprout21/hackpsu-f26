@@ -83,7 +83,9 @@ function badNumbers(value: unknown, path: string, out: string[]): string[] {
 
 function flagsFor(p: Plan, p1Id: string | undefined): string[] {
   const flags: string[] = [];
-  if (p.stepOne.kind === "open" || /\bopen\b/i.test(`${p.stepOne.title} ${p.stepOne.detail}`)) {
+  // "Open your bank app" is fine; opening an account, card, or CD is not.
+  const OPENS_ACCOUNT = /\bopen\b[^.]*\b(account|checking|savings|card|cd)\b/i;
+  if (p.stepOne.kind === "open" || p.stepOne.productId || OPENS_ACCOUNT.test(`${p.stepOne.title} ${p.stepOne.detail}`)) {
     flags.push(`Step one opens an account ("${p.stepOne.title}")`);
   }
 
