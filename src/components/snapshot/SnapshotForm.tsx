@@ -8,11 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
+  countedRows,
   CREDIT_BANDS,
+  FREQUENCY_HINTS,
   FREQUENCY_LABELS,
   INCOME_OPTIONS,
   missingAnswers,
-  newRowKey,
+  newRow,
+  optionById,
+  SCOPE_LINE,
   snapshotFromDraft,
   type SnapshotDraft,
 } from "./draft";
@@ -92,9 +96,12 @@ export function SnapshotForm({
         if (missing.length === 0) onSubmit();
       }}
     >
-      <Button type="button" variant="outline" disabled className="h-11 justify-center gap-2 lg:col-start-1 lg:row-start-1">
-        <Link2 aria-hidden /> Connect your bank (coming soon, via Plaid)
-      </Button>
+      <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1">
+        <p className="text-sm text-muted-foreground">{SCOPE_LINE}</p>
+        <Button type="button" variant="outline" disabled className="h-11 justify-center gap-2">
+          <Link2 aria-hidden /> Connect your bank (coming soon, via Plaid)
+        </Button>
+      </div>
 
       <fieldset className="flex flex-col gap-3 lg:col-start-1 lg:row-start-2">
         <legend className="mb-3 text-lg font-semibold">Is your income steady each month?</legend>
@@ -121,8 +128,14 @@ export function SnapshotForm({
             <p className="text-sm text-muted-foreground">
               Add the money you get in lump sums. No money coming in yet is a fine place to start.
             </p>
-            {draft.rows.map((row) => {
-              const option = INCOME_OPTIONS.find((o) => o.kind === row.kind)!;
+            <div className="flex flex-wrap gap-2">
+              <Choice on={draft.noIncome} onClick={() => set({ noIncome: !draft.noIncome })}>
+                No money coming in right now
+              </Choice>
+            </div>
+            {!draft.noIncome && draft.rows.map((row) => {
+              const option = optionById(row.optionId);
+              const hint = FREQUENCY_HINTS[row.frequency];
               return (
                 <div key={row.key} className="flex flex-col gap-2 rounded-xl border border-border p-3">
                   <div className="flex items-center justify-between">
@@ -157,24 +170,25 @@ export function SnapshotForm({
                   ) : (
                     <p className="text-xs text-muted-foreground">{FREQUENCY_LABELS[option.frequencies[0]]}</p>
                   )}
+                  {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
                 </div>
               );
             })}
-            <div className="flex flex-wrap gap-2">
-              {INCOME_OPTIONS.map((o) => (
-                <Button
-                  key={o.kind}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    set({ rows: [...draft.rows, { key: newRowKey(), kind: o.kind, frequency: o.frequencies[0], amount: "" }] })
-                  }
-                >
-                  <Plus aria-hidden /> {o.label}
-                </Button>
-              ))}
-            </div>
+            {!draft.noIncome && (
+              <div className="flex flex-wrap gap-2">
+                {INCOME_OPTIONS.map((o) => (
+                  <Button
+                    key={o.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => set({ rows: [...draft.rows, newRow(o)] })}
+                  >
+                    <Plus aria-hidden /> {o.label}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </fieldset>
@@ -197,7 +211,10 @@ export function SnapshotForm({
       </fieldset>
 
       <div className="lg:sticky lg:top-24 lg:col-start-2 lg:row-span-6 lg:row-start-1 lg:self-start">
-        <SurplusReadout snapshot={snapshotFromDraft(draft)} />
+        <SurplusReadout
+          snapshot={snapshotFromDraft(draft)}
+          lineLabels={countedRows(draft).map((r) => optionById(r.optionId).label)}
+        />
       </div>
 
       <fieldset className="flex flex-col gap-3 lg:col-start-1 lg:row-start-4">

@@ -85,21 +85,24 @@ export function SnapshotFlow() {
           </div>
         </div>
       )}
-      <DemoPrefill onPick={prefill} />
       <SnapshotForm draft={draft} onChange={setDraft} onSubmit={() => void generate()} submitting={false} />
+      <DemoPrefill onPick={prefill} />
     </div>
   );
 }
 
+// Presenter-only prefill, kept out of the way at the bottom of the page.
 function DemoPrefill({ onPick }: { onPick: (p: DemoPersona) => void }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Demo:</span>
-      {[maya, jordan, mayaOpposite].map((p) => (
-        <Button key={p.id} type="button" variant="secondary" size="sm" onClick={() => onPick(p)}>
-          {p.id === "maya-opposite" ? p.name : `Fill in as ${p.name}`}
-        </Button>
-      ))}
-    </div>
+    <section aria-label="Demo shortcuts" className="flex flex-col gap-2 rounded-xl border border-dashed border-border p-3 text-sm">
+      <p className="text-xs font-medium text-muted-foreground">Demo shortcuts</p>
+      <div className="flex flex-wrap gap-2">
+        {[maya, jordan, mayaOpposite].map((p) => (
+          <Button key={p.id} type="button" variant="secondary" size="sm" onClick={() => onPick(p)}>
+            {p.id === "maya-opposite" ? p.name : `Fill in as ${p.name}`}
+          </Button>
+        ))}
+      </div>
+    </section>
   );
 }
