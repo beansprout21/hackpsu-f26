@@ -256,7 +256,8 @@ check(
   JSON.stringify(OPPOSITE_VALUES) === JSON.stringify(deriveValues(flipSwipes(maya.intake.swipes))),
   `Opposite fixture values = intake-derived values from flipped swipes (${OPPOSITE_VALUES.join(", ")})`,
 );
-check(oppositeDef.id === "family_first", `Opposite swipes persona = Family First (got ${oppositeDef.id})`);
+// #96: swipe card 2 right is now security, so the flipped swipes tally security first.
+check(oppositeDef.id === "safety_builder", `Opposite swipes persona = Safety Builder (got ${oppositeDef.id})`);
 check(JSON.stringify(m) !== JSON.stringify(opp), "Maya vs opposite swipes: plans differ");
 // v3.1 proof moment: a family top value tilts the plan cushion-first, so the plan visibly changes.
 check(
