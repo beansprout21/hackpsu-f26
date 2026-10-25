@@ -109,7 +109,8 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
         requiredMonthly: a?.requiredMonthly ?? null,
         onTrack: a?.onTrack ?? null,
         gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null,
-        levers: a?.levers ?? [],
+        // Durations as *Time strings only (#121 cycle 3): no raw month counts for the model to echo.
+        levers: (a?.levers ?? []).map((l) => (l.kind === "more_time" ? { kind: l.kind, newHorizonTime: aboutTime(l.newHorizonMonths) } : l)),
       };
     }),
     money: {
@@ -117,7 +118,6 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       monthlySurplus: skeleton.monthlySurplus,
       fixedSharePercent: Math.round(skeleton.fixedShare * 100),
       cushionTarget: skeleton.cushionTarget,
-      cushionFillsInMonths: skeleton.cushionFillsInMonths,
       cushionFillsInTime: skeleton.cushionFillsInMonths ? aboutTime(skeleton.cushionFillsInMonths) : null,
       threeMonthCushion: skeleton.emergencyFundTarget,
       spendingPlan: skeleton.spendingPlan.map((b) => ({ bucket: b.bucket, monthlyAmount: b.monthlyAmount, percent: Math.round(b.percent) })),
@@ -159,7 +159,7 @@ function userPrompt(facts: ReturnType<typeof planFacts>): string {
     "",
     "Rewrite ONLY the wording:",
     `- headline: at most ${TEXT_BUDGET.headlineWords} words, optimistic, about what this plan gets them.`,
-    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total. If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". Mention when the safety cushion fills if cushionFillsInMonths is set. Call it the "safety cushion".`,
+    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total. If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". Mention when the safety cushion fills if cushionFillsInTime is set, in those words. Call it the "safety cushion".`,
     "- stepOne is FINAL: do not write a title or detail for it. Step 1 in steps is the same action; leave it as given.",
     `- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. The first sentence is at most ${TEXT_BUDGET.explanationFirstSentenceWords} words (it is shown on its own). Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it.`,
     "- steps: one per order number above except order 1; short imperative title and a 1-sentence detail. Keep the same action, product, and amount.",

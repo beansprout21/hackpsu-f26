@@ -7,7 +7,7 @@ import familyProfile from "../src/data/mocks/profile.family.json";
 import { jordan, maya } from "../src/data/personas";
 import { blockChips, followUpChips, starterChips, type BlockChips, type Chip } from "../src/lib/client/chatCopy";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
-import { answerQuestion } from "../src/lib/ai/chat";
+import { answerQuestion, explain } from "../src/lib/ai/chat";
 import { generatePlan, makeGuard, mergeText } from "../src/lib/ai/plan";
 import { gapClaimsConsistent, specificTimes, voiceNormalize } from "../src/lib/ai/voice";
 import { scenarios } from "../src/data/scenarios";
@@ -181,6 +181,21 @@ async function gapClaims() {
   check(merged.sproutSays === voiceNormalize(mayaPlan.sproutSays), "wrong gap in AI sproutSays falls back to the template");
 }
 
+function explainFacts() {
+  console.log("\n=== Explain facts (#121 cycle 3): honest cushion reason, durations as time strings");
+  const jordanProfile = familyProfile as GoalProfile;
+  const jordanPlan = buildPlanSkeleton(jordanProfile, jordan.snapshot, jordan.intake);
+  const mayaWhy = String(explain({ kind: "why_cushion" }, "Why 3 months?", mayaProfile, mayaPlan, maya.snapshot)?.facts.why ?? "");
+  const jordanWhy = String(explain({ kind: "why_cushion" }, "Why 3 months?", jordanProfile, jordanPlan, jordan.snapshot)?.facts.why ?? "");
+  check(/irregular/i.test(mayaWhy), "Maya (no steady income): irregular-income reason");
+  check(!/irregular/i.test(jordanWhy), "Jordan (steady income): no irregular-income reason");
+  const kinds: ChatIntent[] = [{ kind: "why_cushion" }, { kind: "goal_gap", goalId: "travel" }, { kind: "when_unlock", productId: "smartsecured-card" }];
+  for (const intent of kinds) {
+    const facts = JSON.stringify(explain(intent, "?", mayaProfile, mayaPlan, maya.snapshot)?.facts ?? {});
+    check(!/monthsToTarget|monthsAway|fullInMonths|newHorizonMonths|"inMonths"/.test(facts), `${intent.kind}: facts carry *Time strings, not raw month counts`);
+  }
+}
+
 async function boundary() {
   console.log("\n=== Advice boundary");
   const invest = await ask("Should I put money in index funds or a Roth IRA?", mayaPlan, mayaProfile, maya.snapshot);
@@ -196,6 +211,7 @@ async function main() {
   await boundary();
   await voiceNormalizer();
   await gapClaims();
+  explainFacts();
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
 }
