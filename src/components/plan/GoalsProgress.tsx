@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, CircleCheck, TrendingUp } from "lucide-react";
 import { AskChip } from "@/components/chat/AskSprout";
 import { goalMeta } from "@/components/intake/copy";
+import { statedGap } from "@/lib/client/overview";
 import { cn } from "@/lib/utils";
 import type { Allocation, GapLever } from "@/types";
 import { formatMonths, usd } from "./format";
@@ -33,6 +34,8 @@ function GoalRow({ a }: { a: Allocation }) {
   const meta = goalMeta(a.goalId);
   const pct = fillPct(a);
   const levers = a.levers.map((l) => leverCopy(l, a, meta.label));
+  // DASHBOARD.md v2.1 (#159): name the monthly gap only when guilt-free money can close it.
+  const closable = statedGap(a) !== null;
 
   return (
     <li className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card">
@@ -60,7 +63,7 @@ function GoalRow({ a }: { a: Allocation }) {
           />
         </div>
         <p className="text-small text-muted-foreground tabular-nums">
-          {usd(a.monthlyAmount)}/mo of the {usd(a.requiredMonthly)}/mo it needs
+          {closable || a.onTrack ? `${usd(a.monthlyAmount)}/mo of the ${usd(a.requiredMonthly)}/mo it needs` : `${usd(a.monthlyAmount)}/mo going in`}
           {a.monthlyAmount > 0 ? ` · at this pace, ${formatMonths(a.monthsToTarget)}` : " · starts after your safety cushion"}
         </p>
       </div>
@@ -70,7 +73,7 @@ function GoalRow({ a }: { a: Allocation }) {
       {!a.onTrack && levers.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">
-            Ways to close the gap
+            {closable ? "Ways to close the gap" : "Ways to get there"}
           </span>
           <div className="flex flex-wrap gap-2">
             {levers.map((l, i) => (
