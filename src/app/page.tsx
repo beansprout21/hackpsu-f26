@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Landmark, Route, Shrub, Sprout, Target, TreeDeciduous } from "lucide-react";
-import { LinkPendingIcon } from "@/components/layout/LinkPendingIcon";
+import { Landmark, Route, Shrub, Sprout, Target, TreeDeciduous } from "lucide-react";
+import { GoalChoices } from "@/components/landing/GoalChoices";
 import { SproutSays } from "@/components/sprout/SproutSays";
 import { cn } from "@/lib/utils";
 
@@ -52,35 +52,10 @@ const PREVIEW = [
   },
 ] as const;
 
-function StartButton({ className }: { className?: string }) {
-  return (
-    <Link
-      href="/intake"
-      className={cn(
-        "group inline-flex h-14 w-full items-center justify-center rounded-xl bg-primary px-8 text-lead font-semibold text-primary-foreground shadow-card transition-[background-color,box-shadow,transform] duration-200 outline-none select-none",
-        "hover:bg-primary-hover hover:shadow-raised active:translate-y-px active:bg-primary-active",
-        "focus-visible:ring-4 focus-visible:ring-ring/40 aria-disabled:pointer-events-none aria-disabled:opacity-50",
-        "sm:w-auto motion-reduce:transition-none",
-        className,
-      )}
-    >
-      <span className="inline-flex items-center gap-2">
-        Start my plan (about 3 minutes)
-        <LinkPendingIcon className="size-6">
-          <ArrowRight
-            className="size-6 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
-            aria-hidden
-          />
-        </LinkPendingIcon>
-      </span>
-    </Link>
-  );
-}
-
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-12 sm:px-6 sm:py-24 lg:px-10">
-      <section className="grid items-center gap-12 md:grid-cols-[1.15fr_1fr]">
+      <section className="grid items-center gap-12 md:grid-cols-[1.15fr_1fr] xl:grid-cols-[1.6fr_1fr]">
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <p className="text-small font-semibold tracking-wide text-brand-700 uppercase">
@@ -96,18 +71,25 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <StartButton className="sm:self-start" />
+            <GoalChoices />
             <span className="text-small text-muted-foreground">
-              Swipe what you value → Set your goals → Get your plan
+              About 90 seconds · No sign-up to start · No credit check
             </span>
+            <Link
+              href="/intake"
+              className="self-start rounded text-small text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-4 focus-visible:ring-ring/30"
+            >
+              Something else
+            </Link>
           </div>
         </div>
 
         <div className="flex flex-col gap-6 rounded-3xl bg-card p-6 shadow-card">
           <SproutSays>
-            Hi, I&apos;m Sprout! Let&apos;s start with what you want, like a trip, a safety cushion,
-            or your first place. The numbers come after.
+            Hi, I&apos;m Sprout! Pick what you&apos;re working toward and I&apos;ll map out the steps. The
+            numbers come after.
           </SproutSays>
+          <p className="-mb-2 text-caption text-muted-foreground">Your plan will look like this</p>
           <ol className="flex flex-col" aria-label="Example plan">
             {PREVIEW.map(({ icon: Icon, ...item }, i) => (
               <li key={item.stage} className="flex gap-4">
