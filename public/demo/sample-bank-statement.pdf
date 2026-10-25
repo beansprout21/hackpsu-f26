@@ -1,0 +1,85 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 2096 >>
+stream
+0.86 0.15 0.15 rg 50 746 512 24 re f
+1 1 1 rg
+BT /F2 13 Tf 190 753 Td (SAMPLE - NOT A REAL DOCUMENT) Tj ET
+0 0 0 rg
+BT /F2 20 Tf 50 712 Td (Sample Bank) Tj ET
+BT /F1 10 Tf 50 694 Td (Made-up bank for a hackathon demo. Not a real bank, account, or person.) Tj ET
+BT /F2 11 Tf 50 664 Td (Account holder: Sample Student) Tj ET
+BT /F1 10 Tf 50 648 Td (Statement period: September 1, 2026 to September 30, 2026) Tj ET
+BT /F1 10 Tf 50 634 Td (Accounts: Student Checking \(sample\)  and  Savings \(sample\)) Tj ET
+BT /F2 12 Tf 50 600 Td (Account summary) Tj ET
+0.6 0.6 0.6 RG 0.5 w 50 594 m 562 594 l S
+BT /F1 10 Tf 50 578 Td (Student Checking: beginning balance) Tj ET
+BT /F1 10 Tf 527 578 Td ($250.00) Tj ET
+BT /F1 10 Tf 50 562 Td (Student Checking: ending balance) Tj ET
+BT /F1 10 Tf 517 562 Td ($1,900.00) Tj ET
+BT /F1 10 Tf 50 546 Td (Savings: ending balance) Tj ET
+BT /F1 10 Tf 527 546 Td ($400.00) Tj ET
+BT /F2 12 Tf 50 510 Td (Student Checking activity) Tj ET
+0.6 0.6 0.6 RG 0.5 w 50 504 m 562 504 l S
+BT /F2 10 Tf 50 488 Td (Date) Tj ET
+BT /F2 10 Tf 110 488 Td (Description) Tj ET
+BT /F1 10 Tf 430 488 Td (Deposits) Tj ET
+BT /F1 10 Tf 507 488 Td (Withdrawals) Tj ET
+BT /F1 10 Tf 50 470 Td (09/01) Tj ET
+BT /F1 10 Tf 110 470 Td (Monthly transfer from family) Tj ET
+BT /F1 10 Tf 440 470 Td (300.00) Tj ET
+BT /F1 10 Tf 50 452 Td (09/01) Tj ET
+BT /F1 10 Tf 110 452 Td (Rent payment) Tj ET
+BT /F1 10 Tf 532 452 Td (560.00) Tj ET
+BT /F1 10 Tf 50 434 Td (09/05) Tj ET
+BT /F1 10 Tf 110 434 Td (Electric bill autopay) Tj ET
+BT /F1 10 Tf 537 434 Td (45.00) Tj ET
+BT /F1 10 Tf 50 416 Td (09/08) Tj ET
+BT /F1 10 Tf 110 416 Td (Phone bill) Tj ET
+BT /F1 10 Tf 537 416 Td (45.00) Tj ET
+BT /F1 10 Tf 50 398 Td (09/12) Tj ET
+BT /F1 10 Tf 110 398 Td (Financial aid refund \(fall semester\)) Tj ET
+BT /F1 10 Tf 430 398 Td (2,000.00) Tj ET
+0.6 0.6 0.6 RG 0.5 w 50 388 m 562 388 l S
+BT /F2 10 Tf 110 372 Td (Totals) Tj ET
+BT /F1 10 Tf 430 372 Td (2,300.00) Tj ET
+BT /F1 10 Tf 532 372 Td (650.00) Tj ET
+0.86 0.15 0.15 rg 50 54 512 24 re f
+1 1 1 rg
+BT /F2 13 Tf 190 61 Td (SAMPLE - NOT A REAL DOCUMENT) Tj ET
+0 0 0 rg
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+7 0 obj
+<< /Title (SAMPLE - NOT A REAL DOCUMENT - Sample Bank statement) >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000002399 00000 n 
+0000002469 00000 n 
+0000002544 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
+startxref
+2627
+%%EOF
