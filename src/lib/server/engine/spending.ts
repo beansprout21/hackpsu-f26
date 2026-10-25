@@ -1,5 +1,5 @@
-// Rule sets B, C, F (docs/SPROUT.md v2): spending plan, per-goal allocation with gap levers,
-// cushion fill time, and the Future You row.
+// Rule sets B, C, F (docs/SPROUT.md v3): spending plan, per-goal allocation with gap levers,
+// safety cushion fill time and milestone, and the Future You row.
 import type { Allocation, FutureYou, GapLever, GoalId, ProfiledGoal, SpendingBucket } from "@/types";
 import { usd, type EngineContext } from "./context";
 import { GOAL_LABELS } from "./defaults";
@@ -19,6 +19,8 @@ export interface SpendingResult {
   futureYou: FutureYou;
   highFixedCosts: boolean;
   cushionFillsInMonths: number | null;
+  // Rule set B (v3): months until "1 month covered" (1 x fixed + debt); null once reached or when nothing is saved.
+  milestoneInMonths: number | null;
 }
 
 // Split whole dollars by priority weight (renormalized); leftover dollars go to the first goal.
@@ -89,12 +91,16 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   }
   const guiltFreeMonthly = surplus > 0 ? Math.max(0, Math.floor(surplus - savingsMonthly - earmark)) : 0;
 
-  // Inside savings: cushion first (50/50) until the target cushion is met.
+  // Inside savings: safety cushion first (50/50) until it is met; existing savings count toward it.
   const cushionMet = snapshot.savingsBalance >= ctx.cushionTarget;
   const emergencyMonthly = cushionMet ? 0 : Math.floor(savingsMonthly * 0.5);
   const goalMonthly = savingsMonthly - emergencyMonthly;
   const cushionFillsInMonths =
     !cushionMet && emergencyMonthly > 0 ? monthsToTarget(ctx.cushionTarget, snapshot.savingsBalance, emergencyMonthly) : null;
+  const milestoneInMonths =
+    emergencyMonthly > 0 && snapshot.savingsBalance < math.monthlyCosts
+      ? monthsToTarget(math.monthlyCosts, snapshot.savingsBalance, emergencyMonthly)
+      : null;
 
   const goals = [...profile.goals].sort((a, b) => a.priority - b.priority);
   const otherGoals = goals.filter((g) => g.id !== "emergency_fund");
@@ -125,8 +131,8 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   const emergencyNote = noRoom
     ? "First we find your breathing room, then this starts growing."
     : cushionMet
-      ? "Your cushion is in place, so all savings go to your goals."
-      : `Builds your cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${cushionFillsInMonths} months` : ""}. After that, your goals get the full amount.`;
+      ? "Your safety cushion is full, so all savings go to your goals."
+      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${cushionFillsInMonths} months` : ""}. After that, your goals get the full amount.`;
 
   const spendingPlan: SpendingBucket[] = [
     {
@@ -163,5 +169,6 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
     futureYou: futureYouFor(ctx, earmark, highFixed),
     highFixedCosts: highFixed,
     cushionFillsInMonths,
+    milestoneInMonths,
   };
 }

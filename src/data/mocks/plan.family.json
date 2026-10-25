@@ -1,14 +1,13 @@
 {
-  "headline": "Step one this week, then $188 a month toward your goals, starting with first home",
-  "sproutSays": "You have $750 a month of breathing room, and that's a real start. $187 a month fills your cushion in 21 months, then your goals get the full amount.",
+  "headline": "$188 a month toward your goals, starting with first home",
+  "sproutSays": "You have $750 a month of breathing room, and that's a real start. $187 a month covers one month of costs in 3 months and fills your safety cushion in 21.",
   "stepOne": {
     "order": 1,
     "stage": "now",
-    "kind": "open",
-    "title": "Open Freestyle Checking this week",
-    "detail": "No monthly fee when you choose free online statements, and $0 to open in a branch.",
-    "startMonth": 0,
-    "productId": "freestyle-checking"
+    "kind": "save",
+    "title": "Move $20 into your home fund right now.",
+    "detail": "You'll put $188 a month toward it. This starts it.",
+    "startMonth": 0
   },
   "effectiveMonthlyIncome": 2400,
   "monthlySurplus": 750,
@@ -23,7 +22,7 @@
       "bucket": "emergency_fund",
       "monthlyAmount": 187,
       "percent": 7.79,
-      "note": "Builds your cushion to $4,950 in about 21 months. After that, your goals get the full amount."
+      "note": "Builds your safety cushion to $4,950 in about 21 months. After that, your goals get the full amount."
     },
     {
       "bucket": "goal_savings",
@@ -99,7 +98,7 @@
         "affordability": 20,
         "priority": 15
       },
-      "explanation": "Mortgage calculators fits your first home goal, and you can start right away. Affordability, down payment comparison, fixed vs adjustable.",
+      "explanation": "Mortgage calculators fits your first home goal, and it's ready today. Affordability, down payment comparison, fixed vs adjustable.",
       "termsToKnow": [
         "Free",
         "Affordability, down payment comparison, fixed vs adjustable",
@@ -139,7 +138,7 @@
         "affordability": 10,
         "priority": 12
       },
-      "explanation": "FirstRate Savings fits your emergency fund goal, and you can start right away. $5 monthly fee, already waived by your $500+ balance.",
+      "explanation": "FirstRate Savings fits your emergency fund goal, and it's ready today. $5 monthly fee, already waived by your $500+ balance.",
       "termsToKnow": [
         "$5 monthly fee, already waived by your $500+ balance",
         "$50 to open online, $0 in a branch",
@@ -159,7 +158,7 @@
         "affordability": 10,
         "priority": 12
       },
-      "explanation": "Once your first account is open, Flex CD is the natural next move for your emergency fund goal. One penalty-free withdrawal a month: at least $500, deposited to FNB checking, 7-day holding rules.",
+      "explanation": "Flex CD is the natural next move for your emergency fund goal. One penalty-free withdrawal a month: at least $500, deposited to FNB checking, 7-day holding rules.",
       "termsToKnow": [
         "One penalty-free withdrawal a month: at least $500, deposited to FNB checking, 7-day holding rules",
         "9-month term with a fixed rate",
@@ -172,7 +171,7 @@
       "productId": "fnb-home-ownership-program",
       "goalId": "first_home",
       "stage": "later",
-      "unlockCondition": "When 3 months of expenses ($4,950) are saved",
+      "unlockCondition": "When your $4,950 safety cushion is full",
       "unlockTrigger": {
         "kind": "savings_threshold",
         "amount": 4950
@@ -184,7 +183,7 @@
         "affordability": 4,
         "priority": 15
       },
-      "explanation": "FNB Home Ownership Program is on your path for your first home goal. It unlocks when 3 months of expenses ($4,950) are saved.",
+      "explanation": "FNB Home Ownership Program is on your path for your first home goal. It unlocks when your $4,950 safety cushion is full.",
       "termsToKnow": [
         "Little to no down payment",
         "Up to $5,000 closing cost assistance grant from FNB",
@@ -198,18 +197,17 @@
     {
       "order": 1,
       "stage": "now",
-      "kind": "open",
-      "title": "Open Freestyle Checking this week",
-      "detail": "No monthly fee when you choose free online statements, and $0 to open in a branch.",
-      "startMonth": 0,
-      "productId": "freestyle-checking"
+      "kind": "save",
+      "title": "Move $20 into your home fund right now.",
+      "detail": "You'll put $188 a month toward it. This starts it.",
+      "startMonth": 0
     },
     {
       "order": 2,
       "stage": "now",
       "kind": "habit",
       "title": "Automate it on payday",
-      "detail": "Move $375 to savings first: $187 to your cushion, $188 to your goals.",
+      "detail": "Move $375 to savings first: $187 to your safety cushion, $188 to your goals.",
       "startMonth": 0,
       "productId": "firstrate-savings",
       "monthlyAmount": 375
@@ -243,10 +241,10 @@
       "order": 6,
       "stage": "now",
       "kind": "open",
-      "title": "Open FirstRate Savings",
-      "detail": "$5 monthly fee, already waived by your $500+ balance",
+      "title": "Open Freestyle Checking",
+      "detail": "No monthly fee when you choose free online statements",
       "startMonth": 0,
-      "productId": "firstrate-savings"
+      "productId": "freestyle-checking"
     },
     {
       "order": 7,
@@ -263,7 +261,7 @@
       "stage": "later",
       "kind": "talk_to_banker",
       "title": "Talk to an FNB banker about FNB Home Ownership Program",
-      "detail": "When 3 months of expenses ($4,950) are saved",
+      "detail": "When your $4,950 safety cushion is full",
       "startMonth": 21,
       "productId": "fnb-home-ownership-program"
     }
@@ -272,8 +270,8 @@
     {
       "productId": "fnb-home-ownership-program",
       "goalId": "first_home",
-      "reason": "Not a mortgage pre-approval yet. Your savings cover less than 3 months of costs, and buying now would leave no cushion.",
-      "revisitWhen": "after $4,950 (3 months of costs) is saved"
+      "reason": "Not a mortgage pre-approval yet. Your savings cover less than 3 months of costs, and buying now would leave no safety cushion.",
+      "revisitWhen": "after your $4,950 safety cushion is full"
     }
   ],
   "bankerSummary": "Young family, not yet an FNB customer, steady income. Income: $2,400/mo job = about $2,400/mo effective. Fixed costs $1,500, debt payments $150 (69% of income), surplus $750/mo, savings $1,200, credit range: fair. Spending plan: $375/mo savings, $375/mo guilt-free. Goals: first home ($15,000 in 60 months, P1, $188/mo of $250/mo needed); emergency fund ($5,000 est. in 12 months, P2, $187/mo of $413/mo needed). Plan: now Mortgage calculators, Freestyle Checking, FirstRate Savings; next Flex CD; later FNB Home Ownership Program.",
