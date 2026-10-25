@@ -88,5 +88,5 @@ All strings live in `src/lib/client/planCopy.ts` so Ben can edit text in one pla
 - FNB fit: FNB Student Checking.
 - Month: "You have $483 a month to work with." Bar $113 / $113 / $257.
 - Cushion: "$400 of $1,950 · 1 month covered in 3 months · full in 14 months".
-- Goals: "Travel fund is $140 a month away." + "See what moving $140 from guilt-free does"; credit building and home lines follow the rules above.
+- Goals: "Travel fund is $129 a month away." + "See what moving $129 from guilt-free does"; credit building and home lines follow the rules above.
 - Path: Now Student Checking; Next Savers Goal CD; Later SmartSecured card, unlocks at $1,150 saved or first paycheck.

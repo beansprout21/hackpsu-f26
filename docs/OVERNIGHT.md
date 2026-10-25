@@ -66,3 +66,20 @@ Lead decisions made overnight (Ben may override):
 - Rule clarified (#109): FNB Student Checking keeps a `null` deposit (FNB doesn't publish one) and is allowed `now` for no-surplus students; never "$0 to open".
 
 **For Ben:** the Fixer reports one rule slip: it force-pushed (`--force-with-lease`) its own PR branch for #133 after a rebase. Its branch only, nothing lost; it now merges instead of rebasing.
+
+### 5:30 AM (lead wake 3)
+**MAYA CHANGED (#106, PR #143):** travel $91 → **$80**, home $22 → **$33**, Japan gap $118 → **$129**. Levers: move $129 from guilt-free (guilt-free stays $128), 32 months, or $960. Cushion unchanged: $1,950, full in 14 months, 1 month covered in 3. Opposite swipes: Safety Builder, cushion full in 12 months, travel $144 away.
+- Verified by the lead: check-engine passes against this golden on `main` b2a3a65.
+- Updated to these numbers: deck slides 5, 6, 7 (no `[confirm]` left; slide 7 test line now says 2,000+ generated users, 200 live AI plans, 400 answers), pitch script + Q&A, video script, DASHBOARD.md, ASK_SPROUT.md.
+- **Still quoting $140 (yours to change in the morning):** the Devpost story, docs/DEMO.md (Ethan's), and a voice example in `src/lib/ai/plan.ts` (code; harmless, the number guard catches copied numbers).
+
+**Verified by the lead on `main` b2a3a65 (AI off):** check-engine, check-overview, check-chat, scenarios pass. Stress seed 9707: goal bucket 40 (#107), no surplus 96 under the v3.3 invariant (#109). Everything else 0.
+
+**Merged since 4:25:** #142 (#105 duplicate goal ids), #143 (#106 rank weights), #145 (Finder: v3.3 invariants, seed override, STRESS.md).
+
+**Agent health:**
+- **Fixer stopped at 4:40 AM** after its 8-cycle cap. Fixed overnight: #118, #124, #126, #130, #139, #105, #106. Not started: **#107, #109 (both P0)**, #111 to #114, #144. I can't restart it from here (it runs on Ben's laptop).
+- Finder still running (cycle 4 at 4:38, seed 97704: goal bucket 78, no surplus 154/204). New: #144 (P1, no-surplus gap chip says "needs $209 and gets $0" with no next step).
+- AI auditor stopped at 3:13 (cap used).
+
+**Morning decision for Ben:** start a builder session at 7:45 on #109 then #107 (rules are in SPROUT.md v3.3; bug fixes are allowed after the 9:00 freeze), or leave them: the demo personas (Maya, Jordan) don't hit either bug.
