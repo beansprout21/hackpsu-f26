@@ -1,6 +1,7 @@
 import { SWIPE_CARDS } from "@/data/swipeCards";
 import { IntakeAnswersSchema } from "@/types/schemas";
 import type { GoalId, IntakeAnswers, LifeStage, SwipeAnswer, ValueTag } from "@/types";
+import { goalMeta } from "./copy";
 
 export interface GoalDraft {
   id: GoalId;
@@ -13,9 +14,18 @@ export interface GoalDraft {
 export interface IntakeDraft {
   lifeStage?: LifeStage;
   swipes: SwipeAnswer[];
-  goals: GoalDraft[]; // array order = priority
+  goals: GoalDraft[]; // money goals first, in priority order; habits after (unranked)
   richLifeText: string;
 }
+
+export const isHabit = (id: GoalId) => goalMeta(id).group === "habit";
+export const MAX_MONEY_GOALS = 3;
+
+// Contracts v2.4: money goals first, then habits, keeping each group's order.
+export const moneyFirst = <T extends { id: GoalId }>(goals: T[]) => [
+  ...goals.filter((g) => !isHabit(g.id)),
+  ...goals.filter((g) => isHabit(g.id)),
+];
 
 export const EMPTY_DRAFT: IntakeDraft = { swipes: [], goals: [], richLifeText: "" };
 
@@ -42,14 +52,12 @@ export function draftFromIntake(intake: IntakeAnswers): IntakeDraft {
   return {
     lifeStage: intake.lifeStage,
     swipes: intake.swipes,
-    goals: [...intake.goals]
-      .sort((a, b) => a.priority - b.priority)
-      .map((g) => ({
-        id: g.id,
-        horizonMonths: g.horizonMonths,
-        targetAmount: g.targetAmount,
-        whyText: g.why,
-      })),
+    goals: moneyFirst([...intake.goals].sort((a, b) => a.priority - b.priority)).map((g) => ({
+      id: g.id,
+      horizonMonths: g.horizonMonths,
+      targetAmount: g.targetAmount,
+      whyText: g.why,
+    })),
     richLifeText: intake.richLifeText ?? "",
   };
 }
@@ -59,9 +67,11 @@ export function intakeFromDraft(draft: IntakeDraft) {
     lifeStage: draft.lifeStage,
     swipes: draft.swipes,
     values: deriveValues(draft.swipes),
-    goals: draft.goals.map((g, i) => ({
+    // Priorities 1..3 rank money goals; habits sort after them (capped at 3, the contract's lowest), so a
+    // habit is never the engine's P1.
+    goals: moneyFirst(draft.goals).map((g, i) => ({
       id: g.id,
-      priority: i + 1,
+      priority: Math.min(i + 1, 3),
       horizonMonths: g.horizonMonths,
       ...(g.targetAmount !== undefined && { targetAmount: g.targetAmount }),
       why: g.whyText.trim() || g.whyChip || "",

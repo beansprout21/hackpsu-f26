@@ -17,16 +17,12 @@ export const LIFE_STAGES: { id: LifeStage; label: string; detail: string }[] = [
   { id: "young_family", label: "Building a family", detail: "Planning for more than one" },
 ];
 
-// What the life stage screen shows: more specific choices, each mapped to one engine stage.
+// What the life stage screen shows: four choices that fit without scrolling, each mapped to one engine stage.
 // `key` is the option's own id (several options share a LifeStage).
 export const LIFE_STAGE_OPTIONS: { key: string; label: string; stage: LifeStage }[] = [
-  { key: "college", label: "In college", stage: "student" },
-  { key: "grad_school", label: "In grad school", stage: "student" },
-  { key: "trade_school", label: "In trade school or an apprenticeship", stage: "student" },
-  { key: "just_graduated", label: "Just graduated or started working", stage: "new_grad" },
-  { key: "working_no_kids", label: "Working, no kids yet", stage: "new_grad" },
-  { key: "building_family", label: "Building a family (partner, kids, or planning for them)", stage: "young_family" },
-  { key: "single_parent", label: "Single parent", stage: "young_family" },
+  { key: "school", label: "In school (college, grad, or trade)", stage: "student" },
+  { key: "started_working", label: "Just started working", stage: "new_grad" },
+  { key: "building_family", label: "Building a family", stage: "young_family" },
   { key: "something_else", label: "Something else", stage: "new_grad" },
 ];
 

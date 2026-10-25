@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { GripVertical, Sprout } from "lucide-react";
+import { Check, GripVertical, Sprout } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { estimateTarget } from "@/lib/server/engine/defaults";
 import { cn } from "@/lib/utils";
 import { ESTIMATE_BASIS, costMax, formatHorizon, formatUsd, goalMeta } from "./copy";
-import type { GoalDraft } from "./draft";
+import { isHabit, type GoalDraft } from "./draft";
 import { TimelineTrack } from "./TimelineTrack";
 
 const COST_STEP = 250;
@@ -41,13 +42,15 @@ export function GoalTimeline({
   goals: GoalDraft[];
   onChange: (goals: GoalDraft[]) => void;
 }) {
-  const patch = (i: number, p: Partial<GoalDraft>) =>
-    onChange(goals.map((g, j) => (j === i ? { ...g, ...p } : g)));
+  // Contracts v2.4: only money goals are ranked (and dragged); habits sit below, unranked.
+  const money = goals.filter((g) => !isHabit(g.id));
+  const habits = goals.filter((g) => isHabit(g.id));
+  const patch = (id: GoalDraft["id"], p: Partial<GoalDraft>) => onChange(goals.map((g) => (g.id === id ? { ...g, ...p } : g)));
   const reorder = (from: number, to: number) => {
-    const next = [...goals];
+    const next = [...money];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
-    onChange(next);
+    onChange([...next, ...habits]);
   };
 
   const listRef = useRef<HTMLOListElement>(null);
@@ -105,7 +108,7 @@ export function GoalTimeline({
   }
 
   // Rank shown on each card while dragging (others slide aside, numbers follow).
-  const order = goals.map((_, j) => j);
+  const order = money.map((_, j) => j);
   if (drag) order.splice(drag.over, 0, ...order.splice(drag.index, 1));
 
   function shiftFor(j: number) {
@@ -120,11 +123,11 @@ export function GoalTimeline({
     <div className="flex flex-col gap-5">
       <TimelineTrack
         goals={goals}
-        onMove={(id, horizonMonths) => patch(goals.findIndex((g) => g.id === id), { horizonMonths })}
+        onMove={(id, horizonMonths) => patch(id, { horizonMonths })}
       />
 
-      <ol ref={listRef} className="flex flex-col gap-3" aria-label="Your goals, most important first">
-        {goals.map((g, i) => {
+      <ol ref={listRef} className="flex flex-col gap-3" aria-label="Your money goals, most important first">
+        {money.map((g, i) => {
           const meta = goalMeta(g.id);
           const costCap = costMax(g.id);
           const basis = ESTIMATE_BASIS[g.id];
@@ -157,12 +160,12 @@ export function GoalTimeline({
               >
                 <button
                   type="button"
-                  aria-label={`Reorder ${meta.label}, rank ${i + 1} of ${goals.length}. Use the up and down arrow keys to move it.`}
+                  aria-label={`Reorder ${meta.label}, rank ${i + 1} of ${money.length}. Use the up and down arrow keys to move it.`}
                   onKeyDown={(e) => {
                     if (e.key === "ArrowUp" && i > 0) {
                       e.preventDefault();
                       reorder(i, i - 1);
-                    } else if (e.key === "ArrowDown" && i < goals.length - 1) {
+                    } else if (e.key === "ArrowDown" && i < money.length - 1) {
                       e.preventDefault();
                       reorder(i, i + 1);
                     }
@@ -180,52 +183,70 @@ export function GoalTimeline({
                 </span>
               </div>
 
-              {meta.group === "habit" ? (
-                <p className="text-sm text-muted-foreground">{meta.hint}</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Roughly how much?</span>
-                    <span className="text-lg font-semibold tabular-nums">
-                      {formatUsd(amount)}
-                      {amount >= costCap && "+"}
-                    </span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={costCap}
-                    step={COST_STEP}
-                    value={[Math.min(amount, costCap)]}
-                    onValueChange={(v) => patch(i, { targetAmount: Array.isArray(v) ? v[0] : v })}
-                    aria-label={`Rough cost for ${meta.label}`}
-                    className="py-2"
-                  />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>$0</span>
-                    {isEstimate ? (
-                      <span className="flex items-center gap-1 font-medium text-highlight">
-                        <Sprout className="size-3.5" aria-hidden />
-                        Sprout&apos;s estimate
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => patch(i, { targetAmount: undefined })}
-                        className="flex items-center gap-1 rounded font-medium text-highlight underline-offset-2 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                      >
-                        <Sprout className="size-3.5" aria-hidden />
-                        Use Sprout&apos;s estimate ({formatUsd(estimate)})
-                      </button>
-                    )}
-                    <span>{formatUsd(costCap)}+</span>
-                  </div>
-                  {basis && <p className="text-xs text-muted-foreground">{basis}</p>}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Roughly how much? <span className="font-medium text-foreground">{isEstimate ? "Sprout's estimate" : "Your number"}</span>
+                  </span>
+                  <span className="text-lg font-semibold tabular-nums">
+                    {formatUsd(amount)}
+                    {amount >= costCap && "+"}
+                  </span>
                 </div>
-              )}
+                <Slider
+                  min={0}
+                  max={costCap}
+                  step={COST_STEP}
+                  value={[Math.min(amount, costCap)]}
+                  onValueChange={(v) => patch(g.id, { targetAmount: Array.isArray(v) ? v[0] : v })}
+                  aria-label={`Rough cost for ${meta.label}`}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>$0</span>
+                  <span>{formatUsd(costCap)}+</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-pressed={isEstimate}
+                  onClick={() => patch(g.id, { targetAmount: undefined })}
+                  className={cn("self-start gap-1.5 max-lg:h-11", isEstimate && "border-primary bg-secondary")}
+                >
+                  {isEstimate ? <Check aria-hidden /> : <Sprout aria-hidden />}
+                  Use Sprout&apos;s estimate ({formatUsd(estimate)})
+                </Button>
+                {basis && <p className="text-xs text-muted-foreground">{basis}</p>}
+              </div>
             </li>
           );
         })}
       </ol>
+
+      {habits.length > 0 && (
+        <section aria-labelledby="habits-title" className="flex flex-col gap-3">
+          <h3 id="habits-title" className="font-semibold">
+            Healthy habits
+          </h3>
+          <ul className="flex flex-col gap-3">
+            {habits.map((g) => {
+              const meta = goalMeta(g.id);
+              return (
+                <li key={g.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4 lg:px-6">
+                  <meta.icon className="size-5 shrink-0 text-highlight" aria-hidden />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-semibold">{meta.label}</span>
+                    <span className="text-sm text-muted-foreground">
+                      In {formatHorizon(g.horizonMonths)} · {meta.hint}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
@@ -251,7 +272,10 @@ export function Chip({
           : "border-border bg-background hover:border-primary/60 hover:bg-secondary",
       )}
     >
-      {children}
+      <span className="inline-flex items-center gap-1.5">
+        {selected && <Check className="size-3.5 shrink-0" aria-hidden />}
+        {children}
+      </span>
     </button>
   );
 }
