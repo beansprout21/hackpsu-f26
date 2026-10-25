@@ -1,9 +1,10 @@
 // Demo personas from docs/CONTRACTS.md (v2.1, Maya v3). Maya is the hero; Jordan is the young-family contrast.
 // Proof moment: re-run Maya with flipSwipes(maya.intake.swipes) and her finances unchanged.
-import type { FinancialSnapshot, IntakeAnswers, SwipeAnswer } from "@/types";
+import type { FinancialSnapshot, IntakeAnswers, SwipeAnswer, ValueTag } from "@/types";
+import { deriveValues } from "@/components/intake/draft";
 
 export interface DemoPersona {
-  id: "maya" | "jordan";
+  id: "maya" | "jordan" | "maya-opposite";
   name: string;
   label: string;
   intake: IntakeAnswers;
@@ -71,6 +72,18 @@ export const jordan: DemoPersona = {
     creditBand: "fair",
     isFnbCustomer: false,
   },
+};
+
+// Proof moment (SPEC): Maya's goals and finances, flipped swipes, and the values the intake
+// itself would derive from those swipes, so the button matches swiping opposite live.
+export const OPPOSITE_VALUES: ValueTag[] = deriveValues(flipSwipes(maya.intake.swipes));
+
+export const mayaOpposite: DemoPersona = {
+  id: "maya-opposite",
+  name: "Maya, opposite swipes",
+  label: "Same money and goals, opposite swipes",
+  intake: { ...maya.intake, swipes: flipSwipes(maya.intake.swipes), values: OPPOSITE_VALUES },
+  snapshot: maya.snapshot,
 };
 
 export const personas: DemoPersona[] = [maya, jordan];

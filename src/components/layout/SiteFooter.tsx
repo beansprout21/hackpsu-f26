@@ -5,7 +5,7 @@ export function SiteFooter() {
         <p className="font-medium text-foreground">
           Educational prototype. Not financial advice. No data is stored.
         </p>
-        <p>Sprout is a hackathon prototype, not affiliated with any bank.</p>
+        <p>Sprout is a hackathon prototype built for FNB, not an official FNB product.</p>
       </div>
     </footer>
   );

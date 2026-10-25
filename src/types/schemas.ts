@@ -1,4 +1,4 @@
-// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2.1).
+// Zod schemas for the shapes in docs/CONTRACTS.md (Contracts v2.2).
 // Each schema is type-checked against its interface in ./index.ts at the
 // bottom of this file, so drift between the two fails `npm run build`.
 import { z } from "zod";
@@ -20,6 +20,10 @@ import type {
   Product,
   ProfiledGoal,
   ScoreBreakdown,
+  ShareContact,
+  SharedPlan,
+  SharedPlanSummary,
+  ShareStatus,
   SpendingBucket,
   SwipeAnswer,
   SwipeCard,
@@ -337,6 +341,44 @@ export const ChatResponseSchema = z.object({
   citedProductIds: z.array(z.string()),
 });
 
+// ---------- share with FNB (v2.2) ----------
+export const ShareRequestSchema = z.object({
+  consent: z.literal(true),     // the user ticked the consent box for consentVersion "v1"
+  intake: IntakeAnswersSchema,
+  snapshot: FinancialSnapshotSchema,
+  profile: GoalProfileSchema,
+  plan: PlanSchema,
+});
+export const ShareContactSchema = z.object({ name: z.string(), email: z.string() });
+export const SharedPlanSchema = z.object({
+  id: z.string(),
+  sharedAt: z.string(),
+  expiresAt: z.string(),
+  consentVersion: z.literal("v1"),
+  contact: ShareContactSchema,
+  intake: IntakeAnswersSchema,
+  snapshot: FinancialSnapshotSchema,
+  profile: GoalProfileSchema,
+  plan: PlanSchema,
+});
+export const SharedPlanSummarySchema = z.object({
+  id: z.string(),
+  sharedAt: z.string(),
+  contactName: z.string(),
+  lifeStage: LifeStageSchema,
+  persona: PersonaSchema,
+  topGoalLabel: z.string(),
+  stepOneTitle: z.string(),
+  monthlySurplus: z.number(),
+  isFnbCustomer: z.boolean(),
+});
+export const ShareStatusSchema = z.object({
+  shared: z.boolean(),
+  id: z.string().optional(),
+  sharedAt: z.string().optional(),
+  expiresAt: z.string().optional(),
+});
+
 // ---------- compile-time drift checks ----------
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 type Assert<T extends true> = T;
@@ -363,4 +405,8 @@ export type SchemaChecks = [
   Assert<Same<z.infer<typeof PlanStepSchema>, PlanStep>>,
   Assert<Same<z.infer<typeof NotYetSchema>, NotYet>>,
   Assert<Same<z.infer<typeof PlanSchema>, Plan>>,
+  Assert<Same<z.infer<typeof ShareContactSchema>, ShareContact>>,
+  Assert<Same<z.infer<typeof SharedPlanSchema>, SharedPlan>>,
+  Assert<Same<z.infer<typeof SharedPlanSummarySchema>, SharedPlanSummary>>,
+  Assert<Same<z.infer<typeof ShareStatusSchema>, ShareStatus>>,
 ];

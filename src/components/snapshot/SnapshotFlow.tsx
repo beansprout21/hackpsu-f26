@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SproutSays } from "@/components/sprout/SproutSays";
-import { jordan, maya, type DemoPersona } from "@/data/personas";
+import { jordan, maya, mayaOpposite, type DemoPersona } from "@/data/personas";
 import { ApiError, getPlan, getProfile } from "@/lib/client/api";
 import { useAppState } from "@/lib/client/state";
 import type { GoalProfile, IntakeAnswers } from "@/types";
@@ -26,7 +26,8 @@ export function SnapshotFlow() {
 
   const prefill = (p: DemoPersona) => {
     setDraft(draftFromSnapshot(p.snapshot));
-    if (!state.intake) update({ intake: p.intake, profile: undefined, plan: undefined });
+    // The proof-moment persona always replaces the intake; the others fill one in only if missing.
+    if (p.id === "maya-opposite" || !state.intake) update({ intake: p.intake, profile: undefined, plan: undefined });
   };
 
   async function generate() {
@@ -94,9 +95,9 @@ function DemoPrefill({ onPick }: { onPick: (p: DemoPersona) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <span className="text-muted-foreground">Demo:</span>
-      {[maya, jordan].map((p) => (
+      {[maya, jordan, mayaOpposite].map((p) => (
         <Button key={p.id} type="button" variant="secondary" size="sm" onClick={() => onPick(p)}>
-          Fill in as {p.name}
+          {p.id === "maya-opposite" ? p.name : `Fill in as ${p.name}`}
         </Button>
       ))}
     </div>

@@ -119,7 +119,7 @@ export function BankerCta({ summary }: { summary: string }) {
           Want a second set of eyes?
         </h2>
         <p className="text-small text-muted-foreground">
-          We&apos;ll copy a summary of this plan so a banker knows your goals before you meet.
+          We&apos;ll copy a summary of this plan so an FNB banker knows your goals before you meet.
         </p>
       </div>
       <div className="relative shrink-0">
@@ -142,7 +142,7 @@ export function BankerCta({ summary }: { summary: string }) {
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-body font-semibold text-primary-foreground shadow-card transition-[background-color,box-shadow,transform] duration-200 outline-none select-none hover:bg-primary-hover hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-px active:bg-primary-active disabled:pointer-events-none disabled:opacity-50 sm:w-auto motion-reduce:transition-none"
         >
           <CalendarCheck className="size-6" aria-hidden />
-          Book with a banker
+          Book with an FNB banker
         </button>
       </div>
     </section>
