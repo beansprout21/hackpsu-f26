@@ -7,6 +7,7 @@ import { buildOverview, overviewSteps, type OverviewModel } from "../src/lib/cli
 import { ASK_SPROUT_STARTERS } from "../src/lib/client/planCopy";
 import { aboutTime, timeSpan } from "../src/lib/client/time";
 import { CUSHION_SIZED_NOTE, ESTIMATE_BASIS } from "../src/components/intake/copy";
+import { readFileSync } from "node:fs";
 import { fallbackProfile } from "../src/lib/ai/profile";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { GoalProfileSchema } from "../src/types/schemas";
@@ -185,6 +186,18 @@ console.log("\n=== Intake safety cushion note (#112)");
     /three months/.test(CUSHION_SIZED_NOTE) && /at least \$1,000/.test(CUSHION_SIZED_NOTE) && jordanPlan.cushionTarget === 3 * jordanCosts && tiny.cushionTarget === 1000,
     'cushion note matches the engine: "' + CUSHION_SIZED_NOTE + '" (Jordan $' + jordanPlan.cushionTarget + ", $100 costs -> $" + tiny.cushionTarget + ")",
   );
+}
+
+// #113: the landing preview's "Start here" is the hero plan's real Step one (rule D: a personal move, never "open an
+// account"), and the cushion is called the safety cushion.
+console.log("\n=== Landing preview (#113)");
+{
+  const landing = readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
+  const previewText = (stage: string) => landing.match(new RegExp('stage: "' + stage + '",\\s*text: "([^"]+)"'))?.[1] ?? "";
+  const start = previewText("Start here");
+  const mayaStepOne = run(maya.snapshot).nextMove.title;
+  check(!/^open\b/i.test(start) && mayaStepOne.startsWith(start), 'Start here = Maya\'s Step one: "' + start + '" / "' + mayaStepOne + '"');
+  check(/safety cushion/.test(previewText("Next")), 'Next names the safety cushion: "' + previewText("Next") + '"');
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
