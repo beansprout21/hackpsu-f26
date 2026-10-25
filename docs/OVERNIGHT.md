@@ -94,3 +94,6 @@ Lead decisions made overnight (Ben may override):
 **Production:** NOT current. The live site is `157cf43` (has the new Maya numbers, not the 5:34+ fixes). Every `main` deploy since 5:34 is "rate limited, retry in 24 hours". Ben's 7:40 Redeploy step stands.
 
 **Open:** #115 (tap targets under 24 px; styling, Ethan's). Nothing else open from the overnight run.
+
+### 8:30 AM
+Deploy test: merged this docs-only change to trigger a production deploy of `main` (Ben asked).
