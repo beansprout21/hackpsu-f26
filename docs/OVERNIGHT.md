@@ -100,3 +100,6 @@ Deploy test: merged this docs-only change to trigger a production deploy of `mai
 
 ### 9:25 AM
 Deploy retry: docs-only merge to trigger a production deploy of main (Ben asked).
+
+### 9:27 AM
+Vercel upgraded to Pro by Ben; docs-only merge to trigger the production deploy of main.
