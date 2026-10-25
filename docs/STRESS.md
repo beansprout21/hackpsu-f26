@@ -258,3 +258,70 @@ Local dev server, `DEMO_AUTH_BYPASS=1`, `AI_DISABLED=1`, in-app browser at 1280�
 ### Observation for Ben (not a rule violation)
 
 Loan products reach the first 4 guide steps for some generated users: auto loan (23), CashPlease (14), secured installment loan (13), unsecured line of credit (4). The rules only forbid student loans, so this is a question, not a bug.
+
+## Overnight loop (#119)
+
+Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH_BYPASS=1 npx --yes tsx scripts/stress.ts`, a browser pass for one persona (dev server on port 3003, `DEMO_AUTH_BYPASS=1`, `AI_DISABLED=1`), and the live-AI sample when a key is present. This clone has no `ANTHROPIC_API_KEY`, so the live-AI sample is skipped and reported as 0 calls.
+
+### Cycle 1 (2:22 AM ET, seed 9334)
+
+- **Harness:** 514 users (500 generated + 14 edge), 1.1 s, 0 crashes, 0 API problems (51 calls).
+  - plan is schema-valid: 11 fail (#104: 10 cushion with 3 matches, 1 duplicate ids #105)
+  - goal bucket lands on money goals: 60 fail (#107, all habits-only)
+  - no surplus: only $0 products now/next: 190 of 206 fail (#109)
+  - Ask Sprout templates: 17 of 755 answers say raw months ≥ 24 (#108)
+- **Browser (Maya, 1280 + 375 px):** intake "Use Maya" → snapshot "Fill in as Maya" → plan → chips "Why is this my first move?", "How did you split my money?" → Save PDF (`print()` called). No new problems.
+  - Numbers $80 / $33 / $129 (#106).
+  - The split answer is correct (64 words).
+  - 375 px: no overflow, 4 guide steps. "See it at FNB" and "Banker view (demo)" are under 24 px (#115).
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** no new signatures. New reproductions commented on #104, #107, #108, #109.
+
+### Cycle 2 (3:06 AM ET, seed 83923, main `6f4e26c`)
+
+- **Main moved 10 commits:** #122 (no consumer loans), #127 (cushion wording, years), #129 (max 2 matches per goal), and #121 AI audit cycles 1–6.
+- **Harness:** 514 users, 0.6 s, 0 crashes, 0 API problems. New check: "safety cushion", never "emergency fund" in user-facing text.
+  - plan is schema-valid: **0** fail (was 11): #104 verified fixed
+  - "safety cushion" wording: 0 fail: #110 verified fixed
+  - Ask Sprout templates: **0** of 734 with raw months (was 17): #108 verified fixed
+  - Loan products in the guide: none (#122)
+  - goal bucket lands on money goals: 69 fail (#107, plus the duplicate-id case #105)
+  - no surplus: only $0 products now/next: 184 of 203 fail (#109)
+- **Browser (Maya opposite swipes, 1280 + 375 px):** snapshot shortcut → plan → gap chip → Save PDF (`print()` called).
+  - Safety Builder, Step one D4, cushion $135/mo.
+  - Chat now says "give it 3 years" (#108 nit: no "about").
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** none opened. Updated #104, #105, #107, #108, #109, #110.
+
+### Cycle 3 (3:52 AM ET, seed 91945, main `79dfb7d`)
+
+- **Main moved 4 commits:** SPROUT v3.3 rules (#138, docs), #130 fix (no IRA; no card or CardGuard for the cushion), and #121 AI audit cycles 7–8.
+- **Harness:** invariants updated to the exact v3.3 rules for #107, #109 and #130. 514 users, 0.6 s, 0 crashes, 0 API problems.
+  - no IRA; no card, loan or CardGuard for the cushion: **0** fail (111 before the #130 fix): #130 verified
+  - goal bucket lands on money goals (v3.3): 68 fail; 67 of them also say "your savings goal" (#107, no engine change yet)
+  - no surplus: only $0 products now/next (v3.3): 163 of 199 fail (#109, no engine change yet). Includes 23 `student-checking` with a `null` deposit; question raised on #109.
+  - Ask Sprout templates: 703 answers, 0 problems
+- **Browser (Jordan, 1280 + 375 px):** intake "Use Jordan" → "Fill in as Jordan" → plan → "When can I get the Home Ownership Program?" → Save PDF.
+  - Step 3 now says "safety cushion goal" (#110 fixed in the UI).
+  - Intake still shows "$2,000 … a student's basic costs" (#112).
+  - New: the chat says "Meanwhile, Mortgage calculators gets you ready" (**#139**, P1).
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** opened #139. Updated #107, #109, #112, #130.
+
+### Cycle 4 (4:38 AM ET, seed 97704, main `7733632`)
+
+- **Main moved 4 commits:** #139 fix (Meanwhile line), #141 docs (Student Checking null-deposit clarification), #105 fix (engine merges duplicate goal ids), #106 fix (goal weights by rank; Maya golden regenerated).
+- **Harness:** no-surplus check updated to the 4:25 AM clarification (null-deposit checking with "no minimum balance" is allowed). 514 users, 0.8 s, 0 crashes, 0 API problems. `check-engine`, `check-overview`, `check-chat` and `check-proxy` all pass.
+  - Duplicate goal ids: the edge case now passes every invariant (#105 verified)
+  - goal bucket lands on money goals (v3.3): 78 fail, all with "your savings goal" (#107)
+  - no surplus: only $0 products now/next (v3.3): 154 of 204 fail (#109)
+  - Ask Sprout templates: 690 answers, 0 problems
+- **Browser (no income, 1280 + 375 px):** seeded intake/snapshot → plan → gap chip → Save PDF.
+  - Step one D1; the month line uses the no-room sentence.
+  - Step 3 still says "Open Savers Goal CD" (#109).
+  - New: the gap chip answers "needs $209 and gets $0" with no next step (**#144**, P1).
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** opened #144. Updated #107, #109.
