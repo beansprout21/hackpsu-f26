@@ -3,7 +3,7 @@
 // Fund names, the FNB fit, the path and the lever text come from the Overview's own model (#67), so a
 // block's chip always names what that block shows.
 import rawCatalog from "@/data/catalog.json";
-import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, Match, Plan, Product, Stage } from "@/types";
+import type { ChatIntent, ChatTurn, FinancialSnapshot, GapLever, GoalId, GoalProfile, Match, Plan, Product, Stage } from "@/types";
 import { buildOverview } from "./overview";
 import { FUND_NAME, leverMoreTime, leverSmallerTarget, leverTurnUpDial } from "./planCopy";
 
@@ -81,10 +81,9 @@ const fillFaster = () => chip("How can I fill it faster?", { kind: "what_if", am
 const whyProduct = (question: string, productId: string) => chip(question, { kind: "why_product", productId });
 const productFees = (productId: string) => chip("Any fees I should know?", { kind: "product_fees", productId });
 
-// The P1 goal's lever, first lever only, with the Overview's own askSprout text (planCopy.ts).
-function leverChip(plan: Plan, goalId: GoalId): Chip | undefined {
-  const lever = plan.allocation.find((a) => a.goalId === goalId)?.levers[0];
-  if (!lever) return undefined;
+const MORE_TIME_MAX_MONTHS = 60; // DASHBOARD.md v3.1: more_time is offered only up to 5 years
+
+function leverChipFor(goalId: GoalId, lever: GapLever): Chip {
   switch (lever.kind) {
     case "turn_up_dial":
       return chip(leverTurnUpDial(goalId, lever.moveFromGuiltFree).askSprout, { kind: "what_if", amount: lever.moveFromGuiltFree, goalId });
@@ -93,6 +92,22 @@ function leverChip(plan: Plan, goalId: GoalId): Chip | undefined {
     case "smaller_target":
       return chip(leverSmallerTarget(goalId, lever.reachableAmount).askSprout, { kind: "goal_gap", goalId });
   }
+}
+
+// The P1 goal's lever chip: the Overview's own lever text when there's a snapshot (so the chip always
+// matches the button the user sees), else the DASHBOARD.md v3.1 order applied here.
+function leverChip(plan: Plan, profile: GoalProfile, goalId: GoalId, snapshot?: FinancialSnapshot): Chip | undefined {
+  const levers = plan.allocation.find((a) => a.goalId === goalId)?.levers ?? [];
+  if (snapshot) {
+    const askSprout = buildOverview(plan, profile, snapshot).goals.find((g) => g.goalId === goalId)?.lever?.askSprout;
+    if (!askSprout) return undefined;
+    return levers.map((l) => leverChipFor(goalId, l)).find((c) => c.question === askSprout) ?? chip(askSprout, { kind: "free" });
+  }
+  const lever =
+    levers.find((l) => l.kind === "turn_up_dial") ??
+    levers.find((l) => l.kind === "more_time" && l.newHorizonMonths <= MORE_TIME_MAX_MONTHS) ??
+    levers.find((l) => l.kind === "smaller_target");
+  return lever && leverChipFor(goalId, lever);
 }
 
 export function starterChips(plan: Plan, profile: GoalProfile, snapshot?: FinancialSnapshot, history: ChatTurn[] = []): Chip[] {
@@ -128,7 +143,7 @@ export function blockChips(plan: Plan, profile: GoalProfile, snapshot?: Financia
   for (const a of plan.allocation) {
     if (a.goalId === "emergency_fund") continue; // the cushion block covers it
     if (a.goalId === p1) {
-      const lever = leverChip(plan, a.goalId);
+      const lever = leverChip(plan, profile, a.goalId, snapshot);
       goals[a.goalId] = lever ? [lever] : [];
       continue;
     }
