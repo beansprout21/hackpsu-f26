@@ -4,7 +4,7 @@
 // Answers come from the server's grounded chat (engine math for what-ifs, catalog rates, advice
 // boundary); this component only renders them. Cited products jump to their match cards.
 import { useEffect, useRef, useState } from "react";
-import { MessageCircleQuestion, Send, X } from "lucide-react";
+import { ArrowDown, MessageCircleQuestion, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SproutAvatar } from "@/components/sprout/SproutAvatar";
@@ -85,15 +85,14 @@ export function ChatPanel({ plan, profile }: { plan: Plan; profile: GoalProfile 
   return (
     <>
       {!open && (
-        <Button
+        <button
           ref={openButton}
           type="button"
-          size="lg"
           onClick={() => setOpen(true)}
-          className="fixed right-4 bottom-4 z-50 h-12 gap-2 rounded-full px-5 shadow-lg sm:right-6 sm:bottom-6"
+          className="fixed right-4 bottom-4 z-50 inline-flex h-12 animate-in items-center gap-2 rounded-full bg-highlight px-5 text-body font-semibold text-highlight-foreground shadow-raised outline-none transition-[background-color,box-shadow,transform] duration-200 fade-in slide-in-from-bottom-4 select-none hover:bg-highlight/90 focus-visible:ring-4 focus-visible:ring-brand-400/60 active:translate-y-px active:bg-highlight/80 motion-reduce:animate-none motion-reduce:transition-none sm:right-6 sm:bottom-6"
         >
-          <MessageCircleQuestion aria-hidden /> Ask Sprout
-        </Button>
+          <MessageCircleQuestion className="size-6" aria-hidden /> Ask Sprout
+        </button>
       )}
 
       {open && (
@@ -101,10 +100,10 @@ export function ChatPanel({ plan, profile }: { plan: Plan; profile: GoalProfile 
           role="dialog"
           aria-modal="false"
           aria-labelledby="ask-sprout-title"
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl border border-border bg-background shadow-2xl sm:inset-x-auto sm:top-20 sm:right-6 sm:bottom-6 sm:max-h-none sm:w-[24rem] sm:rounded-2xl"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] animate-in flex-col rounded-t-2xl bg-card shadow-raised duration-200 fade-in slide-in-from-bottom-4 motion-reduce:animate-none sm:inset-x-auto sm:top-20 sm:right-6 sm:bottom-6 sm:max-h-none sm:w-[24rem] sm:rounded-2xl"
         >
           <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <h2 id="ask-sprout-title" className="flex items-center gap-2 font-semibold">
+            <h2 id="ask-sprout-title" className="flex items-center gap-2 text-body font-semibold">
               <SproutAvatar size="sm" /> Ask Sprout why or what if
             </h2>
             <Button type="button" variant="ghost" size="icon-sm" aria-label="Close Ask Sprout" onClick={() => setOpen(false)}>
@@ -117,9 +116,9 @@ export function ChatPanel({ plan, profile }: { plan: Plan; profile: GoalProfile 
 
             {turns.map((t) => (
               <div key={t.id} className="flex flex-col gap-2">
-                <p className="self-end rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-sm text-primary-foreground">{t.question}</p>
+                <p className="max-w-[85%] self-end rounded-2xl rounded-tr-sm bg-highlight px-4 py-2 text-small text-highlight-foreground">{t.question}</p>
                 {t.status === "pending" && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-small text-muted-foreground motion-safe:animate-pulse">
                     <SproutAvatar mood="thinking" size="sm" /> Sprout is thinking...
                   </div>
                 )}
@@ -127,18 +126,24 @@ export function ChatPanel({ plan, profile }: { plan: Plan; profile: GoalProfile 
                   <div className="flex flex-col gap-2">
                     <SproutSays>{t.answer}</SproutSays>
                     {t.cited.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pl-14">
+                      <div className="flex flex-wrap gap-2 pl-14">
                         {t.cited.map((id) => (
-                          <Button key={id} type="button" variant="outline" size="xs" onClick={() => jumpToProduct(id)}>
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => jumpToProduct(id)}
+                            className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1 text-caption font-semibold text-brand-700 outline-none transition-colors duration-200 hover:bg-brand-200 focus-visible:ring-4 focus-visible:ring-ring/30"
+                          >
+                            <ArrowDown className="size-4" aria-hidden />
                             {productName(id)}
-                          </Button>
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
                 )}
                 {t.status === "error" && (
-                  <div role="alert" className="flex flex-wrap items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
+                  <div role="alert" className="flex flex-wrap items-center gap-2 rounded-xl bg-danger-soft px-4 py-3 text-small text-danger">
                     <span>{t.message}</span>
                     <Button type="button" variant="outline" size="xs" onClick={() => void ask(t.question, t.id)} disabled={busy}>
                       Try again
@@ -151,11 +156,17 @@ export function ChatPanel({ plan, profile }: { plan: Plan; profile: GoalProfile 
           </div>
 
           <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Suggested questions">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Suggested questions">
               {CHIPS.map((chip) => (
-                <Button key={chip} type="button" variant="secondary" size="sm" disabled={busy} onClick={() => void ask(chip)}>
+                <button
+                  key={chip}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void ask(chip)}
+                  className="rounded-full bg-brand-50 px-3 py-1 text-small font-medium text-brand-700 ring-1 ring-brand-200 outline-none transition-colors duration-200 ring-inset hover:bg-brand-100 focus-visible:ring-4 focus-visible:ring-ring/30 active:bg-brand-200 disabled:pointer-events-none disabled:opacity-50"
+                >
                   {chip}
-                </Button>
+                </button>
               ))}
             </div>
             <form
@@ -178,7 +189,7 @@ export function ChatPanel({ plan, profile }: { plan: Plan; profile: GoalProfile 
                 <Send aria-hidden />
               </Button>
             </form>
-            <p className="text-center text-xs text-muted-foreground">{DISCLAIMER}</p>
+            <p className="text-center text-caption text-muted-foreground">{DISCLAIMER}</p>
           </div>
         </section>
       )}

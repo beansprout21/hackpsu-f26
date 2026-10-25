@@ -2,9 +2,55 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Light mode only. This keeps the UI kit's built-in dark: classes inert (no .dark class is ever set);
+   without it Tailwind would fall back to the visitor's OS dark-mode setting. */
 @custom-variant dark (&:is(.dark *));
 
+/* Sprout design system (UI/UX rules approved by Ethan). */
+@theme {
+  /* Brand ramp from #7EBC89: tints for surfaces and chips, shades for hover, pressed, and green text. */
+  --color-brand-50: #f3f9f4;
+  --color-brand-100: #e3f1e6;
+  --color-brand-200: #c6e3cd;
+  --color-brand-400: #7ebc89;
+  --color-brand-500: #5ea06b;
+  --color-brand-600: #47844f;
+  --color-brand-700: #376640;
+
+  /* Semantic colors: each used only for its meaning. */
+  --color-success: #1f8a5b;
+  --color-success-soft: #e6f4ec;
+  --color-warning: #92400e;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-soft: #eff6ff;
+
+  /* Type scale: the only six sizes. Headlines use -2% tracking and 115% line height. */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-lead: 1.25rem;
+  --text-lead--line-height: 1.75rem;
+  --text-title: 2rem;
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.02em;
+  --text-display: 3rem;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.02em;
+
+  /* Depth: cards barely lift off the tinted page; raised layers (drawers, dialogs) lift more. */
+  --shadow-card: 0 1px 2px rgb(16 40 24 / 0.04), 0 8px 24px -6px rgb(16 40 24 / 0.08);
+  --shadow-raised: 0 4px 8px rgb(16 40 24 / 0.06), 0 24px 48px -12px rgb(16 40 24 / 0.18);
+}
+
 @theme inline {
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -56,34 +102,37 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Main green #7EBC89 (black text on it: green-on-white is only ~2.2:1), accent #466060. */
+/* Primary green #7EBC89 carries black text (green-on-white text is only ~2.2:1; use brand-700 for green text).
+   #466060 is the secondary-text ink and the active-step marker. Near-white tinted page so white cards stand out. */
 :root {
-  --background: #ffffff;
+  --background: #f7faf8;
   --foreground: #000000;
   --card: #ffffff;
   --card-foreground: #000000;
   --popover: #ffffff;
   --popover-foreground: #000000;
   --primary: #7ebc89;
+  --primary-hover: #5ea06b;
+  --primary-active: #47844f;
   --primary-foreground: #000000;
-  --secondary: #edf6ef;
+  --secondary: #e3f1e6;
   --secondary-foreground: #000000;
-  --muted: #f5f7f7;
+  --muted: #eef3f0;
   --muted-foreground: #466060;
-  /* shadcn uses accent for hover/menu surfaces, so it stays a green tint; #466060 lives in --highlight. */
-  --accent: #edf6ef;
+  /* shadcn uses accent for hover/menu surfaces, so it stays a green tint. */
+  --accent: #e3f1e6;
   --accent-foreground: #000000;
   --highlight: #466060;
   --highlight-foreground: #ffffff;
-  --destructive: #b42318;
+  --destructive: #b91c1c;
   --border: #dce5e0;
   --input: #c9d6d0;
   --ring: #466060;
-  --stage-now: #7ebc89;
-  --stage-next: #466060;
-  --stage-later: #a3b5b5;
-  --conf-high: #466060;
-  --conf-medium: #b45309;
+  --stage-now: #1f8a5b;
+  --stage-next: #47844f;
+  --stage-later: #92400e;
+  --conf-high: #1f8a5b;
+  --conf-medium: #92400e;
   --conf-low: #64748b;
   --chart-1: #7ebc89;
   --chart-2: #466060;
@@ -99,40 +148,6 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
