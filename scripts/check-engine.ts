@@ -502,5 +502,31 @@ const jordanHome =
   explain({ kind: "when_unlock", productId: "fnb-home-ownership-program" }, "When can I get the Home Ownership Program?", jordanProfile, j, jordan.snapshot)?.template ?? "";
 check(/Meanwhile, Mortgage calculators can get you ready\./.test(jordanHome), 'Jordan when-unlock: "Meanwhile, Mortgage calculators can get you ready." (got: ' + jordanHome.slice(-60) + ")");
 
+// #105 (SPROUT.md v3.3): duplicate goal ids keep the first occurrence (highest priority); the rest are dropped.
+console.log("\n=== Duplicate goal ids (#105): Maya with travel twice");
+{
+  const dupIntake: IntakeAnswers = {
+    ...maya.intake,
+    goals: [
+      { id: "travel", priority: 1, horizonMonths: 12, targetAmount: 2500, why: "" },
+      { id: "travel", priority: 2, horizonMonths: 24, targetAmount: 4000, why: "" },
+    ],
+  };
+  const dupPlan = buildPlanSkeleton(fallbackProfile(dupIntake), maya.snapshot, dupIntake);
+  const travelRows = dupPlan.allocation.filter((a) => a.goalId === "travel");
+  const goalBucket = dupPlan.spendingPlan.find((b) => b.bucket === "goal_savings")?.monthlyAmount ?? 0;
+  check(PlanSchema.safeParse(dupPlan).success, "duplicate travel: plan passes PlanSchema");
+  check(
+    travelRows.length === 1 && travelRows[0].requiredMonthly === Math.ceil(2500 / 12),
+    "duplicate travel: one travel allocation, from the P1 entry ($2,500 in 12 months)" + (travelRows.length ? " (required $" + travelRows[0].requiredMonthly + ")" : ""),
+  );
+  check(
+    dupPlan.allocation.filter((a) => a.goalId !== "emergency_fund").reduce((t, a) => t + a.monthlyAmount, 0) === goalBucket,
+    "duplicate travel: the whole goal bucket ($" + goalBucket + ") lands on travel",
+  );
+  check(dupPlan.matches.filter((m) => m.goalId === "travel").length <= 2, "duplicate travel: max 2 travel matches");
+  check((dupPlan.bankerSummary.match(/\btravel \(/g) ?? []).length === 1, "duplicate travel: banker summary lists the travel goal once");
+}
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

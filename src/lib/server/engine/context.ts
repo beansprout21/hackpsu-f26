@@ -26,7 +26,18 @@ export const isHabit = (id: GoalId) => HABIT_GOALS.includes(id);
 
 const CUSHION_FIRST_VALUES: ValueTag[] = ["security", "family"];
 
-export function buildContext(profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers): EngineContext {
+// SPROUT.md v3.3 (#105): duplicate goal ids keep the first occurrence (highest priority); the rest are dropped and
+// priorities renumbered 1..n (capped at 3, the contract's range). Inputs without duplicates pass through unchanged.
+export function uniqueGoals<G extends { id: GoalId; priority: 1 | 2 | 3 }>(goals: G[]): G[] {
+  const seen = new Set<GoalId>();
+  const kept = [...goals].sort((a, b) => a.priority - b.priority).filter((g) => !seen.has(g.id) && !!seen.add(g.id));
+  if (kept.length === goals.length) return goals;
+  return kept.map((g, i) => ({ ...g, priority: Math.min(i + 1, 3) as 1 | 2 | 3 }));
+}
+
+export function buildContext(profileIn: GoalProfile, snapshot: FinancialSnapshot, intakeIn: IntakeAnswers): EngineContext {
+  const profile = { ...profileIn, goals: uniqueGoals(profileIn.goals) };
+  const intake = { ...intakeIn, goals: uniqueGoals(intakeIn.goals) };
   const math = computeMath(snapshot);
   const values: ValueTag[] = profile.topValues.length ? profile.topValues : intake.values;
   const isStudent = intake.lifeStage === "student";
