@@ -27,7 +27,7 @@ const BENEFITS = [
 const PREVIEW = [
   {
     stage: "Start here",
-    text: "Open an everyday account",
+    text: "Move $20 into your travel fund",
     icon: Sprout,
     size: "size-4",
     dot: "bg-success-soft text-success",
@@ -35,7 +35,7 @@ const PREVIEW = [
   },
   {
     stage: "Next",
-    text: "Build a 3-month cushion",
+    text: "Build your safety cushion",
     icon: Shrub,
     size: "size-5",
     dot: "bg-brand-100 text-brand-600",
