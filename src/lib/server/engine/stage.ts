@@ -55,15 +55,16 @@ export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
   const needsIncome = INCOME_BASED.includes(p.category) || (p.category === "credit_card" && !isSecuredCard(p));
 
   if (isMortgageLike(p)) {
-    if (steady && snapshot.savingsBalance >= math.fullCushion) return { stage: "next" };
-    const amount = math.fullCushion;
+    // Rule set E (v3): mortgages and homebuyer programs wait for a full-time job + the safety cushion.
+    if (steady && snapshot.savingsBalance >= ctx.cushionTarget) return { stage: "next" };
+    const amount = ctx.cushionTarget;
     return {
       stage: "later",
       unlockTrigger: { kind: "savings_threshold", amount },
       unlockCondition:
         ctx.isStudent || !steady
-          ? `When you have a full-time job and 3 months of expenses (${usd(amount)}) saved`
-          : `When 3 months of expenses (${usd(amount)}) are saved`,
+          ? `When you have a full-time job and your ${usd(amount)} safety cushion is full`
+          : `When your ${usd(amount)} safety cushion is full`,
     };
   }
 
@@ -89,21 +90,22 @@ export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
     const spare = snapshot.savingsBalance - ctx.cushionTarget;
     const deposit = p.minOpeningDeposit;
     if (deposit === null && p.category === "cd") {
-      // Unpublished CD minimum (e.g. CD Specials): wait until the cushion is in place, then check with FNB.
+      // Unpublished CD minimum (e.g. CD Specials): wait until the safety cushion is full, then check with FNB.
       if (spare < 0) {
         return {
           stage: "later",
           unlockTrigger: { kind: "savings_threshold", amount: ctx.cushionTarget },
-          unlockCondition: `When your cushion reaches ${usd(ctx.cushionTarget)} (check the minimum with FNB)`,
+          unlockCondition: `When your safety cushion reaches ${usd(ctx.cushionTarget)} (check the minimum with FNB)`,
         };
       }
-    } else if (deposit !== null && isSecuredCard(p) && spare < deposit) {
-      // Rule set E: secured card unlocks at savings >= target cushion + minimum deposit.
-      const amount = Math.ceil(ctx.cushionTarget + deposit);
+    } else if (deposit !== null && isSecuredCard(p) && snapshot.savingsBalance < math.monthlyCosts + deposit) {
+      // Rule set E (v3): secured card unlocks at savings >= 1 month of costs + minimum deposit (or the
+      // first paycheck), decoupled from the 3-month cushion so credit building can start early.
+      const amount = Math.ceil(math.monthlyCosts + deposit);
       return {
         stage: "later",
         unlockTrigger: { kind: "savings_threshold", amount },
-        unlockCondition: `When your savings reach ${usd(amount)}, so the ${usd(deposit)} deposit leaves your cushion untouched${steady ? "" : " (or your first paycheck arrives)"}`,
+        unlockCondition: `When your savings reach ${usd(amount)}: one month of costs plus the ${usd(deposit)} deposit${steady ? "" : " (or your first paycheck arrives)"}`,
       };
     }
   }

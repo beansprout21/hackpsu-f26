@@ -1,4 +1,4 @@
-// Rule set A (docs/SPROUT.md): effective income, surplus, cushion targets.
+// Rule set A (docs/SPROUT.md v3): effective income, surplus, safety cushion.
 import type { FinancialSnapshot, IncomeFrequency, IncomeSource } from "@/types";
 
 const PER_MONTH_DIVISOR: Record<IncomeFrequency, number> = {
@@ -6,6 +6,10 @@ const PER_MONTH_DIVISOR: Record<IncomeFrequency, number> = {
   per_semester: 4,
   one_time: 9, // spread over the 9-month academic year
 };
+
+// v3: the safety cushion is 3 months of (fixed + debt) for everyone, never below $1,000.
+export const CUSHION_MONTHS = 3;
+export const CUSHION_FLOOR = 1000;
 
 export interface IncomeLine extends IncomeSource {
   monthlyEquivalent: number;
@@ -18,8 +22,8 @@ export interface MoneyMath {
   monthlyDebtPayments: number;
   monthlySurplus: number; // may be <= 0
   fixedShare: number; // (fixed + debt) / effective income; 0..1+ (Infinity-safe: 1 when income is 0)
-  starterCushion: number; // 1 x (fixed + debt)
-  fullCushion: number; // 3 x (fixed + debt) = Plan.emergencyFundTarget
+  monthlyCosts: number; // 1 x (fixed + debt): the "1 month covered" milestone
+  safetyCushion: number; // max($1,000, 3 x monthlyCosts) = Plan.cushionTarget = Plan.emergencyFundTarget
 }
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -32,7 +36,7 @@ export function computeMath(snapshot: FinancialSnapshot): MoneyMath {
   const effectiveMonthlyIncome = round2(
     snapshot.incomeSources.reduce((sum, s) => sum + s.amount / PER_MONTH_DIVISOR[s.frequency], 0),
   );
-  const monthlyCosts = snapshot.monthlyFixedCosts + snapshot.monthlyDebtPayments;
+  const monthlyCosts = round2(snapshot.monthlyFixedCosts + snapshot.monthlyDebtPayments);
   return {
     incomeLines,
     effectiveMonthlyIncome,
@@ -40,8 +44,8 @@ export function computeMath(snapshot: FinancialSnapshot): MoneyMath {
     monthlyDebtPayments: snapshot.monthlyDebtPayments,
     monthlySurplus: round2(effectiveMonthlyIncome - monthlyCosts),
     fixedShare: effectiveMonthlyIncome > 0 ? Math.round((monthlyCosts / effectiveMonthlyIncome) * 10000) / 10000 : 1,
-    starterCushion: round2(monthlyCosts),
-    fullCushion: round2(3 * monthlyCosts),
+    monthlyCosts,
+    safetyCushion: Math.max(CUSHION_FLOOR, round2(CUSHION_MONTHS * monthlyCosts)),
   };
 }
 

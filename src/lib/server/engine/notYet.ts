@@ -7,7 +7,7 @@ import type { Candidate } from "./select";
 export function buildNotYet(ctx: EngineContext, matches: Candidate[]): NotYet[] {
   const { snapshot, math, profile } = ctx;
   const goalIds = new Set(profile.goals.map((g) => g.id));
-  const lacksFullCushion = snapshot.savingsBalance < math.fullCushion;
+  const lacksCushion = snapshot.savingsBalance < ctx.cushionTarget;
   const out: NotYet[] = [];
 
   if (math.monthlySurplus <= 0) {
@@ -17,16 +17,16 @@ export function buildNotYet(ctx: EngineContext, matches: Candidate[]): NotYet[] 
     });
   }
 
-  if (goalIds.has("first_home") && (lacksFullCushion || !snapshot.hasSteadyIncome)) {
+  if (goalIds.has("first_home") && (lacksCushion || !snapshot.hasSteadyIncome)) {
     const mortgage = matches.find((m) => isMortgageLike(m.product));
     out.push({
       goalId: "first_home",
       ...(mortgage ? { productId: mortgage.product.id } : {}),
       reason: snapshot.hasSteadyIncome
-        ? `Not a mortgage pre-approval yet. Your savings cover less than 3 months of costs, and buying now would leave no cushion.`
-        : "Not a mortgage pre-approval yet. Lenders look for steady income, and a 3-month cushion keeps a new home from becoming a risk.",
+        ? "Not a mortgage pre-approval yet. Your savings cover less than 3 months of costs, and buying now would leave no safety cushion."
+        : "Not a mortgage pre-approval yet. Lenders look for steady income, and a 3-month safety cushion keeps a new home from becoming a risk.",
       revisitWhen: snapshot.hasSteadyIncome
-        ? `after ${usd(math.fullCushion)} (3 months of costs) is saved`
+        ? `after your ${usd(ctx.cushionTarget)} safety cushion is full`
         : "after a steady income and 3 months saved",
     });
   }
@@ -39,10 +39,10 @@ export function buildNotYet(ctx: EngineContext, matches: Candidate[]): NotYet[] 
     });
   }
 
-  if (lacksFullCushion && out.length === 0) {
+  if (lacksCushion && out.length === 0) {
     out.push({
-      reason: `Big commitments like loans wait until your 3-month cushion (${usd(math.fullCushion)}) is in place.`,
-      revisitWhen: `after ${usd(math.fullCushion)} is saved`,
+      reason: `Big commitments like loans wait until your ${usd(ctx.cushionTarget)} safety cushion is full.`,
+      revisitWhen: `after ${usd(ctx.cushionTarget)} is saved`,
     });
   }
   return out;

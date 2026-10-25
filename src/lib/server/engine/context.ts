@@ -9,7 +9,7 @@ export interface EngineContext {
   math: MoneyMath;
   values: ValueTag[];
   isStudent: boolean;
-  // Rule set B: students (or no steady income) target the starter cushion first; steady income targets full.
+  // Rule set B (v3): the safety cushion, max($1,000, 3 x monthly costs), for everyone.
   cushionTarget: number;
   // Rule set B: students / no steady income save 20% of income; steady income saves 10% + Future You.
   studentRules: boolean;
@@ -28,7 +28,7 @@ export function buildContext(profile: GoalProfile, snapshot: FinancialSnapshot, 
     values,
     isStudent,
     studentRules,
-    cushionTarget: studentRules ? math.starterCushion : math.fullCushion,
+    cushionTarget: math.safetyCushion,
   };
 }
 

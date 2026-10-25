@@ -1,8 +1,8 @@
-// Engine Plan -> Plan with AI-written text (docs/SPROUT.md v2, Plan prompt contract). The AI
-// rewrites words only (headline, sproutSays, Step one and step wording, match explanations,
-// banker summary). Amounts, buckets, stages, triggers, levers, product ids, and the Step one
-// choice stay exactly as the engine produced them, and any AI text that cites a number the
-// engine didn't produce falls back to the template text.
+// Engine Plan -> Plan with AI-written text (docs/SPROUT.md v3, Plan prompt contract). The AI
+// rewrites words only (headline, sproutSays, step wording, match explanations, banker summary).
+// Amounts, buckets, stages, triggers, levers, product ids, and Step one (choice AND text) stay
+// exactly as the engine produced them. AI text falls back to the template when it cites a number
+// the engine didn't produce, breaks a voice rule, or exceeds the docs/DASHBOARD.md text budget.
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { GoalProfile, Plan } from "@/types";
@@ -18,7 +18,7 @@ const PLAN_TIMEOUT_MS = 20_000;
 export const VOICE_RULES = [
   "Voice rules:",
   '1. Possibility first ("Japan is $140 a month away", never "You can\'t afford Japan").',
-  '2. A number and a date ("$113 a month fills your cushion in 3 months").',
+  '2. A number and a date ("$113 a month covers your first month of costs in 3 months").',
   "3. Never shame. Never use these words: only, just, behind, should have, can't afford, waste.",
   "4. Plain and short: under 20 words per sentence; explain jargon in 5 words (\"APY, the interest you earn\").",
   "5. Spend on what you love: celebrate their top dial, trim what they don't care about.",
@@ -30,16 +30,17 @@ export const VOICE_RULES = [
 
 const PLAN_SYSTEM = [
   "You are Sprout, a warm, optimistic money coach for college students and young families, built as a prototype for FNB. Follow the voice rules.",
-  "You receive a finished plan from Sprout's engine. You only write words. Never change any number, stage, lever, product, or the Step one choice.",
+  "You receive a finished plan from Sprout's engine. You only write words. Never change any number, stage, lever, or product. Step one is final, text included: never write it.",
   "Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say an FNB advisor can help. Output JSON only.",
+  'Always call the emergency savings the "safety cushion", never just "cushion".',
   "",
   VOICE_RULES,
 ].join("\n");
 
+// No stepOne here on purpose (SPROUT.md v3 rule D): the AI is never asked for it, and the merge keeps the engine's.
 const AiPlanTextSchema = z.object({
   headline: z.string(),
   sproutSays: z.string(),
-  stepOne: z.object({ title: z.string(), detail: z.string() }),
   explanations: z.array(z.object({ productId: z.string(), explanation: z.string() })),
   steps: z.array(z.object({ order: z.number(), title: z.string(), detail: z.string() })),
   bankerSummary: z.string(),
@@ -54,6 +55,19 @@ export interface PlanResult {
 }
 
 const clean = (s: string | undefined, max: number) => (s ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+
+// docs/DASHBOARD.md "AI text budget": over-budget AI text keeps the template, like a wrong number.
+export const TEXT_BUDGET = { headlineWords: 10, sproutSaysSentences: 2, sproutSaysWords: 35, explanationFirstSentenceWords: 20 };
+export const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+export const sentencesOf = (s: string) => s.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+const withinHeadlineBudget = (s: string) => wordCount(s) <= TEXT_BUDGET.headlineWords;
+const withinSproutSaysBudget = (s: string) =>
+  sentencesOf(s).length <= TEXT_BUDGET.sproutSaysSentences && wordCount(s) <= TEXT_BUDGET.sproutSaysWords;
+const withinExplanationBudget = (s: string) => wordCount(sentencesOf(s)[0] ?? "") <= TEXT_BUDGET.explanationFirstSentenceWords;
+
+// SPROUT.md v3: the user-facing name is always "safety cushion", so a bare "cushion" in AI text is renamed.
+export const safetyCushionName = (s: string) =>
+  s.replace(/(?<!safety[ -])\b(c)ushion\b/gi, (_m, c: string) => (c === "C" ? "Safety cushion" : "safety cushion"));
 
 // Server-side guard: only catalog products survive, whatever produced the plan.
 export function dropUnknownProducts(plan: Plan): Plan {
@@ -139,11 +153,11 @@ function userPrompt(facts: ReturnType<typeof planFacts>): string {
     JSON.stringify(facts, null, 2),
     "",
     "Rewrite ONLY the wording:",
-    "- headline: at most 12 words, optimistic, about what this plan gets them.",
-    "- sproutSays: exactly 2 sentences. If the user's top-value goal has a turn_up_dial lever, lead with it (\"Japan is $140 a month away\"). Mention when the cushion fills if cushionFillsInMonths is set.",
-    "- stepOne: title and detail for the same action. Do not change which action it is.",
-    "- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it.",
-    "- steps: one per order number above; short imperative title and a 1-sentence detail. Keep the same action, product, and amount.",
+    `- headline: at most ${TEXT_BUDGET.headlineWords} words, optimistic, about what this plan gets them.`,
+    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total. If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Mention when the safety cushion fills if cushionFillsInMonths is set. Call it the "safety cushion".`,
+    "- stepOne is FINAL: do not write a title or detail for it. Step 1 in steps is the same action; leave it as given.",
+    `- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. The first sentence is at most ${TEXT_BUDGET.explanationFirstSentenceWords} words (it is shown on its own). Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it.`,
+    "- steps: one per order number above except order 1; short imperative title and a 1-sentence detail. Keep the same action, product, and amount.",
     "- bankerSummary: plain factual text a banker reads before the call; use only the numbers and products given.",
     "Use only numbers that appear in the JSON. Never invent rates, fees, or products. Unpublished rates: say to check the current rate with FNB.",
   ].join("\n");
@@ -184,44 +198,49 @@ function allowedNumbers(facts: unknown): Set<string> {
   return allowed;
 }
 
-// Number guard + voice guard: an AI string survives only if every number it cites came from the
-// engine and it uses no banned voice words ("just" is removed; others keep the template text).
+// Number guard + voice guard + text budget: an AI string survives only if every number it cites came
+// from the engine, it uses no banned voice words ("just" is removed; others keep the template text),
+// and it fits the field's budget when one applies.
 export function makeGuard(facts: unknown) {
   const allowed = allowedNumbers(facts);
   let rejected = 0;
-  const pick = (ai: string | undefined, fallback: string, max: number) => {
+  let overBudget = 0;
+  const pick = (ai: string | undefined, fallback: string, max: number, within?: (text: string) => boolean) => {
     const text = clean(ai, max);
     if (!text) return fallback;
     const numbers = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
-    const voiced = numbers.every((t) => allowed.has(String(Number(t.replace(/,/g, ""))))) ? voiceSafe(text) : null;
-    if (voiced) return voiced;
-    rejected++;
-    return fallback;
+    const safe = numbers.every((t) => allowed.has(String(Number(t.replace(/,/g, ""))))) ? voiceSafe(text) : null;
+    if (!safe) {
+      rejected++;
+      return fallback;
+    }
+    const voiced = safetyCushionName(safe);
+    if (within && !within(voiced)) {
+      overBudget++;
+      return fallback;
+    }
+    return voiced;
   };
-  return { pick, rejected: () => rejected };
+  return { pick, rejected: () => rejected, overBudget: () => overBudget };
 }
 
 // Copies AI text onto the skeleton by key; anything omitted or failing a guard keeps the template.
+// Step one (and step 1, the same action) is never touched: SPROUT.md v3 rule D.
 export function mergeText(skeleton: Plan, ai: AiPlanText, guard: ReturnType<typeof makeGuard>): Plan {
   const { pick } = guard;
   const explanationFor = new Map(ai.explanations.map((e) => [e.productId, e.explanation]));
   const stepFor = new Map(ai.steps.map((s) => [s.order, s]));
-  const stepOne = {
-    ...skeleton.stepOne,
-    title: pick(ai.stepOne.title, skeleton.stepOne.title, 120),
-    detail: pick(ai.stepOne.detail, skeleton.stepOne.detail, 300),
-  };
   return {
     ...skeleton,
-    headline: pick(ai.headline, skeleton.headline, 120),
-    sproutSays: pick(ai.sproutSays, skeleton.sproutSays, 400),
-    stepOne,
-    matches: skeleton.matches.map((m) => ({ ...m, explanation: pick(explanationFor.get(m.productId), m.explanation, 400) })),
+    headline: pick(ai.headline, skeleton.headline, 120, withinHeadlineBudget),
+    sproutSays: pick(ai.sproutSays, skeleton.sproutSays, 400, withinSproutSaysBudget),
+    stepOne: { ...skeleton.stepOne },
+    matches: skeleton.matches.map((m) => ({
+      ...m,
+      explanation: pick(explanationFor.get(m.productId), m.explanation, 400, withinExplanationBudget),
+    })),
     steps: skeleton.steps.map((s) => {
-      // Step 1 is the Step one action: keep the two in sync.
-      if (s.order === 1 && s.kind === skeleton.stepOne.kind && s.productId === skeleton.stepOne.productId) {
-        return { ...s, title: stepOne.title, detail: stepOne.detail };
-      }
+      if (s.order === 1) return { ...s, title: skeleton.stepOne.title, detail: skeleton.stepOne.detail };
       const t = stepFor.get(s.order);
       return { ...s, title: pick(t?.title, s.title, 120), detail: pick(t?.detail, s.detail, 300) };
     }),
@@ -237,8 +256,9 @@ export async function generatePlan(skeleton: Plan, profile: GoalProfile): Promis
     const ai = await aiPlanText(facts);
     const guard = makeGuard(facts);
     const plan = PlanSchema.parse(dropUnknownProducts(mergeText(safeSkeleton, ai, guard)));
-    if (guard.rejected() > 0) console.log(`[ai/plan] number guard kept template text for ${guard.rejected()} field(s)`);
-    return { plan, aiUsed: true, rejectedFields: guard.rejected() };
+    if (guard.rejected() > 0) console.log(`[ai/plan] number/voice guard kept template text for ${guard.rejected()} field(s)`);
+    if (guard.overBudget() > 0) console.log(`[ai/plan] text budget kept template text for ${guard.overBudget()} field(s)`);
+    return { plan, aiUsed: true, rejectedFields: guard.rejected() + guard.overBudget() };
   } catch (error) {
     return { plan: { ...safeSkeleton, aiUsed: false }, aiUsed: false, fallbackReason: describeAiError(error) };
   }

@@ -19,8 +19,8 @@ const VALUE_GOALS: Record<ValueTag, GoalId[]> = {
 const NO_DEPOSIT_CATEGORIES: Product["category"][] = ["checking", "savings", "education_tool"];
 
 function affordability(p: Product, ctx: EngineContext): number {
-  const { snapshot, math } = ctx;
-  if (isMortgageLike(p)) return snapshot.hasSteadyIncome && snapshot.savingsBalance >= math.fullCushion ? 12 : 4;
+  const { snapshot } = ctx;
+  if (isMortgageLike(p)) return snapshot.hasSteadyIncome && snapshot.savingsBalance >= ctx.cushionTarget ? 12 : 4;
   const deposit = p.minOpeningDeposit;
   if (deposit === 0) return 20;
   if (deposit === null) {
