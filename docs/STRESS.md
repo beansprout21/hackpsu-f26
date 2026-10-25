@@ -325,3 +325,18 @@ Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH
   - 375 px: no overflow.
 - **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
 - **Issues:** opened #144. Updated #107, #109.
+
+### Cycle 5 (5:24 AM ET, seed 84864, main `b2a3a65`)
+
+- **Main:** no new commits since PR #145.
+- **Harness:** 514 users, 0.8 s, 0 crashes, 0 API problems.
+  - goal bucket lands on money goals (v3.3): 78 fail, all with "your savings goal" (#107)
+  - no surplus: only $0 products now/next (v3.3): 143 of 204 fail (#109)
+  - Ask Sprout templates: 758 answers, 0 problems
+- **Browser (habits only, 1280 + 375 px):** seeded intake/snapshot → plan → "When can I get the SmartSecured card?" → Save PDF.
+  - Step one D2 with the annualcreditreport.com link; the alerts habit is step 3.
+  - The UI still shows "$90 a month toward your savings goal" and Goals $90 (#107).
+  - The when-unlock answer now reads "Meanwhile, Credit Center can get you ready" (#139 fix confirmed in the UI); its numbers are correct.
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** none opened. Updated #107.
