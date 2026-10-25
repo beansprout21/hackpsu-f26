@@ -228,5 +228,43 @@ export interface Plan {
   disclaimer: string;
 }
 
+// ---------- Share with FNB (v2.2) ----------
+// Opt-in only. Contact comes from the Auth0 session, never from the request body.
+export interface ShareContact {
+  name: string;
+  email: string;
+}
+
+export interface SharedPlan {
+  id: string;                   // opaque random id (crypto.randomUUID), never the Auth0 sub
+  sharedAt: string;             // ISO 8601
+  expiresAt: string;            // ISO 8601, sharedAt + 30 days (storage TTL)
+  consentVersion: "v1";         // which consent text the user accepted (docs/CONTRACTS.md)
+  contact: ShareContact;
+  intake: IntakeAnswers;
+  snapshot: FinancialSnapshot;
+  profile: GoalProfile;
+  plan: Plan;
+}
+
+export interface SharedPlanSummary {   // one row in the banker list
+  id: string;
+  sharedAt: string;
+  contactName: string;
+  lifeStage: LifeStage;
+  persona: Persona;
+  topGoalLabel: string;         // P1 goal label, e.g. "Study abroad in Japan"
+  stepOneTitle: string;
+  monthlySurplus: number;
+  isFnbCustomer: boolean;
+}
+
+export interface ShareStatus {
+  shared: boolean;
+  id?: string;
+  sharedAt?: string;
+  expiresAt?: string;
+}
+
 // ---------- API envelope ----------
 export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };

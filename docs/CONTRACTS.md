@@ -1,4 +1,6 @@
-# Contracts v2.1
+# Contracts v2.2
+
+v2.2 (Sat 9:00 PM, contract-change): **Share with FNB** (opt-in storage), **banker dashboard**, banker role. Everything else unchanged from v2.1.
 
 **Frozen after issue #1 merges.** Changes require a separate PR labeled `contract-change` plus an in-person heads-up.
 Issue #1 copies the types below verbatim into `src/types/index.ts` and the zod schemas into `src/types/schemas.ts`.
@@ -234,6 +236,44 @@ export interface Plan {
   disclaimer: string;
 }
 
+// ---------- Share with FNB (v2.2) ----------
+// Opt-in only. Contact comes from the Auth0 session, never from the request body.
+export interface ShareContact {
+  name: string;
+  email: string;
+}
+
+export interface SharedPlan {
+  id: string;                   // opaque random id (crypto.randomUUID), never the Auth0 sub
+  sharedAt: string;             // ISO 8601
+  expiresAt: string;            // ISO 8601, sharedAt + 30 days (storage TTL)
+  consentVersion: "v1";         // which consent text the user accepted (docs/CONTRACTS.md)
+  contact: ShareContact;
+  intake: IntakeAnswers;
+  snapshot: FinancialSnapshot;
+  profile: GoalProfile;
+  plan: Plan;
+}
+
+export interface SharedPlanSummary {   // one row in the banker list
+  id: string;
+  sharedAt: string;
+  contactName: string;
+  lifeStage: LifeStage;
+  persona: Persona;
+  topGoalLabel: string;         // P1 goal label, e.g. "Study abroad in Japan"
+  stepOneTitle: string;
+  monthlySurplus: number;
+  isFnbCustomer: boolean;
+}
+
+export interface ShareStatus {
+  shared: boolean;
+  id?: string;
+  sharedAt?: string;
+  expiresAt?: string;
+}
+
 // ---------- API envelope ----------
 export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 ```
@@ -258,8 +298,35 @@ export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string 
 - Request: `{ question: string, profile: GoalProfile, plan: Plan }`
 - Response data: `{ answer: string, citedProductIds: string[] }`
 
+### Share with FNB (v2.2, P1)
+All require an Auth0 session. Storage: Upstash Redis (`@upstash/redis`, approved by Ben). Server reads `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`, falling back to `KV_REST_API_URL` / `KV_REST_API_TOKEN` (Vercel Marketplace naming). If neither is set, share and banker routes return `{ ok: false, error: "Sharing is unavailable right now" }` and the rest of the app is unaffected.
+
+- `GET /api/share` -> `ShareStatus` for the signed-in user.
+- `POST /api/share` -> `ShareStatus`
+  - Request: `ShareRequestSchema` = `{ consent: true, intake, snapshot, profile, plan }`. `consent` must be the literal `true`.
+  - Server builds `SharedPlan`: `contact` from the Auth0 session (`name`, `email`), new `id` (or the user's existing id on re-share, which overwrites), `consentVersion: "v1"`, `sharedAt` now, `expiresAt` = +30 days.
+  - Keys: `share:plan:<id>` -> `SharedPlan` (TTL 30 days); `share:user:<auth0 sub>` -> `<id>` (same TTL); `share:index` sorted set of ids by `sharedAt`.
+  - Never log plan contents, snapshot numbers, or contact fields. Log route + ok/error + timing only.
+- `DELETE /api/share` -> `ShareStatus { shared: false }`. Deletes all three keys/entries for the user ("Stop sharing").
+
+### Banker dashboard (v2.2, P1)
+- `GET /api/banker/plans` -> `SharedPlanSummary[]`, newest first, max 50; skips ids whose plan has expired.
+- `GET /api/banker/plans/[id]` -> `SharedPlan`, or `{ ok: false, error: "Not found" }` (404).
+- Both require the **banker role** (below): signed out -> 401 "Sign in required"; signed in without the role -> 403 "Banker access only".
+- Pages: `/banker` (list) and `/banker/[id]` (detail). Login-gated by `src/proxy.ts` like `/plan`; server-side role check before rendering any data.
+
+### Consent text v1 (shown verbatim before sharing)
+> **Share my plan with FNB.** An FNB banker will see your name, email, goals, money snapshot, and Sprout plan so they can prepare for a conversation with you. Sprout keeps it for 30 days. You can stop sharing anytime, which deletes it.
+>
+> [ ] I agree to share my plan with FNB.
+
+Changing this text means bumping `consentVersion`.
+
 ## Auth
 - Auth0 session required for `/snapshot`, `/plan`, and all `/api/*` except none (all API routes require session).
+- **Banker role (v2.2):** Auth0 RBAC role `banker`, added to the ID token by a post-login Action as the custom claim `https://sprout-demo/roles` (string array). Server helper `requireBanker()` in `src/lib/server/auth.ts` checks that claim. Fallback for demo reliability: env `BANKER_EMAILS` (comma-separated, server-only) also grants the role. Verify in the `@auth0/nextjs-auth0` v4 README whether custom ID token claims reach `session.user` (v4 may filter claims; if so, keep the claim via `beforeSessionSaved`).
+- With `DEMO_AUTH_BYPASS=1` the demo session is treated as a banker (emergency demo switch only; shared data in the demo is persona data).
+- `/banker` and `/banker/[id]` are login-gated like `/snapshot` and `/plan`.
 - Env: see `.env.example`.
 
 ## Client state (sessionStorage key `waypoint:v1`)
@@ -277,5 +344,7 @@ interface AppState {
 **Maya (hero, college student, no steady job) v3:** lifeStage student; hasSteadyIncome false; incomeSources: summer_savings 3000 one_time, aid_refund 2000 per_semester, family 300 monthly (effective $1,133/month); monthlyFixedCosts 650; monthlyDebtPayments 0; savingsBalance 400; creditBand "building"; isFnbCustomer false. Values [experiences, freedom] -> Experience Collector. Goals: travel (P1, 12 months, $2,500, "study abroad in Japan"), credit_building (P2, 12 months), first_home (P3, 84 months, "own a place after graduation"). Expected engine output: see the golden test in docs/SPROUT.md.
 
 **Jordan (contrast, young family):** lifeStage young_family; hasSteadyIncome true; incomeSources: job 2400 monthly; monthlyFixedCosts 1500; monthlyDebtPayments 150; savingsBalance 1200; creditBand "fair"; isFnbCustomer false. Swipes lean security + family. Goals: first_home (P1, 60 months, $15,000), emergency_fund (P2, 12 months).
+
+**Banker demo:** sign in as a banker account, share Maya's plan from `/plan`, open `/banker`.
 
 **Live proof moment:** re-run Maya with opposite swipes; the persona, plan, and roadmap visibly change while her finances stay identical.
