@@ -293,3 +293,19 @@ Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH
   - 375 px: no overflow.
 - **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
 - **Issues:** none opened. Updated #104, #105, #107, #108, #109, #110.
+
+### Cycle 3 (3:52 AM ET, seed 91945, main `79dfb7d`)
+
+- **Main moved 4 commits:** SPROUT v3.3 rules (#138, docs), #130 fix (no IRA; no card or CardGuard for the cushion), and #121 AI audit cycles 7–8.
+- **Harness:** invariants updated to the exact v3.3 rules for #107, #109 and #130. 514 users, 0.6 s, 0 crashes, 0 API problems.
+  - no IRA; no card, loan or CardGuard for the cushion: **0** fail (111 before the #130 fix): #130 verified
+  - goal bucket lands on money goals (v3.3): 68 fail; 67 of them also say "your savings goal" (#107, no engine change yet)
+  - no surplus: only $0 products now/next (v3.3): 163 of 199 fail (#109, no engine change yet). Includes 23 `student-checking` with a `null` deposit; question raised on #109.
+  - Ask Sprout templates: 703 answers, 0 problems
+- **Browser (Jordan, 1280 + 375 px):** intake "Use Jordan" → "Fill in as Jordan" → plan → "When can I get the Home Ownership Program?" → Save PDF.
+  - Step 3 now says "safety cushion goal" (#110 fixed in the UI).
+  - Intake still shows "$2,000 … a student's basic costs" (#112).
+  - New: the chat says "Meanwhile, Mortgage calculators gets you ready" (**#139**, P1).
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** opened #139. Updated #107, #109, #112, #130.
