@@ -98,7 +98,9 @@ export const IntakeAnswersSchema = z.object({
   lifeStage: LifeStageSchema,
   swipes: z.array(SwipeAnswerSchema).min(6).max(10),
   values: z.array(ValueTagSchema).min(1).max(3),
-  goals: z.array(GoalAnswerSchema).min(1).max(3),
+  goals: z.array(GoalAnswerSchema).min(1).max(5)   // v2.4: up to 3 money goals + up to 2 habits
+    .refine((gs) => gs.filter((g) => g.id !== "everyday_banking" && g.id !== "credit_building").length <= 3, { message: "at most 3 money goals" })
+    .refine((gs) => gs.filter((g) => g.id === "everyday_banking" || g.id === "credit_building").length <= 2, { message: "at most 2 habits" }),
   richLifeText: z.string().max(500).optional(),
 });
 

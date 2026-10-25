@@ -1,4 +1,6 @@
-# Contracts v2.3
+# Contracts v2.4
+
+v2.4 (Sun 1:00 AM, contract-change): intake allows up to 3 **money goals** plus up to 2 **habits** (`everyday_banking`, `credit_building`). Habits get no money allocation (SPROUT.md v3.2); `Allocation` lists money goals only. Everything else unchanged from v2.3.
 
 v2.3 (Sat 11:25 PM, contract-change): Ask Sprout **conversation memory, intents, snapshot context**; **document upload** (`POST /api/extract`). Everything else unchanged from v2.2.
 
@@ -52,7 +54,7 @@ export interface IntakeAnswers {
   lifeStage: LifeStage;
   swipes: SwipeAnswer[];        // 6 to 10 cards
   values: ValueTag[];           // derived client-side from swipes: tally, most chosen first, 1..3 items
-  goals: GoalAnswer[];          // 1..3 goals
+  goals: GoalAnswer[];          // v2.4: 1..5 goals = up to 3 money goals + up to 2 habits (everyday_banking, credit_building)
   richLifeText?: string;        // optional "describe your rich life", <= 500 chars
 }
 
