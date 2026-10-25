@@ -70,9 +70,9 @@ export function IntakeWizard() {
   const stepRef = useRef<HTMLDivElement>(null);
   const step = STEPS[stepIndex];
   const values = deriveValues(draft.swipes);
-  // The persona reveal has little on screen, so on desktop it's one centered column
-  // (progress, Sprout, card, buttons) instead of the side-by-side layout.
-  const centered = step === "persona";
+  // Steps with little on screen (life stage, persona reveal) are one centered column on desktop
+  // (progress, Sprout, content, buttons) instead of the side-by-side layout.
+  const centered = step === "lifeStage" || step === "persona";
 
   useEffect(() => {
     stepRef.current?.focus({ preventScroll: true });
