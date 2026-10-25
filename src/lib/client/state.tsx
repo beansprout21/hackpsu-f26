@@ -36,6 +36,8 @@ function subscribe(listener: () => void) {
 
 export function updateAppState(patch: Partial<AppState>) {
   const next = { ...read(), ...patch };
+  // Ask Sprout's memory belongs to one plan: a new (or cleared) plan starts a fresh conversation.
+  if ("plan" in patch && !("chat" in patch)) delete next.chat;
   cache = next;
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
