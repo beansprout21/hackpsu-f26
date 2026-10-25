@@ -13,16 +13,10 @@ const CONFIDENCE: Record<Confidence, { label: string; className: string }> = {
   low: { label: "Low confidence", className: "bg-muted text-muted-foreground" },
 };
 
-const SCORE_PARTS = [
-  { key: "goalFit", label: "Fits your goal", max: 40 },
-  { key: "eligibility", label: "You qualify", max: 25 },
-  { key: "affordability", label: "Fits your budget", max: 20 },
-  { key: "priority", label: "Your priority", max: 15 },
-] as const;
-
 export const matchKey = (m: Match) => `${m.productId}-${m.goalId}`;
 
-// One product as a collapsed row; details (why, terms, score, source) open on click.
+// One product as a collapsed row; details (why, terms, source) open on click. Score breakdowns stay on
+// the banker dashboard only (docs/DASHBOARD.md).
 export function MatchRow({ match, open, onToggle }: { match: Match; open: boolean; onToggle: (open: boolean) => void }) {
   const product = productById(match.productId);
   const goal = goalMeta(match.goalId);
@@ -72,27 +66,6 @@ export function MatchRow({ match, open, onToggle }: { match: Match; open: boolea
             </div>
           )}
           {product?.rateNote && <p className="text-caption text-muted-foreground">{product.rateNote}</p>}
-
-          <dl className="flex flex-col gap-2 rounded-xl bg-muted px-4 py-3">
-            <div className="flex justify-between text-caption font-semibold text-muted-foreground">
-              <dt>Why this match</dt>
-              <dd className="tabular-nums">{match.score}/100</dd>
-            </div>
-            {SCORE_PARTS.map((p) => {
-              const value = match.breakdown[p.key];
-              return (
-                <div key={p.key} className="grid grid-cols-[7rem_1fr_3rem] items-center gap-2 text-caption">
-                  <dt className="text-muted-foreground">{p.label}</dt>
-                  <dd className="h-2 overflow-hidden rounded-full bg-card">
-                    <span className="block h-full rounded-full bg-brand-400" style={{ width: `${(value / p.max) * 100}%` }} />
-                  </dd>
-                  <dd className="text-right tabular-nums">
-                    {value}/{p.max}
-                  </dd>
-                </div>
-              );
-            })}
-          </dl>
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-caption text-info">
             <a

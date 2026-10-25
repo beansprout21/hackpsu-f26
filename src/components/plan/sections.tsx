@@ -3,79 +3,28 @@
 import { useRef, useState, type ReactNode } from "react";
 import { CalendarCheck, Check, Quote } from "lucide-react";
 import { toast } from "sonner";
-import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
 import { cn } from "@/lib/utils";
-import type { GoalProfile, Plan, PlanStep } from "@/types";
-import { formatMonths, productName, usd } from "./format";
-import { STEP_ICONS } from "./icons";
+import type { GoalProfile, Plan } from "@/types";
 
 const BANKER_URL = "https://www.fnb-online.com/schedule-an-appointment";
 
+// Above the tabs: the plan headline and the user's rich life. The persona chip lives in the Overview's
+// first block (#71), and the numbers live in the Overview blocks instead of stat tiles.
 export function SummaryHeader({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
-  const PersonaIcon = PERSONA_ICONS[profile.persona.id];
-  const onTrack = plan.allocation.filter((a) => a.onTrack).length;
-  const steps = plan.steps.some((s) => s.order === plan.stepOne.order && s.title === plan.stepOne.title)
-    ? plan.steps.length
-    : plan.steps.length + 1;
-  const stats = [
-    { label: "To work with", value: `${usd(Math.max(plan.monthlySurplus, 0))}/mo`, accent: true },
-    {
-      label: "Cushion full in",
-      value: plan.cushionFillsInMonths !== null ? formatMonths(plan.cushionFillsInMonths) : "Covered",
-    },
-    { label: "Goals on track", value: `${onTrack} of ${plan.allocation.length}` },
-    { label: "Roadmap", value: `${steps} steps` },
-  ];
-
   return (
-    <section aria-labelledby="plan-headline" className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-100 px-3 py-1 text-small font-semibold text-brand-700">
-          <PersonaIcon className="size-5 text-foreground" aria-hidden />
-          {profile.persona.label}
-        </span>
-        <h1 id="plan-headline" className="text-lead font-semibold text-balance sm:text-title">
-          {plan.headline}
-        </h1>
-        <blockquote className="flex gap-2 text-body text-brand-700 italic">
-          <Quote className="size-6 shrink-0 text-brand-400" aria-hidden />
-          <span className="line-clamp-2 sm:line-clamp-none">{profile.richLifeStatement}</span>
-        </blockquote>
-      </div>
-      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="flex flex-col gap-1 rounded-2xl bg-card p-4 shadow-card">
-            <dt className="text-caption text-muted-foreground">{s.label}</dt>
-            <dd className={cn("text-lead font-semibold tabular-nums", s.accent && "text-brand-700")}>{s.value}</dd>
-          </div>
-        ))}
-      </dl>
+    <section aria-labelledby="plan-headline" className="flex flex-col gap-3">
+      <h1 id="plan-headline" className="text-lead font-semibold text-balance sm:text-title">
+        {plan.headline}
+      </h1>
+      <blockquote className="flex gap-2 text-body text-brand-700 italic">
+        <Quote className="size-6 shrink-0 text-brand-400" aria-hidden />
+        <span className="line-clamp-2 sm:line-clamp-none">{profile.richLifeStatement}</span>
+      </blockquote>
     </section>
   );
 }
 
-export function StepOneCard({ step }: { step: PlanStep }) {
-  const Icon = STEP_ICONS[step.kind];
-  return (
-    <article aria-labelledby="step-one" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-card ring-2 ring-success/30">
-      <span className="flex items-center gap-2 text-caption font-semibold tracking-wide text-success uppercase">
-        <Icon className="size-5" aria-hidden />
-        Start here this week
-      </span>
-      <h3 id="step-one" className="text-lead font-semibold">
-        {step.title}
-      </h3>
-      <p className="text-small text-muted-foreground">{step.detail}</p>
-      {step.productId && (
-        <span className="self-start rounded-full bg-brand-100 px-3 py-1 text-caption font-semibold text-brand-700">
-          {productName(step.productId)}
-        </span>
-      )}
-    </article>
-  );
-}
-
-export function BankerCta({ summary, children }: { summary: string; children?: ReactNode }) {
+export function BankerCta({ summary, title = "Talk it through with a person", children }: { summary: string; title?: string; children?: ReactNode }) {
   const [chip, setChip] = useState<"hidden" | "in" | "out">("hidden");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -103,7 +52,7 @@ export function BankerCta({ summary, children }: { summary: string; children?: R
     >
       <div className="flex flex-col gap-1">
         <h2 id="banker" className="text-lead font-semibold">
-          Talk it through with a person
+          {title}
         </h2>
         <p className="text-small text-muted-foreground">
           We&apos;ll copy a summary of this plan so an FNB banker knows your goals before you meet.

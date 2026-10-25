@@ -12,6 +12,25 @@ export const WHY_THIS_FIRST = ASK_SPROUT_STARTERS[0];
 
 // Rule D2 (SPROUT.md v3): the only Step one with a link.
 export const CREDIT_REPORT_URL = "https://www.annualcreditreport.com";
+export const CREDIT_REPORT_LINK_LABEL = "Open annualcreditreport.com";
+
+// Overview block titles and controls (DASHBOARD.md block order). Components render these as-is.
+export const BLOCK_TITLES = {
+  nextMove: "Your next move",
+  month: "Your month",
+  cushion: "Your safety cushion",
+  goals: "Your goals",
+  path: "Your path",
+  fnb: "Take it to FNB",
+} as const;
+export const DONE_LABEL = "Done";
+export const DONE_MESSAGE = "Nice start";
+export const FNB_FIT_LABEL = "Your FNB fit";
+export const DETAILS_LABEL = "Details";
+export const OPEN_ROADMAP_LABEL = "Open roadmap";
+export const MILESTONE_LABEL = "1 month covered";
+export const MONTH_BAR_LABELS = { cushion: "Safety cushion", goals: "Goals", guiltFree: "Guilt-free" } as const;
+export const PATH_STAGE_LABELS = { now: "Now", next: "Next", later: "Later" } as const;
 
 // Fund names, lowercase for use mid-sentence ("my travel fund"); fund() capitalizes for line starts.
 export const FUND_NAME: Record<GoalId, string> = {

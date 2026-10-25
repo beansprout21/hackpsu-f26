@@ -61,11 +61,11 @@ function GoalRow({ a }: { a: Allocation }) {
         </div>
         <p className="text-small text-muted-foreground tabular-nums">
           {usd(a.monthlyAmount)}/mo of the {usd(a.requiredMonthly)}/mo it needs
-          {a.monthlyAmount > 0 ? ` · at this pace, ${formatMonths(a.monthsToTarget)}` : " · starts after your cushion"}
+          {a.monthlyAmount > 0 ? ` · at this pace, ${formatMonths(a.monthsToTarget)}` : " · starts after your safety cushion"}
         </p>
       </div>
 
-      <AskChip question={`Why is my ${meta.label.toLowerCase()} goal ${a.onTrack ? "on track" : "behind"}?`} />
+      <AskChip question={a.onTrack ? `Why is my ${meta.label.toLowerCase()} goal on track?` : `Why does my ${meta.label.toLowerCase()} goal need a boost?`} />
 
       {!a.onTrack && levers.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -118,30 +118,3 @@ export function GoalsProgress({ allocation }: { allocation: Allocation[] }) {
 
 const fillPct = (a: Allocation) =>
   a.requiredMonthly > 0 ? Math.min((a.monthlyAmount / a.requiredMonthly) * 100, 100) : 100;
-
-// Overview version: one line per goal with its bar and status.
-export function GoalsSummary({ allocation }: { allocation: Allocation[] }) {
-  return (
-    <ul className="flex flex-col gap-4">
-      {allocation.map((a) => {
-        const meta = goalMeta(a.goalId);
-        return (
-          <li key={a.goalId} className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-small font-semibold">
-                <meta.icon className="size-5 text-brand-600" aria-hidden />
-                {meta.label}
-              </span>
-              <span className={cn("text-caption font-semibold", a.onTrack ? "text-success" : "text-warning")}>
-                {a.onTrack ? "On track" : "Needs a boost"}
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <span className={cn("block h-full rounded-full", a.onTrack ? "bg-success" : "bg-brand-400")} style={{ width: `${fillPct(a)}%` }} />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
