@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import { Tabs } from "@base-ui/react/tabs";
 import { LayoutDashboard, Map, Printer, Target, Wallet } from "lucide-react";
 import { AskSproutMobile, AskSproutProvider, SproutCopilot } from "@/components/chat/AskSprout";
-import { SharePlanCard } from "@/components/share/SharePlanCard";
+import { hasSession, SharePlanCard, signInReturningTo } from "@/components/share/SharePlanCard";
 import { buildOverview } from "@/lib/client/overview";
 import { useAppState } from "@/lib/client/state";
 import type { FinancialSnapshot, GoalProfile, Plan } from "@/types";
@@ -66,6 +67,37 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
   useEffect(() => {
     if (!plan.aiUsed) console.info("[plan] Rendering engine fallback text (aiUsed=false).");
   }, [plan.aiUsed]);
+
+  // Contracts v2.5 (#157): sign-in at the end. The PDF asks for sign-in and comes back to /plan?export=1;
+  // Share comes back to /plan?share=1. The plan itself stays in sessionStorage across the round trip (same tab).
+  const { user, isLoading } = useUser();
+  const pdfButton = useRef<HTMLButtonElement>(null);
+  const [pdfSignedIn, setPdfSignedIn] = useState(false);
+
+  const savePdf = async () => {
+    if (user || (await hasSession())) window.print();
+    else signInReturningTo("/plan?export=1");
+  };
+
+  useEffect(() => {
+    if (isLoading) return;
+    const params = new URLSearchParams(window.location.search);
+    const fromExport = params.get("export") === "1";
+    const fromShare = params.get("share") === "1";
+    if (!fromExport && !fromShare) return;
+    params.delete("export");
+    params.delete("share");
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+    void (async () => {
+      const signedIn = !!user || (await hasSession());
+      if (fromExport && signedIn) {
+        setPdfSignedIn(true);
+        requestAnimationFrame(() => pdfButton.current?.focus());
+      }
+      if (fromShare) requestAnimationFrame(() => document.getElementById("share-fnb")?.scrollIntoView({ block: "start" }));
+    })();
+  }, [isLoading, user]);
 
   useEffect(() => {
     const onPop = () => setTabState(readHash());
@@ -141,9 +173,15 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
                 onProduct={cite}
                 actions={
                   <>
+                    {pdfSignedIn && (
+                      <p role="status" className="w-full text-small">
+                        You&apos;re signed in. Save your plan as a PDF for your banker.
+                      </p>
+                    )}
                     <button
+                      ref={pdfButton}
                       type="button"
-                      onClick={() => window.print()}
+                      onClick={() => void savePdf()}
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-small font-semibold ring-1 ring-border outline-none transition-colors ring-inset hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
                     >
                       <Printer className="size-5" aria-hidden /> Save for my banker (PDF)

@@ -4,7 +4,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ApiResponse, ExtractedSnapshot } from "@/types";
-import { requireSession } from "@/lib/server/auth";
 import { getClient } from "@/lib/ai/client";
 import { EXTRACT_MEDIA_TYPES, extractSnapshot, type ExtractMediaType } from "@/lib/ai/extract";
 
@@ -30,8 +29,6 @@ function failureLabel(error: unknown): string {
 const fail = (error: string, status: number) => NextResponse.json<ApiResponse<ExtractedSnapshot>>({ ok: false, error }, { status });
 
 export async function POST(request: Request) {
-  const auth = await requireSession();
-  if (auth.response) return auth.response;
 
   const started = Date.now();
   const log = (ok: boolean, detail: string) => console.log(`[api/extract] ok=${ok} ms=${Date.now() - started} ${detail}`);

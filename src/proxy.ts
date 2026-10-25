@@ -1,12 +1,12 @@
 // Next 16 proxy (formerly middleware): mounts the Auth0 routes (/auth/login, /auth/callback,
-// /auth/logout, /auth/profile, ...) and gates the signed-in pages. /intake stays public;
-// API routes check the session themselves with requireSession().
+// /auth/logout, /auth/profile, ...) and gates the signed-in pages. Contracts v2.5 (#157): sign-in at the end,
+// so /intake, /snapshot and /plan are public and only /banker is gated here; /api/share and /api/banker/**
+// check the session themselves with requireSession().
 import { NextResponse, type NextRequest } from "next/server";
 import { auth0 } from "@/lib/auth0";
 import { authBypassed } from "@/lib/server/auth";
 
-const PROTECTED_PAGES = ["/snapshot", "/plan", "/banker"];
-const RETURN_TO_AFTER_LOGIN = "/snapshot";
+const PROTECTED_PAGES = ["/banker"];
 
 const isUnder = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
 
@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
     const session = await auth0.getSession(request);
     if (!session) {
       const login = new URL("/auth/login", request.nextUrl.origin);
-      login.searchParams.set("returnTo", isUnder(pathname, "/banker") ? "/banker" : RETURN_TO_AFTER_LOGIN);
+      login.searchParams.set("returnTo", "/banker");
       return NextResponse.redirect(login);
     }
   }
