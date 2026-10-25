@@ -222,8 +222,11 @@ function trackFlags(field: string, text: string, p1OnTrack: boolean | null, plan
   if (plan && !gapClaimsConsistent(text, plan)) out.push({ type: "contradiction: on track vs gap", detail: `${field} claims a gap the engine doesn't have: "${clip(text)}"` });
   if (p1OnTrack === null) return out;
   // Clause-aware: "first home is $4 a month away, and your small business goal is on track" is about two goals.
-  for (const clause of text.split(/(?<=[.!?])\s+|,\s*|;\s*|\s+(?:and|but)\s+/)) {
-    if (!/\bon track\b/i.test(clause) || CONDITIONAL.test(clause)) continue;
+  for (const sentence of sentences(text)) {
+    // A condition anywhere earlier in the sentence ("automate $38 more and you're on track") covers the claim.
+    if (!/\bon track\b/i.test(sentence) || CONDITIONAL.test(sentence.slice(0, sentence.search(/\bon track\b/i)))) continue;
+    const clause = sentence.split(/,\s*|;\s*|\s+(?:and|but)\s+/).find((c) => /\bon track\b/i.test(c)) ?? sentence;
+    if (CONDITIONAL.test(clause)) continue;
     const named = GOAL_WORDS.filter(([, re]) => re.test(clause)).map(([id]) => id);
     const offTrack = named.length
       ? named.some((id) => plan?.allocation.find((a) => a.goalId === id)?.onTrack === false)
