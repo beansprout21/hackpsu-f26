@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Compass, Heart, Sparkles, Target } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,7 +12,6 @@ import { SWIPE_CARDS } from "@/data/swipeCards";
 import { useAppState } from "@/lib/client/state";
 import { cn } from "@/lib/utils";
 import type { GoalId } from "@/types";
-import { GoalIdSchema } from "@/types/schemas";
 import { LIFE_STAGE_OPTIONS, goalMeta } from "./copy";
 import { EMPTY_DRAFT, deriveValues, draftFromIntake, intakeFromDraft, moneyFirst, type IntakeDraft } from "./draft";
 import { GoalTimeline } from "./GoalTimeline";
@@ -60,23 +59,11 @@ const SPROUT_LINES: Record<Step, string> = {
   finish: "Nice. Want me to save this so I can build your plan?",
 };
 
-// A goal picked on the landing page (/intake?goal=<id>, #85) starts pre-selected on the goals step.
-// Invalid ids are ignored; it isn't added twice or past the 3-goal limit, and earlier steps still run.
-// The param comes from useSearchParams: on a client-side navigation window.location isn't updated yet.
-function withLandingGoal(draft: IntakeDraft, goalParam: string | null): IntakeDraft {
-  const parsed = GoalIdSchema.safeParse(goalParam);
-  if (!parsed.success) return draft;
-  const id = parsed.data;
-  if (draft.goals.some((g) => g.id === id) || draft.goals.length >= 3) return draft;
-  return { ...draft, goals: [{ id, horizonMonths: goalMeta(id).defaultMonths, whyText: "" }, ...draft.goals] };
-}
-
 export function IntakeWizard() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [app, update] = useAppState();
   const [draft, setDraft] = useState<IntakeDraft>(() =>
-    withLandingGoal(app.intake ? draftFromIntake(app.intake) : EMPTY_DRAFT, searchParams.get("goal")),
+    app.intake ? draftFromIntake(app.intake) : EMPTY_DRAFT,
   );
   const [stepIndex, setStepIndex] = useState(0);
   // Several life stage options share one LifeStage; remember which one was tapped.

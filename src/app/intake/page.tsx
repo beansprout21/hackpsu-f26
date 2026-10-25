@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import { IntakeWizard } from "@/components/intake/IntakeWizard";
 import { useHydrated } from "@/lib/client/state";
 
@@ -9,8 +8,7 @@ export default function IntakePage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-12 lg:max-w-6xl lg:justify-center lg:px-10 lg:py-16">
       <h1 className="sr-only">Your goals</h1>
-      {/* Suspense: IntakeWizard reads ?goal= with useSearchParams (#85). */}
-      <Suspense>{hydrated && <IntakeWizard />}</Suspense>
+      {hydrated && <IntakeWizard />}
     </main>
   );
 }
