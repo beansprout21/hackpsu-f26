@@ -188,7 +188,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
                     </button>
                     <Link
                       href="/banker"
-                      className="self-center text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                      className="inline-flex min-h-6 items-center self-center text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                     >
                       Banker view (demo)
                     </Link>

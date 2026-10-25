@@ -22,11 +22,11 @@ export function BankerNotice({ kind }: { kind: Exclude<BankerAccess["kind"], "ok
       <p className="text-small text-muted-foreground">{body}</p>
       {kind === "signed_out" ? (
         // /auth/login is an Auth0 route handled in src/proxy.ts, not a Next page.
-        <a href="/auth/login?returnTo=/banker" className="text-small font-semibold text-primary underline-offset-4 hover:underline">
+        <a href="/auth/login?returnTo=/banker" className="inline-flex min-h-6 items-center text-small font-semibold text-primary underline-offset-4 hover:underline">
           Sign in
         </a>
       ) : (
-        <Link href="/plan" className="text-small font-semibold text-primary underline-offset-4 hover:underline">
+        <Link href="/plan" className="inline-flex min-h-6 items-center text-small font-semibold text-primary underline-offset-4 hover:underline">
           Back to my plan
         </Link>
       )}
