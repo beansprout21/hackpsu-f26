@@ -31,12 +31,14 @@ function SummaryCard({ title, more, onMore, children }: { title: string; more: s
 export function Overview({
   plan,
   stages,
+  done,
   onTab,
   onStage,
   actions,
 }: {
   plan: Plan;
   stages: StageInfo[];
+  done: Set<string>;
   onTab: (tab: "money" | "goals" | "roadmap") => void;
   onStage: (stage: Stage) => void;
   actions: ReactNode;
@@ -49,7 +51,7 @@ export function Overview({
       </div>
 
       <SummaryCard title="Your roadmap" more="Open roadmap" onMore={() => onTab("roadmap")}>
-        <StageTiles stages={stages} onSelect={onStage} />
+        <StageTiles stages={stages} done={done} onSelect={onStage} />
       </SummaryCard>
 
       <div className="grid gap-8 md:grid-cols-2">

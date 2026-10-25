@@ -33,6 +33,16 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
   const [stage, setStage] = useState<Stage>("now");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ key: string; tick: number } | null>(null);
+  const [done, setDone] = useState<Set<string>>(() => new Set());
+
+  const toggleDone = useCallback((key: string) => {
+    setDone((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!plan.aiUsed) console.info("[plan] Rendering engine fallback text (aiUsed=false).");
@@ -106,6 +116,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
               <Overview
                 plan={plan}
                 stages={stages}
+                done={done}
                 onTab={setTab}
                 onStage={openStage}
                 actions={
@@ -129,7 +140,16 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
               <GoalsProgress allocation={plan.allocation} />
             </Tabs.Panel>
             <Tabs.Panel value="roadmap" className="outline-none">
-              <Roadmap plan={plan} stage={stage} onStage={setStage} openKey={openKey} onOpenKey={setOpenKey} />
+              <Roadmap
+                plan={plan}
+                stage={stage}
+                onStage={setStage}
+                done={done}
+                onDone={toggleDone}
+                openKey={openKey}
+                onOpenKey={setOpenKey}
+                onProduct={cite}
+              />
             </Tabs.Panel>
           </Tabs.Root>
 
