@@ -258,3 +258,21 @@ Local dev server, `DEMO_AUTH_BYPASS=1`, `AI_DISABLED=1`, in-app browser at 1280�
 ### Observation for Ben (not a rule violation)
 
 Loan products reach the first 4 guide steps for some generated users: auto loan (23), CashPlease (14), secured installment loan (13), unsecured line of credit (4). The rules only forbid student loans, so this is a question, not a bug.
+
+## Overnight loop (#119)
+
+Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH_BYPASS=1 npx --yes tsx scripts/stress.ts`, a browser pass for one persona (dev server on port 3003, `DEMO_AUTH_BYPASS=1`, `AI_DISABLED=1`), and the live-AI sample when a key is present. This clone has no `ANTHROPIC_API_KEY`, so the live-AI sample is skipped and reported as 0 calls.
+
+### Cycle 1 (2:22 AM ET, seed 9334)
+
+- **Harness:** 514 users (500 generated + 14 edge), 1.1 s, 0 crashes, 0 API problems (51 calls).
+  - plan is schema-valid: 11 fail (#104: 10 cushion with 3 matches, 1 duplicate ids #105)
+  - goal bucket lands on money goals: 60 fail (#107, all habits-only)
+  - no surplus: only $0 products now/next: 190 of 206 fail (#109)
+  - Ask Sprout templates: 17 of 755 answers say raw months ≥ 24 (#108)
+- **Browser (Maya, 1280 + 375 px):** intake "Use Maya" → snapshot "Fill in as Maya" → plan → chips "Why is this my first move?", "How did you split my money?" → Save PDF (`print()` called). No new problems.
+  - Numbers $80 / $33 / $129 (#106).
+  - The split answer is correct (64 words).
+  - 375 px: no overflow, 4 guide steps. "See it at FNB" and "Banker view (demo)" are under 24 px (#115).
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** no new signatures. New reproductions commented on #104, #107, #108, #109.

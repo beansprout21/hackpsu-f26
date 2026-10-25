@@ -26,8 +26,13 @@ import type { ChatIntent, FinancialSnapshot, GoalAnswer, GoalId, GoalProfile, In
 const args = process.argv.slice(2);
 const LIVE = args.includes("--live");
 const OUT = args.includes("--out") ? args[args.indexOf("--out") + 1] : undefined;
-const SEED = 9707;
-const GENERATED = 300;
+// Overnight runs (#119) pick a new seed and size per cycle: STRESS_SEED=1234 STRESS_USERS=500.
+const envInt = (name: string, fallback: number) => {
+  const n = Number(process.env[name]);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+};
+const SEED = envInt("STRESS_SEED", 9707);
+const GENERATED = envInt("STRESS_USERS", 300);
 const CHAT_USERS = 20;
 const LIVE_USERS = 10;
 
