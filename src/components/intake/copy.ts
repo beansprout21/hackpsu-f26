@@ -76,12 +76,14 @@ export const costMax = (id: GoalId) => COST_MAX[id] ?? COST_MAX_DEFAULT;
 export const ESTIMATE_BASIS: Partial<Record<GoalId, string>> = {
   first_home: "About 3.5% down on a $250k starter home, plus closing costs",
   travel: "A typical study-abroad or summer trip budget",
-  emergency_fund: "About three months of a student's basic costs",
   credit_building: "A typical secured-card deposit",
   education: "A typical year of courses or certifications",
   family: "A starter fund for a big family milestone",
   small_business: "Startup costs for a small side business",
 };
+
+// #112: the safety cushion has no amount to pick. The engine sizes it as max($1,000, 3 x monthly costs) (SPROUT.md rule B).
+export const CUSHION_SIZED_NOTE = "Sprout sizes this from your costs: three months of bills and debt payments, at least $1,000.";
 
 export const WHY_CHIPS: Record<GoalId, string[]> = {
   travel: ["Study abroad", "See family", "Bucket-list trip", "Need a break"],

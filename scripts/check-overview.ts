@@ -6,6 +6,7 @@ import { jordan, maya } from "../src/data/personas";
 import { buildOverview, overviewSteps, type OverviewModel } from "../src/lib/client/overview";
 import { ASK_SPROUT_STARTERS } from "../src/lib/client/planCopy";
 import { aboutTime, timeSpan } from "../src/lib/client/time";
+import { CUSHION_SIZED_NOTE, ESTIMATE_BASIS } from "../src/components/intake/copy";
 import { fallbackProfile } from "../src/lib/ai/profile";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { GoalProfileSchema } from "../src/types/schemas";
@@ -171,6 +172,19 @@ console.log("\n=== Habits only (#107)");
     'habits only, cushion met: headline "' + met.plan.headline + '", no "your savings goal"',
   );
   check(run(maya.snapshot).month.goalsLabel === "Goals", 'Maya (money goals): the goals segment stays "Goals"');
+}
+
+// #112: the intake shows no amount for the safety cushion; its note states the engine's rule, max($1,000, 3 x costs).
+console.log("\n=== Intake safety cushion note (#112)");
+{
+  const jordanPlan = buildPlanSkeleton(jordanProfile, jordan.snapshot, jordan.intake);
+  const tiny = buildPlanSkeleton(mayaProfile, { ...maya.snapshot, monthlyFixedCosts: 100, monthlyDebtPayments: 0 }, maya.intake);
+  const jordanCosts = jordan.snapshot.monthlyFixedCosts + jordan.snapshot.monthlyDebtPayments;
+  check(!ESTIMATE_BASIS.emergency_fund, 'no "Sprout\'s estimate" basis for the safety cushion (no "a student\'s basic costs")');
+  check(
+    /three months/.test(CUSHION_SIZED_NOTE) && /at least \$1,000/.test(CUSHION_SIZED_NOTE) && jordanPlan.cushionTarget === 3 * jordanCosts && tiny.cushionTarget === 1000,
+    'cushion note matches the engine: "' + CUSHION_SIZED_NOTE + '" (Jordan $' + jordanPlan.cushionTarget + ", $100 costs -> $" + tiny.cushionTarget + ")",
+  );
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");

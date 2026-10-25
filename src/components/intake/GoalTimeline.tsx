@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { estimateTarget } from "@/lib/server/engine/defaults";
 import { cn } from "@/lib/utils";
-import { ESTIMATE_BASIS, costMax, formatHorizon, formatUsd, goalMeta } from "./copy";
+import { CUSHION_SIZED_NOTE, ESTIMATE_BASIS, costMax, formatHorizon, formatUsd, goalMeta } from "./copy";
 import { isHabit, type GoalDraft } from "./draft";
 import { TimelineTrack } from "./TimelineTrack";
 
@@ -183,42 +183,46 @@ export function GoalTimeline({
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Roughly how much? <span className="font-medium text-foreground">{isEstimate ? "Sprout's estimate" : "Your number"}</span>
-                  </span>
-                  <span className="text-lg font-semibold tabular-nums">
-                    {formatUsd(amount)}
-                    {amount >= costCap && "+"}
-                  </span>
+              {g.id === "emergency_fund" ? (
+                <p className="text-sm text-muted-foreground">{CUSHION_SIZED_NOTE}</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Roughly how much? <span className="font-medium text-foreground">{isEstimate ? "Sprout's estimate" : "Your number"}</span>
+                    </span>
+                    <span className="text-lg font-semibold tabular-nums">
+                      {formatUsd(amount)}
+                      {amount >= costCap && "+"}
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={costCap}
+                    step={COST_STEP}
+                    value={[Math.min(amount, costCap)]}
+                    onValueChange={(v) => patch(g.id, { targetAmount: Array.isArray(v) ? v[0] : v })}
+                    aria-label={`Rough cost for ${meta.label}`}
+                    className="py-2"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>$0</span>
+                    <span>{formatUsd(costCap)}+</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-pressed={isEstimate}
+                    onClick={() => patch(g.id, { targetAmount: undefined })}
+                    className={cn("self-start gap-1.5 max-lg:h-11", isEstimate && "border-primary bg-secondary")}
+                  >
+                    {isEstimate ? <Check aria-hidden /> : <Sprout aria-hidden />}
+                    Use Sprout&apos;s estimate ({formatUsd(estimate)})
+                  </Button>
+                  {basis && <p className="text-xs text-muted-foreground">{basis}</p>}
                 </div>
-                <Slider
-                  min={0}
-                  max={costCap}
-                  step={COST_STEP}
-                  value={[Math.min(amount, costCap)]}
-                  onValueChange={(v) => patch(g.id, { targetAmount: Array.isArray(v) ? v[0] : v })}
-                  aria-label={`Rough cost for ${meta.label}`}
-                  className="py-2"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>$0</span>
-                  <span>{formatUsd(costCap)}+</span>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-pressed={isEstimate}
-                  onClick={() => patch(g.id, { targetAmount: undefined })}
-                  className={cn("self-start gap-1.5 max-lg:h-11", isEstimate && "border-primary bg-secondary")}
-                >
-                  {isEstimate ? <Check aria-hidden /> : <Sprout aria-hidden />}
-                  Use Sprout&apos;s estimate ({formatUsd(estimate)})
-                </Button>
-                {basis && <p className="text-xs text-muted-foreground">{basis}</p>}
-              </div>
+              )}
             </li>
           );
         })}
