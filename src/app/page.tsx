@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Landmark, Route, Shrub, Sprout, Target, TreeDeciduous } from "lucide-react";
 import { GoalChoices } from "@/components/landing/GoalChoices";
+import { TypedPhrase } from "@/components/landing/TypedPhrase";
 import { SproutSays } from "@/components/sprout/SproutSays";
 import { cn } from "@/lib/utils";
 
@@ -62,8 +63,12 @@ export default function Home() {
               Meet Sprout, your money guide
             </p>
             <h1 className="text-title font-semibold text-balance sm:text-display">
-              Most banks start with your credit score.{" "}
-              <span className="text-brand-700">Sprout starts with your life.</span>
+              {/* Screen readers get the sentence once; the typing line is decorative. */}
+              <span className="sr-only">Most banks start with your credit score. Sprout starts with your life.</span>
+              <TypedPhrase />
+              <span aria-hidden className="block text-brand-700">
+                Sprout starts with your life.
+              </span>
             </h1>
             <p className="max-w-prose text-lead text-muted-foreground">
               Tell Sprout what you&apos;re working toward and get a step-by-step plan, starting with
