@@ -130,7 +130,25 @@ function withCushionAccount(matches: Candidate[], ctx: EngineContext): Candidate
   if (matches.some((m) => m.product.category === "savings")) return matches;
   const product = getProduct(CUSHION_ACCOUNT);
   const c = product ? candidateFor(product, { id: "emergency_fund", priority: 2 }, ctx) : null;
-  return c && c.staging.stage === "now" ? [...matches, c] : matches;
+  if (!c || c.staging.stage !== "now") return matches;
+  // #126: max 2 matches per goal (Contracts): the savings home replaces the weakest safety-cushion match.
+  const sameGoal = matches.filter((m) => m.goalId === "emergency_fund");
+  if (sameGoal.length >= MAX_PER_GOAL) {
+    const weakest = [...sameGoal].sort((a, b) => a.score - b.score)[0];
+    matches = matches.filter((m) => m !== weakest);
+  }
+  return [...matches, c];
+}
+
+// Contracts: "max 2 per goal, sorted by score". Last guard after every add-on above; keeps the top 2 by score.
+const MAX_PER_GOAL = 2;
+function capPerGoal(sorted: Candidate[]): Candidate[] {
+  const count = new Map<string, number>();
+  return sorted.filter((m) => {
+    const n = (count.get(m.goalId) ?? 0) + 1;
+    count.set(m.goalId, n);
+    return n <= MAX_PER_GOAL;
+  });
 }
 
 function laterStartMonth(c: Candidate, ctx: EngineContext, spending: SpendingResult): number {
@@ -296,8 +314,10 @@ export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnaps
   const stepOne = chooseStepOne(ctx, spending);
   // Score order; on a tie an account outranks a tool, so the FNB fit (top `now` match) is an account to open.
   const isAccount = (c: Candidate) => (ACCOUNT_CATEGORIES.includes(c.product.category) ? 0 : 1);
-  const matches = withCushionAccount(withStudentFoundation(withEverydayChecking(selectMatches(ctx), ctx), ctx), ctx).sort(
-    (a, b) => b.score - a.score || isAccount(a) - isAccount(b),
+  const matches = capPerGoal(
+    withCushionAccount(withStudentFoundation(withEverydayChecking(selectMatches(ctx), ctx), ctx), ctx).sort(
+      (a, b) => b.score - a.score || isAccount(a) - isAccount(b),
+    ),
   );
   const { math } = ctx;
   const p1 = ctx.moneyGoals[0]; // v3.2: habits are never P1
