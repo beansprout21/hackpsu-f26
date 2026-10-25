@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CircleCheck, TrendingUp } from "lucide-react";
+import { Check, CircleCheck, TrendingUp } from "lucide-react";
 import { goalMeta } from "@/components/intake/copy";
 import { cn } from "@/lib/utils";
 import type { Allocation, GapLever } from "@/types";
@@ -34,28 +34,31 @@ function GoalRow({ a }: { a: Allocation }) {
   const levers = a.levers.map((l) => leverCopy(l, a, meta.label));
 
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+    <li className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="flex items-center gap-2 font-semibold">
-          <meta.icon className="size-5 text-highlight" aria-hidden />
+        <span className="flex items-center gap-2 text-body font-semibold">
+          <meta.icon className="size-6 text-brand-600" aria-hidden />
           {meta.label}
         </span>
         <span
           className={cn(
-            "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium",
-            a.onTrack ? "bg-primary/20 text-foreground" : "bg-secondary text-highlight",
+            "flex items-center gap-1 rounded-full px-3 py-1 text-caption font-semibold",
+            a.onTrack ? "bg-success-soft text-success" : "bg-warning-soft text-warning",
           )}
         >
-          {a.onTrack ? <CircleCheck className="size-3.5" aria-hidden /> : <TrendingUp className="size-3.5" aria-hidden />}
+          {a.onTrack ? <CircleCheck className="size-4" aria-hidden /> : <TrendingUp className="size-4" aria-hidden />}
           {a.onTrack ? "On track" : "Needs a boost"}
         </span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-          <span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      <div className="flex flex-col gap-2">
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
+          <span
+            className={cn("block h-full rounded-full", a.onTrack ? "bg-success" : "bg-brand-400")}
+            style={{ width: `${pct}%` }}
+          />
         </div>
-        <p className="text-sm text-muted-foreground tabular-nums">
+        <p className="text-small text-muted-foreground tabular-nums">
           {usd(a.monthlyAmount)}/mo of the {usd(a.requiredMonthly)}/mo it needs
           {a.monthlyAmount > 0 ? ` · at this pace, ${formatMonths(a.monthsToTarget)}` : " · starts after your cushion"}
         </p>
@@ -63,7 +66,9 @@ function GoalRow({ a }: { a: Allocation }) {
 
       {!a.onTrack && levers.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Ways to close the gap</span>
+          <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">
+            Ways to close the gap
+          </span>
           <div className="flex flex-wrap gap-2">
             {levers.map((l, i) => (
               <button
@@ -72,18 +77,22 @@ function GoalRow({ a }: { a: Allocation }) {
                 aria-pressed={picked === i}
                 onClick={() => setPicked(picked === i ? null : i)}
                 className={cn(
-                  "min-h-9 rounded-full border px-3 py-1.5 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "inline-flex min-h-9 items-center gap-1 rounded-full border-2 px-3 py-1 text-left text-small transition-colors duration-150 outline-none focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-px",
                   picked === i
-                    ? "border-primary bg-primary font-medium text-primary-foreground"
-                    : "border-border hover:border-primary/60 hover:bg-secondary",
+                    ? "border-brand-600 bg-brand-100 font-semibold text-brand-700"
+                    : "border-border bg-card hover:border-brand-400 hover:bg-brand-50",
                 )}
               >
+                {picked === i && <Check className="size-4" aria-hidden />}
                 {l.label}
               </button>
             ))}
           </div>
           {picked !== null && (
-            <p className="animate-in fade-in rounded-xl bg-secondary px-3 py-2 text-sm leading-relaxed" aria-live="polite">
+            <p
+              className="animate-in fade-in slide-in-from-top-1 rounded-xl bg-brand-50 px-4 py-3 text-small duration-200 motion-reduce:animate-none"
+              aria-live="polite"
+            >
               {levers[picked].detail}
             </p>
           )}
@@ -96,11 +105,11 @@ function GoalRow({ a }: { a: Allocation }) {
 export function GoalsProgress({ allocation }: { allocation: Allocation[] }) {
   if (allocation.length === 0) return null;
   return (
-    <section aria-labelledby="goals" className="flex flex-col gap-3">
-      <h2 id="goals" className="text-lg font-semibold tracking-tight">
+    <section aria-labelledby="goals" className="flex flex-col gap-4">
+      <h2 id="goals" className="text-lead font-semibold">
         Your goals
       </h2>
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-4">
         {allocation.map((a) => (
           <GoalRow key={a.goalId} a={a} />
         ))}
