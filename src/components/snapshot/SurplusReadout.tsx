@@ -10,12 +10,13 @@ import { FREQUENCY_LABELS, INCOME_OPTIONS } from "./draft";
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const DIVISOR_NOTE = { monthly: "", per_semester: " ÷ 4", one_time: " ÷ 9" } as const;
 
-export function SurplusReadout({ snapshot }: { snapshot: FinancialSnapshot }) {
+// lineLabels: optional label per incomeSources entry (same order), e.g. "Birthday money and gifts".
+export function SurplusReadout({ snapshot, lineLabels }: { snapshot: FinancialSnapshot; lineLabels?: string[] }) {
   const math = computeMath(snapshot);
   const costs = math.monthlyFixedCosts + math.monthlyDebtPayments;
   const room = math.monthlySurplus;
-  const label = (kind: string) =>
-    kind === "job" ? "Take-home pay" : (INCOME_OPTIONS.find((o) => o.kind === kind)?.label ?? kind);
+  const label = (kind: string, i: number) =>
+    lineLabels?.[i] ?? (kind === "job" ? "Take-home pay" : (INCOME_OPTIONS.find((o) => o.kind === kind)?.label ?? kind));
 
   return (
     <div className="rounded-2xl border-2 border-primary/40 bg-secondary/60 p-4" aria-live="polite">
@@ -30,7 +31,7 @@ export function SurplusReadout({ snapshot }: { snapshot: FinancialSnapshot }) {
         {math.incomeLines.map((line, i) => (
           <li key={i} className="flex justify-between gap-3">
             <span>
-              {label(line.kind)}: {usd(line.amount)} {FREQUENCY_LABELS[line.frequency]}
+              {label(line.kind, i)}: {usd(line.amount)} {FREQUENCY_LABELS[line.frequency]}
               {DIVISOR_NOTE[line.frequency]}
             </span>
             <span className="tabular-nums text-foreground">{usd(line.monthlyEquivalent)}/mo</span>
@@ -47,7 +48,7 @@ export function SurplusReadout({ snapshot }: { snapshot: FinancialSnapshot }) {
         </li>
         <li className={cn("flex justify-between gap-3 font-medium", room > 0 ? "text-foreground" : "text-destructive")}>
           <span>Left to plan with</span>
-          <span className="tabular-nums">{usd(room)}/mo</span>
+          <span className="tabular-nums">{room < 0 ? `−${usd(-room)}` : usd(room)}/mo</span>
         </li>
       </ul>
       {room <= 0 && (
