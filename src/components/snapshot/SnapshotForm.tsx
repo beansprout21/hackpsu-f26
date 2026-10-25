@@ -165,6 +165,7 @@ export function SnapshotForm({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
+                      className="max-lg:-my-2 max-lg:-mr-2 max-lg:size-11"
                       aria-label={`Remove ${option.label}`}
                       onClick={() => set({ rows: draft.rows.filter((r) => r.key !== row.key) })}
                     >
@@ -203,6 +204,7 @@ export function SnapshotForm({
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="max-lg:h-11"
                     onClick={() => set({ rows: [...draft.rows, newRow(o)] })}
                   >
                     <Plus aria-hidden /> {o.label}
