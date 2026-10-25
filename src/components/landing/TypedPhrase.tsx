@@ -19,14 +19,14 @@ const GAP_MS = 350;
 
 type Phase = "hold" | "delete" | "type";
 
-function usePrefersReducedMotion() {
+function useMediaQuery(query: string) {
   return useSyncExternalStore(
     (onChange) => {
-      const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const media = window.matchMedia(query);
       media.addEventListener("change", onChange);
       return () => media.removeEventListener("change", onChange);
     },
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => window.matchMedia(query).matches,
     () => false,
   );
 }
@@ -76,14 +76,16 @@ function TypedText({ typed, rest, blinking }: { typed: string; rest: string; bli
 
 // Decorative: the h1 carries the static sentence for screen readers, so this is aria-hidden.
 export function TypedPhrase() {
-  const reduceMotion = usePrefersReducedMotion();
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  // Phones show the static sentence instead (#180), so don't run the timers there.
+  const wide = useMediaQuery("(min-width: 640px)");
   const [index, setIndex] = useState(0);
   const [shown, setShown] = useState(PHRASES[0].length);
   const [phase, setPhase] = useState<Phase>("hold");
   const phrase = PHRASES[index];
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || !wide) return;
     let timer: ReturnType<typeof setTimeout>;
     if (phase === "hold") {
       timer = setTimeout(() => setPhase("delete"), HOLD_MS);
@@ -102,7 +104,7 @@ export function TypedPhrase() {
           : setTimeout(() => setPhase("hold"), 0);
     }
     return () => clearTimeout(timer);
-  }, [phase, shown, phrase, reduceMotion]);
+  }, [phase, shown, phrase, reduceMotion, wide]);
 
   const text = reduceMotion ? PHRASES[0] : phrase.slice(0, shown);
 

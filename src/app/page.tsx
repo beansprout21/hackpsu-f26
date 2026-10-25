@@ -88,10 +88,16 @@ export default function Home() {
               Meet Sprout, your money guide
             </p>
             <h1 className="text-title font-semibold text-balance sm:text-display">
-              {/* Screen readers get the sentence once; the typing line is decorative. */}
+              {/* Screen readers get the sentence once; what's shown is decorative. Phones (#180) keep
+                  the original static sentence; the typing line is sm+ only. */}
               <span className="sr-only">Most banks start with your credit score. Sprout starts with your life.</span>
-              <TypedPhrase />
-              <span aria-hidden className="block text-brand-700">
+              <span aria-hidden className="sm:hidden">
+                Most banks start with your credit score.{" "}
+              </span>
+              <span aria-hidden className="hidden sm:block">
+                <TypedPhrase />
+              </span>
+              <span aria-hidden className="text-brand-700 sm:block">
                 Sprout starts with your life.
               </span>
             </h1>
