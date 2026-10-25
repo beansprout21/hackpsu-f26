@@ -31,7 +31,7 @@ export function SummaryHeader({ plan, profile }: { plan: Plan; profile: GoalProf
     <section aria-labelledby="plan-headline" className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-100 px-3 py-1 text-small font-semibold text-brand-700">
-          <PersonaIcon className="size-5" aria-hidden />
+          <PersonaIcon className="size-5 text-foreground" aria-hidden />
           {profile.persona.label}
         </span>
         <h1 id="plan-headline" className="text-lead font-semibold text-balance sm:text-title">

@@ -52,7 +52,7 @@ export function PersonaReveal({ values }: { values: ValueTag[] }) {
   return (
     // Desktop: a tall, narrow "profile card" rather than a wide banner.
     <div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-2xl border border-border bg-secondary px-6 py-8 text-center duration-500 lg:w-full lg:max-w-md lg:gap-5 lg:py-12">
-      <span className="flex size-16 items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-sm ring-2 ring-white lg:size-20">
+      <span className="flex size-20 items-center justify-center rounded-full bg-brand-200 text-foreground shadow-sm ring-2 ring-white lg:size-24">
         <Icon className="size-8 lg:size-10" aria-hidden />
       </span>
       <p className="text-sm font-semibold tracking-wide text-highlight uppercase">You&apos;re {article(persona.label)}</p>
