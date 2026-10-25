@@ -31,6 +31,49 @@ function usePrefersReducedMotion() {
   );
 }
 
+// Cursor: plain inline (not inline-block), so it adds no line-break opportunity mid-word.
+function Caret({ blinking }: { blinking: boolean }) {
+  return (
+    <span className="relative">
+      <span
+        className={`absolute inset-y-[0.08em] left-0.5 w-[3px] rounded-full bg-brand-700 ${
+          blinking ? "animate-caret-blink" : ""
+        }`}
+      />
+    </span>
+  );
+}
+
+// The full phrase is always laid out (untyped letters are transparent), so each word sits on its
+// final line from the first keystroke. The cursor is glued (nowrap) to a real letter so it can't
+// drift to another line: the last typed letter, or after a space the next untyped one (gluing to
+// the space would remove a legal line break and change the layout).
+function TypedText({ typed, rest, blinking }: { typed: string; rest: string; blinking: boolean }) {
+  const last = typed.slice(-1);
+  if (last && last !== " ") {
+    return (
+      <>
+        {typed.slice(0, -1)}
+        <span className="whitespace-nowrap">
+          {last}
+          <Caret blinking={blinking} />
+        </span>
+        <span className="text-transparent">{rest}</span>
+      </>
+    );
+  }
+  return (
+    <>
+      {typed}
+      <span className="whitespace-nowrap">
+        <Caret blinking={blinking} />
+        <span className="text-transparent">{rest.slice(0, 1)}</span>
+      </span>
+      <span className="text-transparent">{rest.slice(1)}</span>
+    </>
+  );
+}
+
 // Decorative: the h1 carries the static sentence for screen readers, so this is aria-hidden.
 export function TypedPhrase() {
   const reduceMotion = usePrefersReducedMotion();
@@ -66,7 +109,9 @@ export function TypedPhrase() {
   return (
     // Every phrase sits invisibly in the same grid cell, so the line keeps the height of the
     // longest one and nothing below jumps while it types.
-    <span aria-hidden className="grid">
+    // text-wrap (not the h1's balance): balancing can pick different breaks as the cursor moves
+    // between spans, while greedy wrapping depends only on the letters, so lines never change.
+    <span aria-hidden className="grid text-wrap">
       {PHRASES.map((p) => (
         <span key={p} className="invisible col-start-1 row-start-1">
           {p}
@@ -76,21 +121,9 @@ export function TypedPhrase() {
         {reduceMotion ? (
           text
         ) : (
-          <>
-            {text.slice(0, -1)}
-            {/* The last letter and the cursor wrap together, so the cursor never sits alone on a line. */}
-            <span className="whitespace-nowrap">
-              {text.slice(-1)}
-              {/* Zero-width wrapper so the cursor never changes where the text wraps. */}
-              <span className="relative inline-block h-[0.9em] w-0 align-[-0.12em]">
-                <span
-                  className={`absolute inset-y-0 left-1 w-[3px] rounded-full bg-brand-700 ${
-                    phase === "hold" ? "animate-caret-blink" : ""
-                  }`}
-                />
-              </span>
-            </span>
-          </>
+          // The whole phrase is always laid out; letters not typed yet are just transparent. So every
+          // word sits on its final line from the first keystroke and typing never reflows the text.
+          <TypedText typed={text} rest={phrase.slice(shown)} blinking={phase === "hold"} />
         )}
       </span>
     </span>
