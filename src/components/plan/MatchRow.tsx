@@ -15,10 +15,59 @@ const CONFIDENCE: Record<Confidence, { label: string; className: string }> = {
 
 export const matchKey = (m: Match) => `${m.productId}-${m.goalId}`;
 
-// One product as a collapsed row; details (why, terms, source) open on click. Score breakdowns stay on
-// the banker dashboard only (docs/DASHBOARD.md).
-export function MatchRow({ match, open, onToggle }: { match: Match; open: boolean; onToggle: (open: boolean) => void }) {
+// The trust layer for one product: unlock, why it fits, terms, rate, source, verified date. Score
+// breakdowns stay on the banker dashboard only (docs/DASHBOARD.md).
+export function TrustLayer({ match, className }: { match: Match; className?: string }) {
   const product = productById(match.productId);
+  const conf = CONFIDENCE[match.confidence];
+  const name = productName(match.productId);
+  return (
+    <div className={cn("flex flex-col gap-4", className)}>
+      <span className={cn("self-start rounded-full px-2 py-1 text-caption font-semibold", conf.className)}>{conf.label}</span>
+      {match.stage === "later" && match.unlockCondition && (
+        <p className="flex items-start gap-2 rounded-xl bg-warning-soft px-4 py-3 text-small font-medium text-warning">
+          <TreeDeciduous className="size-5 shrink-0" aria-hidden />
+          {match.unlockCondition}
+        </p>
+      )}
+      <p className="text-small">{match.explanation}</p>
+      {match.termsToKnow.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">Terms to know</span>
+          <ul className="flex list-disc flex-col gap-1 pl-4 text-small">
+            {match.termsToKnow.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {product?.rateNote && <p className="text-caption text-muted-foreground">{product.rateNote}</p>}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-caption text-info">
+        <a
+          href={match.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded underline-offset-2 hover:underline focus-visible:ring-4 focus-visible:ring-info/30 focus-visible:outline-none"
+        >
+          <Link2 className="size-4" aria-hidden />
+          Source: product page
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
+        {product?.verified && (
+          <span className="inline-flex items-center gap-1">
+            <BadgeCheck className="size-4" aria-hidden />
+            Verified {formatDate(product.verified)}
+          </span>
+        )}
+      </div>
+      <AskChip question={`Is ${name} right for me?`} />
+    </div>
+  );
+}
+
+// One product as a collapsed row; the trust layer opens on click.
+export function MatchRow({ match, open, onToggle }: { match: Match; open: boolean; onToggle: (open: boolean) => void }) {
   const goal = goalMeta(match.goalId);
   const conf = CONFIDENCE[match.confidence];
   const name = productName(match.productId);
@@ -44,49 +93,7 @@ export function MatchRow({ match, open, onToggle }: { match: Match; open: boolea
           <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden />
         </summary>
 
-        <div className="flex flex-col gap-4 px-2 pt-1 pb-4 pl-10">
-          <span className={cn("self-start rounded-full px-2 py-1 text-caption font-semibold sm:hidden", conf.className)}>
-            {conf.label}
-          </span>
-          {match.stage === "later" && match.unlockCondition && (
-            <p className="flex items-start gap-2 rounded-xl bg-warning-soft px-4 py-3 text-small font-medium text-warning">
-              <TreeDeciduous className="size-5 shrink-0" aria-hidden />
-              {match.unlockCondition}
-            </p>
-          )}
-          <p className="text-small">{match.explanation}</p>
-          {match.termsToKnow.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">Terms to know</span>
-              <ul className="flex list-disc flex-col gap-1 pl-4 text-small">
-                {match.termsToKnow.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {product?.rateNote && <p className="text-caption text-muted-foreground">{product.rateNote}</p>}
-
-          <div className="flex flex-wrap items-center justify-between gap-2 text-caption text-info">
-            <a
-              href={match.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded underline-offset-2 hover:underline focus-visible:ring-4 focus-visible:ring-info/30 focus-visible:outline-none"
-            >
-              <Link2 className="size-4" aria-hidden />
-              Source: product page
-              <span className="sr-only">(opens in a new tab)</span>
-            </a>
-            {product?.verified && (
-              <span className="inline-flex items-center gap-1">
-                <BadgeCheck className="size-4" aria-hidden />
-                Verified {formatDate(product.verified)}
-              </span>
-            )}
-          </div>
-          <AskChip question={`Is ${name} right for me?`} />
-        </div>
+        <TrustLayer match={match} className="px-2 pt-1 pb-4 pl-10 sm:[&>span:first-child]:hidden" />
       </details>
     </li>
   );
