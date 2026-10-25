@@ -51,29 +51,31 @@ Every completed plan is a **warm lead with context**: a banker sees the customer
 - AI fallback: if an AI call fails or times out (15s), the plan still renders using deterministic engine output and template explanations.
 
 ## Nice-to-have (P1)
+- Save for my banker (print/PDF) and Share with FNB + banker dashboard (v2.2, Sat 8:50 PM).
 - Chat panel (`/api/chat`).
 - Side-by-side persona comparison view.
 - Catalog "last verified" refresh demo (re-fetch 1 to 2 product pages).
 - ElevenLabs voice readout of the plan (MLH prize).
 
 ## Out of scope
-Banker view (deferred until MVP is polished), real bank connections (Plaid is "future plans"), storing real financial data in a database, real credit pulls, any FNB branding or logos, investment advice.
+Real bank connections (Plaid is "future plans"), storing financial data without explicit opt-in (v2.2: only "Share with FNB" stores data, 30 days, revocable), real credit pulls, any FNB branding or logos, investment advice.
 
 ## Key product rules
 1. **Never invent products, rates, or fees.** The AI may only reference product IDs from `src/data/catalog.json`. The server rejects any unknown ID. Unpublished rates display as "Check current rate with FNB".
 2. **Stage everything.** Foundation first (everyday banking, emergency fund), bigger moves later with explicit unlock conditions. Method inspired by *I Will Teach You to Be Rich* (credited in Devpost; no book text or branding in the app).
 3. **Restraint is a feature.** The engine must produce at least one "not yet" item whenever the user lacks a 3-month emergency fund or the goal horizon is longer than the product makes sense for.
 4. **Show the math.** Effective monthly income (monthly x1, per semester /4, one-time /9) minus fixed costs minus debt payments = surplus. Allocation never exceeds surplus. Displayed on the page.
-5. **Educational, not advice.** Disclaimer on snapshot and plan pages: "Educational prototype. Not financial advice. No data is stored."
+5. **Educational, not advice.** Disclaimer on snapshot and plan pages: "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB." (v2.2)
 6. Credit band filters eligibility (e.g., SmartSecured card fits "building"/"unsure").
+7. **Your plan, your choice (v2.2).** Sprout stores nothing by default. Users can (a) **Save for my banker**: print or save a PDF of their plan, nothing stored; (b) **Share with FNB**: explicit consent, stored 30 days, visible only to banker-role accounts on `/banker`, deletable anytime with "Stop sharing". Contract: docs/CONTRACTS.md v2.2.
 
 ## Architecture
 - Next.js App Router + TypeScript strict + Tailwind + shadcn/ui, deployed on Vercel.
-- Client state: React context persisted to `sessionStorage` (intake answers, snapshot, profile, plan). No database.
+- Client state: React context persisted to `sessionStorage` (intake answers, snapshot, profile, plan). No database for app state; opt-in shared plans only in Upstash Redis (v2.2).
 - Server: route handlers under `src/app/api/**`, Anthropic SDK, model from `ANTHROPIC_MODEL`.
 - Matching engine (deterministic, `src/lib/server/engine/`): scores each catalog product per goal (goal fit, eligibility, affordability, priority), computes allocation and timeline. AI receives engine output and writes the rich life statement, explanations, and step wording; it does not choose scores.
 - Auth: Auth0 via `@auth0/nextjs-auth0`.
-- Allowed new dependencies: `@anthropic-ai/sdk`, `zod`, `@auth0/nextjs-auth0`, shadcn/ui and its deps, `lucide-react`. Anything else: ask first.
+- Allowed new dependencies: `@anthropic-ai/sdk`, `zod`, `@auth0/nextjs-auth0`, shadcn/ui and its deps, `lucide-react`, `@upstash/redis` (v2.2). Anything else: ask first.
 
 ## Judging criteria mapping
 | Criterion | How we hit it |
