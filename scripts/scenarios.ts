@@ -1,12 +1,13 @@
 // Scenario test (#78): runs every fixture in src/data/scenarios.ts through the engine (no AI) and
-// buildOverview() (docs/DASHBOARD.md), prints one Markdown table, flags anything that reads wrong,
+// buildOverview() (docs/DASHBOARD.md v2), prints one Markdown table, flags anything that reads wrong,
 // and writes docs/SCENARIOS.md. Run: npm run scenarios
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { scenarios } from "../src/data/scenarios";
-import { buildOverview, type OverviewModel } from "../src/lib/client/overview";
+import { buildOverview, overviewSteps, type OverviewModel } from "../src/lib/client/overview";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { GOAL_LABELS } from "../src/lib/server/engine/defaults";
+import { getProduct } from "../src/lib/server/catalog";
 import type { Plan, SpendingBucketId } from "../src/types";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -14,18 +15,21 @@ const cell = (s: string) => s.replace(/\|/g, "\|").replace(/\n/g, " ");
 const bucket = (p: Plan, id: SpendingBucketId) => p.spendingPlan.find((b) => b.bucket === id)?.monthlyAmount ?? 0;
 
 function monthLine(o: OverviewModel): string {
-  const { cushion, goals, guiltFree } = o.month.bar;
+  const { fixed, cushion, goals, guiltFree } = o.month.bar;
   return o.month.toWorkWith > 0
-    ? `${o.month.sentence}<br>Bar ${usd(cushion)} / ${usd(goals)} / ${usd(guiltFree)}`
+    ? `${o.month.sentence}<br>Bar ${usd(fixed)} / ${usd(cushion)} / ${usd(goals)} / ${usd(guiltFree)}`
     : o.month.sentence;
 }
 
 const goalLines = (o: OverviewModel) =>
   o.goals.map((g) => `${g.line}${g.lever ? ` [${g.lever.label}]` : ""}`).join("<br>") || "(none listed)";
 
-const STAGE_LABEL = { now: "Now", next: "Next", later: "Later" } as const;
-const pathLine = (o: OverviewModel) =>
-  o.path.map((p) => `${STAGE_LABEL[p.stage]}: ${p.title}${p.unlock ? `. ${p.unlock}` : ""}`).join("<br>") || "(empty)";
+// The step-by-step guide (v2): the first 4 steps the Overview shows.
+const stepsLine = (o: OverviewModel) =>
+  overviewSteps(o)
+    .map((x) => `${x.n}. ${x.title}${x.unlock ? `. ${x.unlock}` : ""}`)
+    .join("<br>") || "(empty)";
+const HABITS = ["everyday_banking", "credit_building"];
 
 // Every user-facing string (engine templates and Overview copy, not catalog facts), for the wording checks.
 const userText = (p: Plan, o: OverviewModel) => [
@@ -39,11 +43,10 @@ const userText = (p: Plan, o: OverviewModel) => [
   ...p.notYet.flatMap((n) => [n.reason, n.revisitWhen]),
   o.nextMove.title,
   o.nextMove.detail,
-  o.fnbFit?.line ?? "",
   o.month.sentence,
   o.cushion.progressLine,
   ...o.goals.flatMap((g) => [g.line, g.lever?.label ?? ""]),
-  ...o.path.flatMap((x) => [x.detail, x.unlock ?? ""]),
+  ...o.steps.flatMap((x) => [x.title, x.detail, x.unlock ?? ""]),
 ];
 
 const OFF_TRACK = /off[ -]track|behind|falling short|a month away/i;
@@ -77,7 +80,27 @@ function flagsFor(p: Plan, o: OverviewModel, p1Id: string | undefined): string[]
   }
   for (const g of o.goals) {
     if (g.goalId !== p1Id && (g.tone === "gap" || g.lever)) flags.push(`non-P1 ${GOAL_LABELS[g.goalId]} has tone "${g.tone}"`);
+    const funded = (p.allocation.find((a) => a.goalId === g.goalId)?.monthlyAmount ?? 0) > 0;
+    if (funded && /starts growing/i.test(g.line)) flags.push(`"starts growing" on a goal that gets money: "${g.line}"`);
+    const leverMonths = Number(g.lever?.askSprout.match(/(\d+) months\?$/)?.[1] ?? 0);
+    if (leverMonths > 60) flags.push(`lever asks about ${leverMonths} months`);
   }
+
+  // v3.1: no student loan at any stage, including not-yet.
+  const loanIds = [...p.matches.map((m) => m.productId), ...p.notYet.flatMap((n) => (n.productId ? [n.productId] : []))].filter(
+    (id) => getProduct(id)?.category === "student_loan",
+  );
+  if (loanIds.length) flags.push(`student loan recommended: ${loanIds.join(", ")}`);
+
+  // v3.2: habits cost time, not money; one line per goal; no safety-cushion goal line; specific years.
+  const habitAlloc = p.allocation.filter((a) => HABITS.includes(a.goalId));
+  if (habitAlloc.length) flags.push(`habit with an allocation: ${habitAlloc.map((a) => a.goalId).join(", ")}`);
+  const habitMoney = o.goals.find((g) => HABITS.includes(g.goalId) && /\$|going in/.test(g.line));
+  if (habitMoney) flags.push(`habit line with money: "${habitMoney.line}"`);
+  if (new Set(o.goals.map((g) => g.goalId)).size !== o.goals.length) flags.push("duplicate goal lines");
+  if (o.goals.some((g) => g.goalId === "emergency_fund")) flags.push("emergency_fund listed as a goal line");
+  const tenPlus = userText(p, o).find((t) => /10\+/.test(t));
+  if (tenPlus) flags.push(`"10+" in "${tenPlus}"`);
 
   if (p.cushionTarget < 1000) flags.push(`cushion ${usd(p.cushionTarget)} < $1,000`);
   const waitsOnFullCushion = o.cushion.met ? o.goals.find((g) => /after .*safety cushion is full/i.test(g.line)) : undefined;
@@ -106,7 +129,7 @@ function flagsFor(p: Plan, o: OverviewModel, p1Id: string | undefined): string[]
   return flags;
 }
 
-const header = ["Scenario", "Persona", "Step one", "FNB fit", "Month", "Cushion", "Goals", "Path (Now / Next / Later)", "⚠"];
+const header = ["Scenario", "Persona", "Step one", "Month", "Cushion", "Goals", "Step-by-step (first 4)", "⚠"];
 const rows: string[][] = [];
 const details: string[] = [];
 let flagged = 0;
@@ -114,7 +137,8 @@ let flagged = 0;
 for (const s of scenarios) {
   const plan = buildPlanSkeleton(s.profile, s.snapshot, s.intake);
   const o = buildOverview(plan, s.profile, s.snapshot);
-  const p1Id = [...s.profile.goals].sort((a, b) => a.priority - b.priority)[0]?.id;
+  // v3.2: P1 = the top money goal (habits are never P1).
+  const p1Id = [...s.profile.goals].sort((a, b) => a.priority - b.priority).find((g) => !HABITS.includes(g.id))?.id;
   const flags = flagsFor(plan, o, p1Id);
   if (flags.length) {
     flagged++;
@@ -124,11 +148,10 @@ for (const s of scenarios) {
     s.name,
     o.persona.label,
     o.nextMove.title,
-    o.fnbFit?.name ?? "none",
     monthLine(o),
     o.cushion.progressLine,
     goalLines(o),
-    pathLine(o),
+    stepsLine(o),
     flags.length ? `⚠ ${flags.length}` : "",
   ]);
 }
@@ -143,7 +166,7 @@ const doc = [
   "# Scenarios (generated)",
   "",
   "Generated by `npm run scenarios` (`scripts/scenarios.ts`) from `src/data/scenarios.ts`. Do not edit by hand.",
-  "Engine + `buildOverview()` only, no AI. Bar = safety cushion / goals / guilt-free per month.",
+  "Engine + `buildOverview()` only, no AI. Bar = fixed costs / safety cushion / goals / guilt-free per month.",
   "",
   table,
   "",

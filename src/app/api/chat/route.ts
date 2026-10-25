@@ -1,6 +1,6 @@
-// POST /api/chat: { question, profile, plan } -> ApiResponse<{ answer, citedProductIds }>
+// POST /api/chat (v2.3): { question, profile, plan, snapshot?, history?, intent? } -> ApiResponse<{ answer, citedProductIds }>
+// Logs route, intent kind, and timing only: never the question or the conversation history.
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/server/auth";
 import { z } from "zod";
 import type { ApiResponse } from "@/types";
 import { ChatRequestSchema } from "@/types/schemas";
@@ -9,8 +9,6 @@ import { answerQuestion, type ChatAnswer } from "@/lib/ai/chat";
 const MAX_QUESTION_CHARS = 500;
 
 export async function POST(request: Request) {
-  const auth = await requireSession();
-  if (auth.response) return auth.response;
   let body: unknown;
   try {
     body = await request.json();
@@ -29,10 +27,10 @@ export async function POST(request: Request) {
   }
 
   const started = Date.now();
-  const { question, profile, plan } = parsed.data;
-  const result = await answerQuestion(question, profile, plan);
+  const { question, profile, plan, snapshot, history, intent } = parsed.data;
+  const result = await answerQuestion(question, profile, plan, { snapshot, history, intent });
   console.log(
-    `[api/chat] route=${result.route} aiUsed=${result.aiUsed} ms=${Date.now() - started}${result.fallbackReason ? ` fallback=${result.fallbackReason}` : ""}`,
+    `[api/chat] route=${result.route} intent=${result.intent} history=${history?.length ?? 0} aiUsed=${result.aiUsed} ms=${Date.now() - started}${result.fallbackReason ? ` fallback=${result.fallbackReason}` : ""}`,
   );
   return NextResponse.json<ApiResponse<ChatAnswer>>({
     ok: true,

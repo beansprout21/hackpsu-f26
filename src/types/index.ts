@@ -42,7 +42,7 @@ export interface IntakeAnswers {
   lifeStage: LifeStage;
   swipes: SwipeAnswer[];        // 6 to 10 cards
   values: ValueTag[];           // derived client-side from swipes: tally, most chosen first, 1..3 items
-  goals: GoalAnswer[];          // 1..3 goals
+  goals: GoalAnswer[];          // v2.4: 1..5 goals = up to 3 money goals + up to 2 habits (everyday_banking, credit_building)
   richLifeText?: string;        // optional "describe your rich life", <= 500 chars
 }
 

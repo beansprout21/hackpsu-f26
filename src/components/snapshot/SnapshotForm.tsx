@@ -165,6 +165,7 @@ export function SnapshotForm({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
+                      className="max-lg:-my-2 max-lg:-mr-2 max-lg:size-11"
                       aria-label={`Remove ${option.label}`}
                       onClick={() => set({ rows: draft.rows.filter((r) => r.key !== row.key) })}
                     >
@@ -203,6 +204,7 @@ export function SnapshotForm({
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="max-lg:h-11"
                     onClick={() => set({ rows: [...draft.rows, newRow(o)] })}
                   >
                     <Plus aria-hidden /> {o.label}
@@ -218,7 +220,7 @@ export function SnapshotForm({
         <legend className="mb-3 text-lg font-semibold">What goes out, and what you have</legend>
         <MoneyField
           label="Fixed costs a month"
-          hint="Rent, utilities, phone, groceries, insurance."
+          hint="Rent, utilities, phone, groceries or meal plan, insurance. Eating out comes from your guilt-free money."
           value={draft.fixedCosts}
           onChange={(v) => edit("fixedCosts", { fixedCosts: v })}
           fromDoc={draft.fromDoc.fixedCosts}

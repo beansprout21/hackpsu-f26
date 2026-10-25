@@ -57,7 +57,7 @@ export function SnapshotFlow() {
   if (!state.intake) {
     return (
       <div className="flex flex-col gap-6">
-        <SproutSays>Let&apos;s start with what you want your money to do. It takes about two minutes.</SproutSays>
+        <SproutSays>Let&apos;s start with what you want your money to do.</SproutSays>
         <Link href="/intake" className={buttonVariants({ size: "lg", className: "h-12 self-start" })}>
           Start with your goals
         </Link>
@@ -100,7 +100,7 @@ function DemoPrefill({ onPick }: { onPick: (p: DemoPersona) => void }) {
       <p className="text-xs font-medium text-muted-foreground">Demo shortcuts</p>
       <div className="flex flex-wrap gap-2">
         {[maya, jordan, mayaOpposite].map((p) => (
-          <Button key={p.id} type="button" variant="secondary" size="sm" onClick={() => onPick(p)}>
+          <Button key={p.id} type="button" variant="secondary" size="sm" className="max-lg:h-11" onClick={() => onPick(p)}>
             {p.id === "maya-opposite" ? p.name : `Fill in as ${p.name}`}
           </Button>
         ))}

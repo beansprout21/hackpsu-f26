@@ -14,15 +14,15 @@ import type {
 } from "@/types";
 import { getProduct } from "@/lib/server/catalog";
 import { buildContext, usd, type EngineContext } from "./context";
+import { timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "./defaults";
 import { feeNote, termsWithFee } from "./fees";
 import { monthsToTarget } from "./math";
 import { buildNotYet } from "./notYet";
-import { topValueGoal } from "./score";
 import { candidateFor, selectMatches, type Candidate } from "./select";
 import { buildSpending, type SpendingResult } from "./spending";
 import { isMortgageLike } from "./stage";
-import { chooseStepOne, fitCheckingId } from "./stepOne";
+import { chooseStepOne, fitCheckingId, HABIT_STEPS } from "./stepOne";
 
 export const DISCLAIMER = "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB.";
 const MAX_STEPS = 8;
@@ -101,7 +101,8 @@ function withEverydayChecking(matches: Candidate[], ctx: EngineContext): Candida
     const weakest = sameGoal.sort((a, b) => a.score - b.score)[0];
     matches = matches.filter((m) => m !== weakest);
   }
-  return [...matches, { ...c, staging: { stage: "now" } }];
+  // v3.3 (#109): with no surplus the fit stays `later` unless savings already cover its opening deposit (rule (c)).
+  return [...matches, { ...c, staging: c.staging.stage === "later" && ctx.math.monthlySurplus <= 0 ? c.staging : { stage: "now" } }];
 }
 
 // Rule set E: students always get the free education foundation (Learning Center, scholarship
@@ -130,7 +131,25 @@ function withCushionAccount(matches: Candidate[], ctx: EngineContext): Candidate
   if (matches.some((m) => m.product.category === "savings")) return matches;
   const product = getProduct(CUSHION_ACCOUNT);
   const c = product ? candidateFor(product, { id: "emergency_fund", priority: 2 }, ctx) : null;
-  return c && c.staging.stage === "now" ? [...matches, c] : matches;
+  if (!c || c.staging.stage !== "now") return matches;
+  // #126: max 2 matches per goal (Contracts): the savings home replaces the weakest safety-cushion match.
+  const sameGoal = matches.filter((m) => m.goalId === "emergency_fund");
+  if (sameGoal.length >= MAX_PER_GOAL) {
+    const weakest = [...sameGoal].sort((a, b) => a.score - b.score)[0];
+    matches = matches.filter((m) => m !== weakest);
+  }
+  return [...matches, c];
+}
+
+// Contracts: "max 2 per goal, sorted by score". Last guard after every add-on above; keeps the top 2 by score.
+const MAX_PER_GOAL = 2;
+function capPerGoal(sorted: Candidate[]): Candidate[] {
+  const count = new Map<string, number>();
+  return sorted.filter((m) => {
+    const n = (count.get(m.goalId) ?? 0) + 1;
+    count.set(m.goalId, n);
+    return n <= MAX_PER_GOAL;
+  });
 }
 
 function laterStartMonth(c: Candidate, ctx: EngineContext, spending: SpendingResult): number {
@@ -179,6 +198,12 @@ function buildSteps(stepOne: PlanStep, matches: Candidate[], ctx: EngineContext,
       detail: `Bills take ${Math.round(math.fixedShare * 100)}% of your income. Housing, car, or phone is where one change frees the most money.`,
       startMonth: 0,
     });
+  }
+  // v3.2: each habit is a step (unless it is already Step one, rule D rows 2 and 3).
+  for (const h of ctx.habits) {
+    const t = HABIT_STEPS[h.id as keyof typeof HABIT_STEPS];
+    if (!t || (stepOne.kind === t.kind && stepOne.detail === t.detail)) continue;
+    now.push({ stage: "now", kind: t.kind, title: t.title, detail: t.detail, startMonth: 0 });
   }
   for (const m of rest.filter((m) => m.staging.stage === "now")) {
     const learn = m.product.category === "education_tool";
@@ -236,9 +261,11 @@ function bankerSummary(ctx: EngineContext, matches: Candidate[], spending: Spend
   const goals = [...profile.goals]
     .sort((a, b) => a.priority - b.priority)
     .map((g) => {
+      // v3.2: habits cost time, not money, so no target or monthly amount.
+      if (ctx.habits.includes(g)) return `${GOAL_LABELS[g.id]} (habit, P${g.priority})`;
       const a = spending.allocation.find((x) => x.goalId === g.id);
       const status = a ? (a.onTrack ? "on track" : `${usd(a.monthlyAmount)}/mo of ${usd(a.requiredMonthly)}/mo needed`) : "";
-      return `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${g.horizonMonths} months, P${g.priority}${status ? `, ${status}` : ""})`;
+      return `${GOAL_LABELS[g.id]} (${usd(g.targetAmount)}${g.targetIsEstimate ? " est." : ""} in ${timeSpan(g.horizonMonths)}, P${g.priority}${status ? `, ${status}` : ""})`;
     })
     .join("; ");
   const names = (stage: string) =>
@@ -257,8 +284,8 @@ function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
   if (math.monthlySurplus <= 0) {
     return "Right now your costs use up all of your income, and that's okay. First we find your breathing room, starting with one free step right now.";
   }
-  // Lever wording: lead with the top-value goal's turn-up-the-dial lever when there is one.
-  const focus = topValueGoal(ctx);
+  // Lever wording (v3.1): lead with the P1 money goal's turn-up-the-dial lever when there is one.
+  const focus = ctx.moneyGoals[0]?.id;
   const a = focus ? spending.allocation.find((x) => x.goalId === focus) : undefined;
   const dial = a?.levers.find((l) => l.kind === "turn_up_dial");
   const first =
@@ -268,12 +295,18 @@ function sproutSaysFor(ctx: EngineContext, spending: SpendingResult): string {
   // Second sentence: the early win (1 month covered) when it's still ahead, else the full cushion.
   const fills = spending.cushionFillsInMonths;
   const milestone = spending.milestoneInMonths;
+  // DASHBOARD.md v2: durations of 24+ months read as years (#124); shorter ones keep the plain month count.
+  const span = (m: number) => (m < 24 ? `${m} months` : timeSpan(m));
+  const bare = (m: number) => (m < 24 ? String(m) : timeSpan(m));
+  const fullOnly = `${usd(spending.emergencyMonthly)} a month fills your safety cushion in ${span(fills ?? 0)}, then your goals get the full amount.`;
   const second = fills
     ? milestone && milestone < fills
-      ? `${usd(spending.emergencyMonthly)} a month covers one month of costs in ${milestone} months and fills your safety cushion in ${fills}.`
-      : `${usd(spending.emergencyMonthly)} a month fills your safety cushion in ${fills} months, then your goals get the full amount.`
+      ? `${usd(spending.emergencyMonthly)} a month covers one month of costs in ${span(milestone)} and fills your safety cushion in ${bare(fills)}.`
+      : fullOnly
     : "Let's give every dollar a job, beginning with one easy step right now.";
-  return `${first} ${second}`;
+  // Text budget (DASHBOARD.md): <= 35 words; a long P1 name drops the milestone clause.
+  const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
+  return words(`${first} ${second}`) > 35 && fills ? `${first} ${fullOnly}` : `${first} ${second}`;
 }
 
 export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnapshot, intake: IntakeAnswers): Plan {
@@ -282,18 +315,25 @@ export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnaps
   const stepOne = chooseStepOne(ctx, spending);
   // Score order; on a tie an account outranks a tool, so the FNB fit (top `now` match) is an account to open.
   const isAccount = (c: Candidate) => (ACCOUNT_CATEGORIES.includes(c.product.category) ? 0 : 1);
-  const matches = withCushionAccount(withStudentFoundation(withEverydayChecking(selectMatches(ctx), ctx), ctx), ctx).sort(
-    (a, b) => b.score - a.score || isAccount(a) - isAccount(b),
+  const matches = capPerGoal(
+    withCushionAccount(withStudentFoundation(withEverydayChecking(selectMatches(ctx), ctx), ctx), ctx).sort(
+      (a, b) => b.score - a.score || isAccount(a) - isAccount(b),
+    ),
   );
   const { math } = ctx;
-  const p1 = [...profile.goals].sort((a, b) => a.priority - b.priority)[0];
+  const p1 = ctx.moneyGoals[0]; // v3.2: habits are never P1
 
   // Headline: at most 10 words (docs/DASHBOARD.md text budget).
   const headline =
     math.monthlySurplus > 0
-      ? profile.goals.length > 1 && p1
+      ? ctx.moneyGoals.length > 1 && p1
         ? `${usd(spending.goalMonthly)} a month toward your goals, starting with ${GOAL_LABELS[p1.id]}`
-        : `${usd(spending.goalMonthly)} a month toward your ${p1 ? GOAL_LABELS[p1.id] : "savings"} goal`
+        : p1
+          ? `${usd(spending.goalMonthly)} a month toward your ${GOAL_LABELS[p1.id]} goal`
+          : // v3.3 (#107): habits only never says "your savings goal".
+            spending.emergencyMonthly > 0
+            ? `${usd(spending.emergencyMonthly)} a month toward your safety cushion`
+            : `${usd(spending.goalMonthly)} a month in savings, ready for your next goal`
       : "First, let's find your breathing room";
 
   return {

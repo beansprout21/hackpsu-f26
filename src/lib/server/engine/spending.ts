@@ -2,12 +2,19 @@
 // safety cushion fill time and milestone, and the Future You row.
 import type { Allocation, FutureYou, GapLever, GoalId, ProfiledGoal, SpendingBucket } from "@/types";
 import { usd, type EngineContext } from "./context";
+import { timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "./defaults";
 import { monthsToTarget, round2 } from "./math";
 
-const PRIORITY_WEIGHT: Record<1 | 2 | 3, number> = { 1: 0.6, 2: 0.25, 3: 0.15 };
+// #106 (lead 2:15 AM): weights go by rank among money goals (1st, 2nd, 3rd after habits are removed), not raw priority.
+const RANK_WEIGHT = [0.6, 0.25, 0.15];
 const HIGH_FIXED_SHARE = 0.6;
 const GUILT_FREE_FLOOR = 0.1; // turn_up_dial never takes guilt-free below 10% of income
+// SPROUT.md v3.4: guilt-free is the rest, capped at 25% of income (excess to savings); with high fixed costs the
+// surplus splits 60% savings / 40% guilt-free, each keeping at least 5% of income when the surplus allows.
+const GUILT_FREE_CAP = 0.25;
+const HIGH_FIXED_SAVINGS = 0.6;
+const HIGH_FIXED_MIN = 0.05;
 
 export interface SpendingResult {
   spendingPlan: SpendingBucket[];
@@ -23,14 +30,15 @@ export interface SpendingResult {
   milestoneInMonths: number | null;
 }
 
-// Split whole dollars by priority weight (renormalized); leftover dollars go to the first goal.
-function splitByPriority(total: number, goals: ProfiledGoal[]): Map<GoalId, number> {
+// Split whole dollars by rank weight among the money goals (renormalized); leftover dollars go to the first goal.
+function splitByPriority(total: number, goals: ProfiledGoal[], moneyGoals: ProfiledGoal[]): Map<GoalId, number> {
   const out = new Map<GoalId, number>();
   if (!goals.length || total <= 0) return out;
-  const weightSum = goals.reduce((s, g) => s + PRIORITY_WEIGHT[g.priority], 0);
+  const weight = (g: ProfiledGoal) => RANK_WEIGHT[moneyGoals.indexOf(g)] ?? RANK_WEIGHT[RANK_WEIGHT.length - 1];
+  const weightSum = goals.reduce((s, g) => s + weight(g), 0);
   let given = 0;
   for (const g of goals) {
-    const amount = Math.floor((total * PRIORITY_WEIGHT[g.priority]) / weightSum);
+    const amount = Math.floor((total * weight(g)) / weightSum);
     out.set(g.id, amount);
     given += amount;
   }
@@ -71,7 +79,7 @@ function futureYouFor(ctx: EngineContext, earmark: number, highFixed: boolean): 
 }
 
 export function buildSpending(ctx: EngineContext): SpendingResult {
-  const { math, snapshot, profile } = ctx;
+  const { math, snapshot } = ctx;
   const income = math.effectiveMonthlyIncome;
   const surplus = math.monthlySurplus;
   const highFixed = surplus > 0 && math.fixedShare > HIGH_FIXED_SHARE;
@@ -81,19 +89,30 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   let earmark = 0;
   if (surplus > 0) {
     if (highFixed) {
-      savingsMonthly = Math.floor(0.5 * surplus);
-    } else if (ctx.studentRules) {
-      savingsMonthly = Math.min(Math.floor(0.2 * income), Math.floor(surplus));
+      savingsMonthly = Math.floor(HIGH_FIXED_SAVINGS * surplus);
+      const min = Math.floor(HIGH_FIXED_MIN * income);
+      if (Math.floor(surplus) >= 2 * min) {
+        savingsMonthly = Math.min(Math.max(savingsMonthly, min), Math.floor(surplus) - min);
+      }
     } else {
-      savingsMonthly = Math.min(Math.floor(0.1 * income), Math.floor(surplus));
-      earmark = Math.min(Math.floor(0.1 * income), Math.floor(surplus) - savingsMonthly);
+      if (ctx.studentRules) {
+        savingsMonthly = Math.min(Math.floor(0.2 * income), Math.floor(surplus));
+      } else {
+        savingsMonthly = Math.min(Math.floor(0.1 * income), Math.floor(surplus));
+        earmark = Math.min(Math.floor(0.1 * income), Math.floor(surplus) - savingsMonthly);
+      }
+      // v3.4: guilt-free above the cap moves to savings (not the Future You earmark).
+      savingsMonthly += Math.max(0, Math.floor(surplus) - savingsMonthly - earmark - Math.floor(GUILT_FREE_CAP * income));
     }
   }
   const guiltFreeMonthly = surplus > 0 ? Math.max(0, Math.floor(surplus - savingsMonthly - earmark)) : 0;
 
   // Inside savings: safety cushion first (50/50) until it is met; existing savings count toward it.
   const cushionMet = snapshot.savingsBalance >= ctx.cushionTarget;
-  const emergencyMonthly = cushionMet ? 0 : Math.floor(savingsMonthly * 0.5);
+  // v3.1 values tilt: security/family top value puts 60% toward the cushion instead of 50%.
+  // v3.3 (#107): habits only (no money goal) -> the whole savings share goes to the cushion until it is met.
+  const habitsOnly = ctx.moneyGoals.length === 0;
+  const emergencyMonthly = cushionMet ? 0 : habitsOnly ? savingsMonthly : Math.floor(savingsMonthly * (ctx.cushionFirst ? 0.6 : 0.5));
   const goalMonthly = savingsMonthly - emergencyMonthly;
   const cushionFillsInMonths =
     !cushionMet && emergencyMonthly > 0 ? monthsToTarget(ctx.cushionTarget, snapshot.savingsBalance, emergencyMonthly) : null;
@@ -102,9 +121,10 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
       ? monthsToTarget(math.monthlyCosts, snapshot.savingsBalance, emergencyMonthly)
       : null;
 
-  const goals = [...profile.goals].sort((a, b) => a.priority - b.priority);
+  // v3.2: habits (everyday banking, credit building) cost time, not money: no allocation row.
+  const goals = ctx.moneyGoals;
   const otherGoals = goals.filter((g) => g.id !== "emergency_fund");
-  const split = splitByPriority(otherGoals.length ? goalMonthly : 0, otherGoals);
+  const split = splitByPriority(otherGoals.length ? goalMonthly : 0, otherGoals, goals);
 
   const allocation: Allocation[] = goals.map((g) => {
     // The emergency-fund goal is the cushion: funded by the emergency bucket, sized by the engine.
@@ -126,13 +146,15 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   const pct = (amount: number) => (income > 0 ? Math.min(100, round2((100 * amount) / income)) : 0);
   const fixed = round2(math.monthlyFixedCosts + math.monthlyDebtPayments);
   const noRoom = surplus <= 0;
-  const goalNames = otherGoals.length ? otherGoals.map((g) => GOAL_LABELS[g.id]).join(", ") : "your emergency fund";
+  const goalNames = otherGoals.length ? otherGoals.map((g) => GOAL_LABELS[g.id]).join(", ") : "your safety cushion";
 
   const emergencyNote = noRoom
     ? "First we find your breathing room, then this starts growing."
     : cushionMet
-      ? "Your safety cushion is full, so all savings go to your goals."
-      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${cushionFillsInMonths} months` : ""}. After that, your goals get the full amount.`;
+      ? habitsOnly
+        ? "Your safety cushion is full, so savings stay ready for your next goal."
+        : "Your safety cushion is full, so all savings go to your goals."
+      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${timeSpan(cushionFillsInMonths)}` : ""}. ${habitsOnly ? "After that, savings stay ready for your next goal." : "After that, your goals get the full amount."}`;
 
   const spendingPlan: SpendingBucket[] = [
     {
@@ -149,7 +171,11 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
       bucket: "goal_savings",
       monthlyAmount: goalMonthly,
       percent: pct(goalMonthly),
-      note: noRoom ? "Goals start as soon as there's room." : `Split across ${goalNames}, by priority.`,
+      note: noRoom
+        ? "Goals start as soon as there's room."
+        : habitsOnly
+          ? "Savings, ready for your next goal."
+          : `Split across ${goalNames}, by priority.`,
     },
     {
       bucket: "guilt_free",

@@ -5,7 +5,7 @@
 import type { FinancialSnapshot } from "@/types";
 import { computeMath } from "@/lib/server/engine/math";
 import { cn } from "@/lib/utils";
-import { FREQUENCY_LABELS, INCOME_OPTIONS } from "./draft";
+import { FREQUENCY_LABELS, INCOME_OPTIONS, INCOME_SPREAD_NOTE } from "./draft";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const DIVISOR_NOTE = { monthly: "", per_semester: " ÷ 4", one_time: " ÷ 9" } as const;
@@ -51,6 +51,9 @@ export function SurplusReadout({ snapshot, lineLabels }: { snapshot: FinancialSn
           <span className="tabular-nums">{room < 0 ? `−${usd(-room)}` : usd(room)}/mo</span>
         </li>
       </ul>
+      {math.incomeLines.some((l) => l.frequency !== "monthly") && (
+        <p className="mt-2 text-sm text-muted-foreground">{INCOME_SPREAD_NOTE}</p>
+      )}
       {room <= 0 && (
         <p className="mt-2 text-sm text-muted-foreground">Sprout will start by finding your breathing room.</p>
       )}

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { GoalId } from "@/types";
 import { GoalIdSchema } from "@/types/schemas";
 import { LIFE_STAGE_OPTIONS, goalMeta } from "./copy";
-import { EMPTY_DRAFT, deriveValues, draftFromIntake, intakeFromDraft, type IntakeDraft } from "./draft";
+import { EMPTY_DRAFT, deriveValues, draftFromIntake, intakeFromDraft, moneyFirst, type IntakeDraft } from "./draft";
 import { GoalTimeline } from "./GoalTimeline";
 import { SwipeDeck } from "./SwipeDeck";
 import { FinishSummary, GoalsStep, LifeStageStep, PersonaReveal, RichLifeStep, WhyStep } from "./steps";
@@ -49,11 +49,11 @@ function IntroStep() {
 }
 
 const SPROUT_LINES: Record<Step, string> = {
-  intro: "Hi, I'm Sprout. Most banks start with your credit score. I'd rather start with your life. Takes about 3 minutes.",
+  intro: "Hi, I'm Sprout. Most banks start with your credit score. I'd rather start with your life.",
   lifeStage: "First, where are you in life right now?",
   swipes: "Quick gut checks. Pick the one that sounds more like you. There are no wrong answers.",
   persona: "Here's what I'm hearing from you.",
-  goals: "What are you working toward? Pick up to three.",
+  goals: "What are you working toward? Pick up to three money goals, plus any habits.",
   timeline: "When would you like each one? Put the most important goal on top.",
   why: "What's behind each goal? It helps me make the plan feel like yours.",
   richLife: "Last one, and it's optional. What does your rich life look like?",
@@ -118,7 +118,7 @@ export function IntakeWizard() {
       ...d,
       goals: d.goals.some((g) => g.id === id)
         ? d.goals.filter((g) => g.id !== id)
-        : [...d.goals, { id, horizonMonths: goalMeta(id).defaultMonths, whyText: "" }],
+        : moneyFirst([...d.goals, { id, horizonMonths: goalMeta(id).defaultMonths, whyText: "" }]),
     }));
   }
 

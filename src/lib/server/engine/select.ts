@@ -15,11 +15,21 @@ export interface Candidate {
   staging: StageResult;
 }
 
+const isRetirement = (p: Product) => /\bIRA\b|retirement/i.test(`${p.name} ${p.forWho}`);
+
 export function candidateFor(
   product: Product,
   goal: Pick<ProfiledGoal, "id" | "priority">,
   ctx: EngineContext,
 ): Candidate | null {
+  // #118: mortgages and homebuyer programs only ever serve the first_home goal.
+  if (product.category === "mortgage" && goal.id !== "first_home") return null;
+  // #126: small-business products (business checking and savings, business cards) only for a small_business goal.
+  if (product.category === "small_business" && goal.id !== "small_business") return null;
+  // #130: retirement accounts (IRA) are investing/tax territory, an FNB advisor's job (SPEC boundary): never matched.
+  if (isRetirement(product)) return null;
+  // #130: the safety cushion is savings, never borrowing: no credit card serves emergency_fund.
+  if (product.category === "credit_card" && goal.id === "emergency_fund") return null;
   const breakdown = scoreProduct(product, goal, ctx);
   const staging = stageFor(product, ctx);
   if (!breakdown || !staging) return null;

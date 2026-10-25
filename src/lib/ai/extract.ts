@@ -25,7 +25,7 @@ const EXTRACT_SYSTEM = [
   "  payPeriod: how often recurring pay arrives as printed (weekly, biweekly, semimonthly, monthly), or null when not recurring or not shown.",
   "  Use take-home (net) pay when a pay stub shows both gross and net.",
   "  Transfers between the person's own accounts are not income.",
-  "- monthlyFixedCosts: recurring essentials paid each month (rent, utilities, phone, insurance, groceries) only when they appear as payments in the document.",
+  "- monthlyFixedCosts: recurring essentials paid each month (rent, utilities, phone, insurance, groceries, campus meal plan) only when they appear as payments in the document. Never count restaurants, takeout, delivery apps or coffee shops as fixed costs.",
   "- monthlyDebtPayments: loan payments and credit card minimum payments due each month, only when shown.",
   "- savingsBalance: the ending balance of a savings account, or of checking if that is the only account shown.",
   "- creditBand: only from a credit report with a score. 300-579 building, 580-669 fair, 670-739 good, 740-850 excellent. Otherwise null.",

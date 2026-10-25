@@ -1,4 +1,5 @@
 import rawCatalog from "@/data/catalog.json";
+import { timeSpan } from "@/lib/client/time";
 import type { LifeEvent, Product, SpendingBucketId } from "@/types";
 
 // Read-only view of Ben's catalog; names and notes render as published (FNB in text, #47).
@@ -19,11 +20,8 @@ export const productName = (id: string) => {
 export const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-export function formatMonths(months: number) {
-  if (months > 120) return "10+ years";
-  if (months < 24) return months === 1 ? "1 month" : `${months} months`;
-  return `${Math.round((months / 12) * 2) / 2} years`;
-}
+// Time is always specific (DASHBOARD.md v2): the shared formatter, never "10+ years".
+export const formatMonths = timeSpan;
 
 export const whenLabel = (startMonth: number) => (startMonth <= 0 ? "Now" : `Month ${startMonth}`);
 
@@ -36,7 +34,7 @@ export function formatDate(iso: string) {
 
 export const BUCKETS: Record<SpendingBucketId, { label: string; color: string }> = {
   fixed_costs: { label: "Fixed costs", color: "bg-chart-4" },
-  emergency_fund: { label: "Cushion", color: "bg-chart-2" },
+  emergency_fund: { label: "Safety cushion", color: "bg-chart-2" },
   goal_savings: { label: "Goals", color: "bg-chart-1" },
   guilt_free: { label: "Guilt-free", color: "bg-chart-3" },
 };

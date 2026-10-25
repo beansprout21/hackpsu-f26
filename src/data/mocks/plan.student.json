@@ -1,12 +1,12 @@
 {
   "headline": "$113 a month toward your goals, starting with travel",
-  "sproutSays": "Your travel goal is $140 a month away, and your guilt-free money can turn up that dial. $113 a month covers one month of costs in 3 months and fills your safety cushion in 14.",
+  "sproutSays": "Your travel goal is $129 a month away, and your guilt-free money can turn up that dial. $113 a month covers one month of costs in 3 months and fills your safety cushion in 14.",
   "stepOne": {
     "order": 1,
     "stage": "now",
     "kind": "save",
     "title": "Move $20 into your travel fund right now.",
-    "detail": "You'll put $69 a month toward it. This starts it.",
+    "detail": "You'll put $80 a month toward it. This starts it.",
     "startMonth": 0
   },
   "effectiveMonthlyIncome": 1133.33,
@@ -28,7 +28,7 @@
       "bucket": "goal_savings",
       "monthlyAmount": 113,
       "percent": 9.97,
-      "note": "Split across travel, credit building, first home, by priority."
+      "note": "Split across travel, first home, by priority."
     },
     {
       "bucket": "guilt_free",
@@ -49,60 +49,39 @@
   "allocation": [
     {
       "goalId": "travel",
-      "monthlyAmount": 69,
-      "monthsToTarget": 37,
+      "monthlyAmount": 80,
+      "monthsToTarget": 32,
       "requiredMonthly": 209,
       "onTrack": false,
       "levers": [
         {
           "kind": "turn_up_dial",
-          "moveFromGuiltFree": 140
+          "moveFromGuiltFree": 129
         },
         {
           "kind": "more_time",
-          "newHorizonMonths": 37
+          "newHorizonMonths": 32
         },
         {
           "kind": "smaller_target",
-          "reachableAmount": 828
-        }
-      ]
-    },
-    {
-      "goalId": "credit_building",
-      "monthlyAmount": 28,
-      "monthsToTarget": 18,
-      "requiredMonthly": 42,
-      "onTrack": false,
-      "levers": [
-        {
-          "kind": "turn_up_dial",
-          "moveFromGuiltFree": 14
-        },
-        {
-          "kind": "more_time",
-          "newHorizonMonths": 18
-        },
-        {
-          "kind": "smaller_target",
-          "reachableAmount": 336
+          "reachableAmount": 960
         }
       ]
     },
     {
       "goalId": "first_home",
-      "monthlyAmount": 16,
-      "monthsToTarget": 938,
+      "monthlyAmount": 33,
+      "monthsToTarget": 455,
       "requiredMonthly": 179,
       "onTrack": false,
       "levers": [
         {
           "kind": "more_time",
-          "newHorizonMonths": 938
+          "newHorizonMonths": 455
         },
         {
           "kind": "smaller_target",
-          "reachableAmount": 1344
+          "reachableAmount": 2772
         }
       ]
     }
@@ -325,7 +304,7 @@
       "stage": "now",
       "kind": "save",
       "title": "Move $20 into your travel fund right now.",
-      "detail": "You'll put $69 a month toward it. This starts it.",
+      "detail": "You'll put $80 a month toward it. This starts it.",
       "startMonth": 0
     },
     {
@@ -349,6 +328,14 @@
     {
       "order": 4,
       "stage": "now",
+      "kind": "learn",
+      "title": "Check your free credit report",
+      "detail": "5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score.",
+      "startMonth": 0
+    },
+    {
+      "order": 5,
+      "stage": "now",
       "kind": "open",
       "title": "Open FNB Student Checking",
       "detail": "No monthly fee on Student Checking",
@@ -356,23 +343,14 @@
       "productId": "student-checking"
     },
     {
-      "order": 5,
-      "stage": "now",
-      "kind": "learn",
-      "title": "Explore Credit Center (credit score and report)",
-      "detail": "Free TransUnion credit report and VantageScore 3.0 score",
-      "startMonth": 0,
-      "productId": "credit-center"
-    },
-    {
       "order": 6,
       "stage": "next",
       "kind": "open",
       "title": "Open Savers Goal CD for your travel goal",
-      "detail": "Then move $69 a month into it automatically.",
+      "detail": "Then move $80 a month into it automatically.",
       "startMonth": 1,
       "productId": "savers-goal-cd",
-      "monthlyAmount": 69
+      "monthlyAmount": 80
     },
     {
       "order": 7,
@@ -406,7 +384,7 @@
       "revisitWhen": "after 6 to 12 months of on-time payments"
     }
   ],
-  "bankerSummary": "College student, not yet an FNB customer, no steady income. Income: $3,000 one-time summer savings, $2,000 per semester aid refund, $300/mo family support = about $1,133/mo effective. Fixed costs $650, debt payments $0 (57% of income), surplus $483/mo, savings $400, credit range: building. Spending plan: $226/mo savings, $257/mo guilt-free. Goals: travel ($2,500 in 12 months, P1, $69/mo of $209/mo needed); credit building ($500 est. in 12 months, P2, $28/mo of $42/mo needed); first home ($15,000 est. in 84 months, P3, $16/mo of $179/mo needed). Plan: now FNB Student Checking, Credit Center (credit score and report), CardGuard debit card controls and Spend Insights, Mortgage calculators, Financial Insights Learning Center, FNB $15,000 Student Scholarship Sweepstakes, FirstRate Savings; next Savers Goal CD; later FNB SmartSecured Credit Card, FNB Home Ownership Program.",
+  "bankerSummary": "College student, not yet an FNB customer, no steady income. Income: $3,000 one-time summer savings, $2,000 per semester aid refund, $300/mo family support = about $1,133/mo effective. Fixed costs $650, debt payments $0 (57% of income), surplus $483/mo, savings $400, credit range: building. Spending plan: $226/mo savings, $257/mo guilt-free. Goals: travel ($2,500 in 12 months, P1, $80/mo of $209/mo needed); credit building (habit, P2); first home ($15,000 est. in 84 months, P3, $33/mo of $179/mo needed). Plan: now FNB Student Checking, Credit Center (credit score and report), CardGuard debit card controls and Spend Insights, Mortgage calculators, Financial Insights Learning Center, FNB $15,000 Student Scholarship Sweepstakes, FirstRate Savings; next Savers Goal CD; later FNB SmartSecured Credit Card, FNB Home Ownership Program.",
   "aiUsed": false,
   "disclaimer": "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB."
 }

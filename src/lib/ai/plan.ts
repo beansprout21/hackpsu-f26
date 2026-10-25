@@ -8,18 +8,18 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { GoalProfile, Plan } from "@/types";
 import { PlanSchema } from "@/types/schemas";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
-import { GOAL_LABELS } from "@/lib/server/engine/defaults";
+import { aboutTime } from "@/lib/client/time";
 import { describeAiError, getClient, getModel } from "./client";
-import { voiceSafe } from "./voice";
+import { gapClaimsConsistent, goalWord, voiceNormalize, voiceSafe } from "./voice";
 
 const PLAN_TIMEOUT_MS = 20_000;
 
 // docs/SPROUT.md "Sprout's voice", shared with /api/profile.
 export const VOICE_RULES = [
   "Voice rules:",
-  '1. Possibility first ("Japan is $140 a month away", never "You can\'t afford Japan").',
+  '1. Possibility first ("Japan is $129 a month away", never "You can\'t afford Japan").',
   '2. A number and a date ("$113 a month covers your first month of costs in 3 months").',
-  "3. Never shame. Never use these words: only, just, behind, should have, can't afford, waste.",
+  "3. Never shame. Never use these words: only, just, behind, should have, can't afford, waste. This applies to neutral uses too: write \"one\", \"a single\", or \"no other\" instead of \"only\", and \"for\" or \"that powers\" instead of \"behind\".",
   "4. Plain and short: under 20 words per sentence; explain jargon in 5 words (\"APY, the interest you earn\").",
   "5. Spend on what you love: celebrate their top dial, trim what they don't care about.",
   '6. Systems over willpower: "automate it", not "try to remember".',
@@ -32,7 +32,9 @@ const PLAN_SYSTEM = [
   "You are Sprout, a warm, optimistic money coach for college students and young families, built as a prototype for FNB. Follow the voice rules.",
   "You receive a finished plan from Sprout's engine. You only write words. Never change any number, stage, lever, or product. Step one is final, text included: never write it.",
   "Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say an FNB advisor can help. Output JSON only.",
-  'Always call the emergency savings the "safety cushion", never just "cushion".',
+  'You are a prototype built for FNB, not FNB itself: say "FNB\'s" or the product name, never "our" products.',
+  'Always call the emergency savings the "safety cushion", never just "cushion" and never "emergency fund".',
+  "Durations: under 24 months say months; from 24 months say whole years, written the way the JSON's *Time fields are (\"about 4 years\"). Never write 24 or more months.",
   "",
   VOICE_RULES,
 ].join("\n");
@@ -45,7 +47,7 @@ const AiPlanTextSchema = z.object({
   steps: z.array(z.object({ order: z.number(), title: z.string(), detail: z.string() })),
   bankerSummary: z.string(),
 });
-type AiPlanText = z.infer<typeof AiPlanTextSchema>;
+export type AiPlanText = z.infer<typeof AiPlanTextSchema>;
 
 export interface PlanResult {
   plan: Plan;
@@ -96,16 +98,20 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       const a = skeleton.allocation.find((x) => x.goalId === g.id);
       return {
         id: g.id,
-        label: GOAL_LABELS[g.id],
+        label: goalWord(g.id),
         priority: g.priority,
         why: g.why,
         motivation: g.motivation,
         targetAmount: g.targetAmount,
         horizonMonths: g.horizonMonths,
+        horizonTime: aboutTime(g.horizonMonths),
         monthlyAmount: a?.monthlyAmount ?? 0,
+        timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null,
         requiredMonthly: a?.requiredMonthly ?? null,
         onTrack: a?.onTrack ?? null,
-        levers: a?.levers ?? [],
+        gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null,
+        // Durations as *Time strings only (#121 cycle 3): no raw month counts for the model to echo.
+        levers: (a?.levers ?? []).map((l) => (l.kind === "more_time" ? { kind: l.kind, newHorizonTime: aboutTime(l.newHorizonMonths) } : l)),
       };
     }),
     money: {
@@ -113,7 +119,7 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       monthlySurplus: skeleton.monthlySurplus,
       fixedSharePercent: Math.round(skeleton.fixedShare * 100),
       cushionTarget: skeleton.cushionTarget,
-      cushionFillsInMonths: skeleton.cushionFillsInMonths,
+      cushionFillsInTime: skeleton.cushionFillsInMonths ? aboutTime(skeleton.cushionFillsInMonths) : null,
       threeMonthCushion: skeleton.emergencyFundTarget,
       spendingPlan: skeleton.spendingPlan.map((b) => ({ bucket: b.bucket, monthlyAmount: b.monthlyAmount, percent: Math.round(b.percent) })),
       futureYou: skeleton.futureYou,
@@ -124,7 +130,7 @@ function planFacts(skeleton: Plan, profile: GoalProfile) {
       return {
         productId: m.productId,
         product: p?.name,
-        goal: GOAL_LABELS[m.goalId],
+        goal: goalWord(m.goalId),
         stage: m.stage,
         unlockCondition: m.unlockCondition ?? null,
         termsToKnow: m.termsToKnow,
@@ -153,10 +159,10 @@ function userPrompt(facts: ReturnType<typeof planFacts>): string {
     JSON.stringify(facts, null, 2),
     "",
     "Rewrite ONLY the wording:",
-    `- headline: at most ${TEXT_BUDGET.headlineWords} words, optimistic, about what this plan gets them.`,
-    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total. If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Mention when the safety cushion fills if cushionFillsInMonths is set. Call it the "safety cushion".`,
+    `- headline: at most ${TEXT_BUDGET.headlineWords} words (count them; aim for 6 to 8), optimistic, about what this plan gets them.`,
+    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total (count them; aim for 25 to 30). If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $129 a month away"). Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". Mention when the safety cushion fills if cushionFillsInTime is set, in those words. Call it the "safety cushion".`,
     "- stepOne is FINAL: do not write a title or detail for it. Step 1 in steps is the same action; leave it as given.",
-    `- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. The first sentence is at most ${TEXT_BUDGET.explanationFirstSentenceWords} words (it is shown on its own). Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it.`,
+    `- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. The first sentence is at most ${TEXT_BUDGET.explanationFirstSentenceWords} words (it is shown on its own): say why it fits this user's goal, with no rates, terms, or minimums. Put the fee line, rate, or term in the second sentence. Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it in the second sentence, not the first.`,
     "- steps: one per order number above except order 1; short imperative title and a 1-sentence detail. Keep the same action, product, and amount.",
     "- bankerSummary: plain factual text a banker reads before the call; use only the numbers and products given.",
     "Use only numbers that appear in the JSON. Never invent rates, fees, or products. Unpublished rates: say to check the current rate with FNB.",
@@ -201,11 +207,12 @@ function allowedNumbers(facts: unknown): Set<string> {
 // Number guard + voice guard + text budget: an AI string survives only if every number it cites came
 // from the engine, it uses no banned voice words ("just" is removed; others keep the template text),
 // and it fits the field's budget when one applies.
-export function makeGuard(facts: unknown) {
+export function makeGuard(facts: unknown, plan?: Plan) {
   const allowed = allowedNumbers(facts);
   let rejected = 0;
   let overBudget = 0;
-  const pick = (ai: string | undefined, fallback: string, max: number, within?: (text: string) => boolean) => {
+  const pick = (ai: string | undefined, template: string, max: number, within?: (text: string) => boolean) => {
+    const fallback = voiceNormalize(template);
     const text = clean(ai, max);
     if (!text) return fallback;
     const numbers = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
@@ -214,7 +221,12 @@ export function makeGuard(facts: unknown) {
       rejected++;
       return fallback;
     }
-    const voiced = safetyCushionName(safe);
+    const voiced = voiceNormalize(safetyCushionName(safe));
+    // A "$N a month away" that isn't a real off-track gap contradicts the engine: keep the template.
+    if (plan && !gapClaimsConsistent(voiced, plan)) {
+      rejected++;
+      return fallback;
+    }
     if (within && !within(voiced)) {
       overBudget++;
       return fallback;
@@ -249,17 +261,37 @@ export function mergeText(skeleton: Plan, ai: AiPlanText, guard: ReturnType<type
   };
 }
 
-export async function generatePlan(skeleton: Plan, profile: GoalProfile): Promise<PlanResult> {
+// Full fallback: the engine's template wording, with the same voice normalization AI text gets
+// ("safety cushion", specific times). Numbers, stages, and products are untouched; Step one stays exact.
+function normalizedTemplates(plan: Plan): Plan {
+  return {
+    ...plan,
+    headline: voiceNormalize(plan.headline),
+    sproutSays: voiceNormalize(plan.sproutSays),
+    matches: plan.matches.map((m) => ({ ...m, explanation: voiceNormalize(m.explanation) })),
+    steps: plan.steps.map((s) => (s.order === 1 ? s : { ...s, title: voiceNormalize(s.title), detail: voiceNormalize(s.detail) })),
+    notYet: plan.notYet.map((n) => ({ ...n, reason: voiceNormalize(n.reason), revisitWhen: voiceNormalize(n.revisitWhen) })),
+    bankerSummary: voiceNormalize(plan.bankerSummary),
+  };
+}
+
+// Audit hook (scripts/ai-audit.ts): the AI's raw wording and the facts it saw, before any guard runs.
+export interface PlanAudit {
+  onRaw?: (ai: AiPlanText, facts: unknown) => void;
+}
+
+export async function generatePlan(skeleton: Plan, profile: GoalProfile, audit: PlanAudit = {}): Promise<PlanResult> {
   const safeSkeleton = dropUnknownProducts(skeleton);
   try {
     const facts = planFacts(safeSkeleton, profile);
     const ai = await aiPlanText(facts);
-    const guard = makeGuard(facts);
+    audit.onRaw?.(ai, facts);
+    const guard = makeGuard(facts, safeSkeleton);
     const plan = PlanSchema.parse(dropUnknownProducts(mergeText(safeSkeleton, ai, guard)));
     if (guard.rejected() > 0) console.log(`[ai/plan] number/voice guard kept template text for ${guard.rejected()} field(s)`);
     if (guard.overBudget() > 0) console.log(`[ai/plan] text budget kept template text for ${guard.overBudget()} field(s)`);
     return { plan, aiUsed: true, rejectedFields: guard.rejected() + guard.overBudget() };
   } catch (error) {
-    return { plan: { ...safeSkeleton, aiUsed: false }, aiUsed: false, fallbackReason: describeAiError(error) };
+    return { plan: { ...normalizedTemplates(safeSkeleton), aiUsed: false }, aiUsed: false, fallbackReason: describeAiError(error) };
   }
 }

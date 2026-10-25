@@ -1,156 +1,54 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarClock,
-  Check,
-  ChevronDown,
-  Flag,
-  Shrub,
-  Sprout,
-  Trophy,
-  TreeDeciduous,
-  type LucideIcon,
-} from "lucide-react";
-import { AskChip } from "@/components/chat/AskSprout";
+import { CalendarClock, Check, ChevronDown, Flag } from "lucide-react";
+import { AskChip, useAskSprout } from "@/components/chat/AskSprout";
 import { goalMeta } from "@/components/intake/copy";
 import { cn } from "@/lib/utils";
 import type { Match, Plan, PlanStep, Stage } from "@/types";
-import { LIFE_EVENTS, productName, whenLabel } from "./format";
-import { STEP_ICONS } from "./icons";
-import { MatchRow, matchKey } from "./MatchRow";
+import { LIFE_EVENTS, productName } from "./format";
+import { MatchRow, TrustLayer, matchKey } from "./MatchRow";
+import type { OverviewModel, OverviewStep } from "@/lib/client/overview";
+import { GuideStepRow, STAGES, stepChip } from "./guide";
 
-// Semantic stage colors: success = start here, brand = next, warning = later.
-// Growing icon sizes (seedling, shrub, tree) are a deliberate exception to "icon = line height".
-// Selected tints are mixed with the card color, not alpha, so the connector line can't show through a tile.
-const STAGES: {
-  id: Stage;
-  label: string;
-  title: string;
-  purpose: string;
-  ask: string;
-  icon: LucideIcon;
-  size: string;
-  dot: string;
-  text: string;
-  active: string;
-}[] = [
-  {
-    id: "now",
-    label: "Start here",
-    title: "Set up the basics",
-    purpose: "A few small moves that make the rest of the plan run on its own.",
-    ask: "Why should I do these first?",
-    icon: Sprout,
-    size: "size-5",
-    dot: "bg-success-soft text-success",
-    text: "text-success",
-    active: "ring-2 ring-success bg-[color-mix(in_oklab,var(--color-success-soft)_40%,var(--color-card))]",
-  },
-  {
-    id: "next",
-    label: "Next",
-    title: "Build momentum",
-    purpose: "Once the basics are set, point your savings at your goals.",
-    ask: "What has to happen before I move on to Next?",
-    icon: Shrub,
-    size: "size-6",
-    dot: "bg-brand-100 text-brand-600",
-    text: "text-brand-600",
-    active: "ring-2 ring-brand-600 bg-brand-50",
-  },
-  {
-    id: "later",
-    label: "Later",
-    title: "Make the bigger moves",
-    purpose: "These open up as your income and credit grow. Not yet, on purpose.",
-    ask: "What do I need before the Later steps?",
-    icon: TreeDeciduous,
-    size: "size-7",
-    dot: "bg-warning-soft text-warning",
-    text: "text-warning",
-    active: "ring-2 ring-warning bg-[color-mix(in_oklab,var(--color-warning-soft)_40%,var(--color-card))]",
-  },
-];
-
-const TOP_TASKS = 3;
-const isBigWin = (s: PlanStep) => /big win/i.test(s.title);
 export const stepKey = (s: PlanStep) => `${s.order}-${s.title}`;
-
-function whenRange(steps: PlanStep[]) {
-  if (steps.length === 0) return null;
-  const months = steps.map((s) => s.startMonth);
-  const [lo, hi] = [Math.min(...months), Math.max(...months)];
-  if (hi <= 0) return "Now";
-  if (lo === hi) return whenLabel(lo);
-  return lo <= 0 ? `Now to month ${hi}` : `Months ${lo}–${hi}`;
-}
-
-export type StageInfo = (typeof STAGES)[number] & { steps: PlanStep[]; matches: Match[]; when: string | null };
-
-// Steps per stage, most important first: Step one, then any Big Win, then plan order.
-export function stagesFor(plan: Plan): StageInfo[] {
-  const isStepOne = (s: PlanStep) => s.order === plan.stepOne.order && s.title === plan.stepOne.title;
-  const rank = (s: PlanStep) => (s === plan.stepOne ? 0 : isBigWin(s) ? 1 : 2);
-  return STAGES.map((s) => {
-    const rest = plan.steps.filter((x) => x.stage === s.id && !isStepOne(x));
-    const steps = (plan.stepOne.stage === s.id ? [plan.stepOne, ...rest] : rest).sort(
-      (a, b) => rank(a) - rank(b) || a.order - b.order,
-    );
-    return { ...s, steps, matches: plan.matches.filter((m) => m.stage === s.id), when: whenRange(steps) };
-  });
-}
+// Done state for a guide step: step 1 shares Step one's key, so ticking it on Overview shows here too.
+export const guideKey = (plan: Plan, s: OverviewStep) => (s.kind === "move" ? stepKey(plan.stepOne) : `guide-${s.n}-${s.title}`);
 
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-// Three connected tiles. Used as the Roadmap tab's stage picker and as the Overview's mini roadmap.
-// rail: on xl screens the tiles stack into a vertical rail beside the stage panel.
-export function StageTiles({
-  stages,
-  selected,
-  done,
-  rail = false,
+// Three connected tiles: jump links to each stage of the guide (a vertical rail on xl screens).
+function StageTiles({
+  totals,
+  finished,
   onSelect,
 }: {
-  stages: StageInfo[];
-  selected?: Stage;
-  done?: Set<string>;
-  rail?: boolean;
+  totals: Record<Stage, number>;
+  finished: Record<Stage, number>;
   onSelect: (stage: Stage) => void;
 }) {
   return (
-    <ol className={cn("relative grid grid-cols-3 gap-2 sm:gap-4", rail && "xl:grid-cols-1 xl:gap-3")}>
+    <ol className="relative grid grid-cols-3 gap-2 sm:gap-4 xl:grid-cols-1 xl:gap-3">
       <span
-        className={cn(
-          "absolute inset-x-[16%] top-10 h-0.5 rounded-full bg-border",
-          rail && "xl:top-[15%] xl:right-auto xl:bottom-[15%] xl:left-10 xl:h-auto xl:w-0.5",
-        )}
+        className="absolute inset-x-[16%] top-10 h-0.5 rounded-full bg-border xl:top-[15%] xl:right-auto xl:bottom-[15%] xl:left-10 xl:h-auto xl:w-0.5"
         aria-hidden
       />
-      {stages.map((s) => {
-        const finished = done ? s.steps.filter((x) => done.has(stepKey(x))).length : 0;
+      {STAGES.map((s) => {
+        const total = totals[s.id];
+        const done = finished[s.id];
         return (
           <li key={s.id} className="relative">
             <button
               type="button"
-              aria-current={selected === s.id ? "step" : undefined}
               onClick={() => onSelect(s.id)}
-              className={cn(
-                "flex w-full flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-card outline-none transition-[box-shadow,background-color] duration-200 hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/30",
-                rail && "xl:flex-row xl:gap-3 xl:text-left",
-                selected === s.id && s.active,
-              )}
+              className="flex w-full flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center shadow-card outline-none transition-[box-shadow,background-color] duration-200 hover:shadow-raised focus-visible:ring-4 focus-visible:ring-ring/30 xl:flex-row xl:gap-3 xl:text-left"
             >
               <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-full", s.dot)} aria-hidden>
-                {s.steps.length > 0 && finished === s.steps.length ? <Check className="size-6" /> : <s.icon className={s.size} />}
+                {total > 0 && done === total ? <Check className="size-6" /> : <s.icon className={s.size} />}
               </span>
               <span className="flex flex-col gap-1">
                 <span className={cn("text-small font-semibold", s.text)}>{s.label}</span>
-                <span className="text-caption text-muted-foreground">
-                  {finished > 0 ? `${finished} of ${s.steps.length} done` : s.when ?? count(s.steps.length, "task")}
-                </span>
+                <span className="text-caption text-muted-foreground">{done > 0 ? `${done} of ${total} done` : count(total, "step")}</span>
               </span>
             </button>
           </li>
@@ -160,87 +58,7 @@ export function StageTiles({
   );
 }
 
-// One task = one line. Tap to read its 1–2 sentence detail; tick the circle when it's done.
-function TaskRow({
-  step,
-  first,
-  open,
-  done,
-  onOpen,
-  onDone,
-  onProduct,
-}: {
-  step: PlanStep;
-  first: boolean;
-  open: boolean;
-  done: boolean;
-  onOpen: () => void;
-  onDone: () => void;
-  onProduct: (productId: string) => void;
-}) {
-  const Icon = isBigWin(step) ? Trophy : STEP_ICONS[step.kind];
-  return (
-    <li className={cn("rounded-xl transition-colors duration-200", open && "bg-brand-50")}>
-      <div className="flex items-center gap-3 px-2 py-2">
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={done}
-          aria-label={`Mark "${step.title}" done`}
-          onClick={onDone}
-          className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-full border-2 outline-none transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/30",
-            done ? "border-success bg-success text-white" : "border-border bg-card hover:border-success",
-          )}
-        >
-          {done && <Check className="size-4 animate-in zoom-in-50 duration-150 motion-reduce:animate-none" aria-hidden />}
-        </button>
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={onOpen}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1 text-left outline-none focus-visible:ring-4 focus-visible:ring-ring/30"
-        >
-          <Icon className="hidden size-5 shrink-0 text-brand-600 sm:block" aria-hidden />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className={cn("text-body font-semibold", done && "text-muted-foreground line-through")}>{step.title}</span>
-            <span className={cn("text-caption sm:hidden", first ? "font-semibold text-success" : "text-muted-foreground")}>
-              {first ? "This week" : whenLabel(step.startMonth)}
-            </span>
-          </span>
-          {first ? (
-            <span className="hidden shrink-0 rounded-full bg-success-soft px-2 py-1 text-caption font-semibold text-success sm:inline">
-              This week
-            </span>
-          ) : (
-            <span className="hidden shrink-0 text-caption text-muted-foreground sm:inline">{whenLabel(step.startMonth)}</span>
-          )}
-          <ChevronDown
-            className={cn("size-5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")}
-            aria-hidden
-          />
-        </button>
-      </div>
-      {open && (
-        <div className="flex animate-in flex-col gap-2 pr-4 pb-4 pl-12 duration-200 sm:pl-20 fade-in slide-in-from-top-1 motion-reduce:animate-none">
-          <p className="text-small">{step.detail}</p>
-          {step.productId && (
-            <button
-              type="button"
-              onClick={() => onProduct(step.productId!)}
-              className="inline-flex items-center gap-1 self-start rounded-full bg-brand-100 px-3 py-1 text-caption font-semibold text-brand-700 outline-none transition-colors hover:bg-brand-200 focus-visible:ring-4 focus-visible:ring-ring/30"
-            >
-              About {productName(step.productId)}
-              <ArrowRight className="size-4" aria-hidden />
-            </button>
-          )}
-        </div>
-      )}
-    </li>
-  );
-}
-
-// A closed-by-default group with a count, for everything beyond the top tasks.
+// A closed-by-default group with a count.
 function Fold({
   label,
   open,
@@ -284,10 +102,28 @@ function Milestones({ matches }: { matches: Match[] }) {
   );
 }
 
+function DoneToggle({ done, onDone }: { done: boolean; onDone: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={done}
+      onClick={onDone}
+      className={cn(
+        "inline-flex h-9 items-center gap-2 rounded-xl px-4 text-small font-semibold outline-none transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/30 active:translate-y-px motion-reduce:transition-none",
+        done ? "bg-success text-white" : "ring-1 ring-border ring-inset hover:bg-success-soft",
+      )}
+    >
+      <Check className="size-4" aria-hidden />
+      Done
+    </button>
+  );
+}
+
+// The Roadmap tab (docs/DASHBOARD.md v2): the same numbered guide as the Overview, full length, under
+// "Start now" / "Next" / "Unlocks later"; each product step opens its trust layer.
 export function Roadmap({
   plan,
-  stage,
-  onStage,
+  model,
   done,
   onDone,
   openKey,
@@ -295,158 +131,143 @@ export function Roadmap({
   onProduct,
 }: {
   plan: Plan;
-  stage: Stage;
-  onStage: (stage: Stage) => void;
+  model: OverviewModel;
   done: Set<string>;
   onDone: (key: string) => void;
   openKey: string | null;
   onOpenKey: (key: string | null) => void;
   onProduct: (productId: string) => void;
 }) {
-  const stages = stagesFor(plan);
-  const i = stages.findIndex((s) => s.id === stage);
-  const s = stages[i];
-  const [prev, next] = [stages[i - 1], stages[i + 1]];
-
-  const [openTask, setOpenTask] = useState<string | null>(null);
-  const [showMore, setShowMore] = useState(false);
-  const [productsOpen, setProductsOpen] = useState(false);
+  const chips = useAskSprout().blockChips();
+  const [otherOpen, setOtherOpen] = useState<Partial<Record<Stage, boolean>>>({});
   const [notYetOpen, setNotYetOpen] = useState(false);
 
-  const top = s.steps.slice(0, TOP_TASKS);
-  const more = s.steps.slice(TOP_TASKS);
-  const topDone = top.length > 0 && top.every((x) => done.has(stepKey(x)));
-  const citedHere = s.matches.some((m) => matchKey(m) === openKey);
+  const matchFor = (s: OverviewStep) => (s.productId ? plan.matches.find((m) => m.productId === s.productId) : undefined);
+  const inGuide = new Set(model.steps.flatMap((s) => (s.productId ? [s.productId] : [])));
+  // Same numbers as the Overview (the model's guide order); each stage lists its steps in that order.
+  const byStage = (id: Stage) => model.steps.filter((s) => s.stage === id);
+  const totals = { now: byStage("now").length, next: byStage("next").length, later: byStage("later").length };
+  const finished = Object.fromEntries(
+    STAGES.map((s) => [s.id, byStage(s.id).filter((x) => done.has(guideKey(plan, x))).length]),
+  ) as Record<Stage, number>;
 
-  const go = (to: Stage) => {
-    setOpenTask(null);
-    setShowMore(false);
-    setProductsOpen(false);
-    setNotYetOpen(false);
-    onStage(to);
+  const jump = (id: Stage) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(`stage-${id}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   };
-
-  const task = (step: PlanStep) => (
-    <TaskRow
-      key={stepKey(step)}
-      step={step}
-      first={step === plan.stepOne}
-      open={openTask === stepKey(step)}
-      done={done.has(stepKey(step))}
-      onOpen={() => setOpenTask(openTask === stepKey(step) ? null : stepKey(step))}
-      onDone={() => onDone(stepKey(step))}
-      onProduct={onProduct}
-    />
-  );
 
   return (
     <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[13rem_minmax(0,1fr)] xl:items-start">
       <div className="xl:sticky xl:top-36">
-        <StageTiles stages={stages} selected={stage} done={done} rail onSelect={go} />
+        <StageTiles totals={totals} finished={finished} onSelect={jump} />
       </div>
 
-      <section
-        key={s.id}
-        aria-labelledby={`stage-${s.id}`}
-        className="flex animate-in flex-col gap-4 rounded-2xl bg-card p-6 shadow-card duration-200 fade-in motion-reduce:animate-none"
-      >
-        <header className="flex flex-col gap-1">
-          <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">
-            Stage {i + 1} of {stages.length}
-          </span>
-          <h3 id={`stage-${s.id}`} className="text-lead font-semibold">
-            <span className={s.text}>{s.label}:</span> {s.title}
-          </h3>
-          <p className="text-small text-muted-foreground">{s.purpose}</p>
-        </header>
-
-        {s.id === "later" && <Milestones matches={s.matches} />}
-
-        {top.length > 0 ? (
-          <ul className="flex flex-col gap-1">{top.map(task)}</ul>
-        ) : (
-          <p className="text-small text-muted-foreground">Nothing to do here yet. Sprout will add steps as your plan grows.</p>
-        )}
-
-        {more.length > 0 && (
-          <Fold label={`More when you're ready (${more.length})`} open={showMore} onToggle={setShowMore}>
-            <ul className="flex flex-col gap-1">{more.map(task)}</ul>
-          </Fold>
-        )}
-
-        {s.matches.length > 0 && (
-          <Fold
-            label={`Products for this stage (${s.matches.length})`}
-            open={productsOpen || citedHere}
-            onToggle={(open) => {
-              setProductsOpen(open);
-              if (!open) onOpenKey(null);
-            }}
-          >
-            <ul className="flex flex-col divide-y divide-border">
-              {s.matches.map((m) => (
-                <MatchRow
-                  key={matchKey(m)}
-                  match={m}
-                  open={openKey === matchKey(m)}
-                  onToggle={(open) => onOpenKey(open ? matchKey(m) : null)}
-                />
-              ))}
-            </ul>
-          </Fold>
-        )}
-
-        {s.id === "later" && plan.notYet.length > 0 && (
-          <Fold label={`Not yet, on purpose (${plan.notYet.length})`} open={notYetOpen} onToggle={setNotYetOpen}>
-            <ul className="flex flex-col gap-4 px-2">
-              {plan.notYet.map((n, k) => (
-                <li key={k} className="flex flex-col gap-1">
-                  <span className="text-body font-semibold">
-                    {n.productId ? productName(n.productId) : n.goalId ? goalMeta(n.goalId).label : "Holding off"}
-                  </span>
-                  <span className="text-small">{n.reason}</span>
-                  <span className="flex items-center gap-1 text-caption text-muted-foreground">
-                    <CalendarClock className="size-4" aria-hidden />
-                    Revisit {n.revisitWhen}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Fold>
-        )}
-
-        <AskChip question={s.ask} />
-
-        <footer className="flex items-center justify-between gap-2 border-t border-border pt-4">
-          {prev ? (
-            <button
-              type="button"
-              onClick={() => go(prev.id)}
-              className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-small font-semibold text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring/30"
+      <div className="flex min-w-0 flex-col gap-6">
+        {STAGES.map((s) => {
+          const steps = byStage(s.id);
+          const others = plan.matches.filter((m) => m.stage === s.id && !inGuide.has(m.productId));
+          const citedHere = others.some((m) => matchKey(m) === openKey);
+          return (
+            <section
+              key={s.id}
+              id={`stage-${s.id}`}
+              aria-labelledby={`stage-${s.id}-title`}
+              className="flex scroll-mt-36 flex-col gap-4 rounded-2xl bg-card p-6 shadow-card"
             >
-              <ArrowLeft className="size-5" aria-hidden />
-              {prev.label}
-            </button>
-          ) : (
-            <span />
-          )}
-          {next && (
-            <button
-              type="button"
-              onClick={() => go(next.id)}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-small font-semibold outline-none transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/30",
-                topDone
-                  ? "bg-highlight text-highlight-foreground hover:bg-highlight/90"
-                  : "text-brand-700 hover:bg-brand-50",
+              <header className="flex flex-col gap-1">
+                <h3 id={`stage-${s.id}-title`} className="text-lead font-semibold">
+                  <span className={s.text}>{s.label}:</span> {s.title}
+                </h3>
+                <p className="text-small text-muted-foreground">{s.purpose}</p>
+              </header>
+
+              {s.id === "later" && <Milestones matches={plan.matches.filter((m) => m.stage === "later")} />}
+
+              {steps.length > 0 ? (
+                <ol className="flex flex-col">
+                  {steps.map((step, i) => {
+                    const match = matchFor(step);
+                    const key = match ? matchKey(match) : null;
+                    const open = key !== null && openKey === key;
+                    return (
+                      <GuideStepRow
+                        key={step.n}
+                        id={key ? `product-${key}` : undefined}
+                        step={step}
+                        last={i === steps.length - 1}
+                        chip={stepChip(chips, step)}
+                        onProduct={onProduct}
+                        after={
+                          match &&
+                          open && (
+                            <TrustLayer
+                              match={match}
+                              className="mt-2 animate-in rounded-xl bg-brand-50 p-4 duration-200 fade-in slide-in-from-top-1 motion-reduce:animate-none"
+                            />
+                          )
+                        }
+                      >
+                          <DoneToggle done={done.has(guideKey(plan, step))} onDone={() => onDone(guideKey(plan, step))} />
+                          {match && (
+                            <button
+                              type="button"
+                              aria-expanded={open}
+                              onClick={() => onOpenKey(open ? null : key)}
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-small font-semibold text-brand-700 outline-none transition-colors hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
+                            >
+                              Why it fits, terms, and source
+                              <ChevronDown className={cn("size-4 transition-transform duration-200", open && "rotate-180")} aria-hidden />
+                            </button>
+                          )}
+                      </GuideStepRow>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <p className="text-small text-muted-foreground">Nothing to do here yet. Sprout will add steps as your plan grows.</p>
               )}
-            >
-              {topDone ? `Nice work. On to ${next.label}` : `Then: ${next.label}`}
-              <ArrowRight className="size-5" aria-hidden />
-            </button>
-          )}
-        </footer>
-      </section>
+
+              {others.length > 0 && (
+                <Fold
+                  label={`Other FNB options for this stage (${others.length})`}
+                  open={!!otherOpen[s.id] || citedHere}
+                  onToggle={(open) => {
+                    setOtherOpen((o) => ({ ...o, [s.id]: open }));
+                    if (!open && citedHere) onOpenKey(null);
+                  }}
+                >
+                  <ul className="flex flex-col divide-y divide-border">
+                    {others.map((m) => (
+                      <MatchRow key={matchKey(m)} match={m} open={openKey === matchKey(m)} onToggle={(open) => onOpenKey(open ? matchKey(m) : null)} />
+                    ))}
+                  </ul>
+                </Fold>
+              )}
+
+              {s.id === "later" && plan.notYet.length > 0 && (
+                <Fold label={`Not yet, on purpose (${plan.notYet.length})`} open={notYetOpen} onToggle={setNotYetOpen}>
+                  <ul className="flex flex-col gap-4 px-2">
+                    {plan.notYet.map((n, k) => (
+                      <li key={k} className="flex flex-col gap-1">
+                        <span className="text-body font-semibold">
+                          {n.productId ? productName(n.productId) : n.goalId ? goalMeta(n.goalId).label : "Holding off"}
+                        </span>
+                        <span className="text-small">{n.reason}</span>
+                        <span className="flex items-center gap-1 text-caption text-muted-foreground">
+                          <CalendarClock className="size-4" aria-hidden />
+                          Revisit {n.revisitWhen}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Fold>
+              )}
+
+              <AskChip question={s.ask} />
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-# Sprout's Brain (v3)
+# Sprout's Brain (v3.2)
 
 Sprout is the app and its advisor. The **engine** (deterministic code) decides numbers, stages, levers, and Step one. The **AI** explains them in Sprout's voice. The AI never changes an amount, a stage, a trigger, a lever, or the Step one choice.
 
@@ -39,15 +39,26 @@ Amounts are floored to whole dollars; leftover dollars go to `guilt_free`.
 
 **High fixed costs (fixedShare > 60%) and surplus > 0:** savings = 50% of surplus, guilt-free = 50% of surplus, each at least 5% of income when the surplus allows. Future You shows handoff only ("unlocks when fixed costs drop below 60% of income"). Add a **Big Win** step: "Review your biggest fixed cost" (housing, car, phone).
 
+**v3.4 (Ben 8:44 AM Sun) guilt-free is smaller:**
+- Normal case: guilt-free is the rest, **capped at 25% of income**; anything above the cap goes to savings (split cushion/goals by the rules below). Maya's guilt-free is 23%, so her plan does not change.
+- High fixed costs (fixedShare > 60%) and surplus > 0: savings = **60%** of surplus, guilt-free = **40%** (was 50/50); the 5%-of-income minimums stay.
+- The turn_up_dial floor (guilt-free stays ≥ 10% of income) is unchanged.
+
 **Surplus ≤ 0:** savings and guilt-free are 0; plan is `budget` and `habit` steps plus $0 products. Sprout: "First we find your breathing room."
+- **v3.3 (#109, lead 3:20 AM Sun) what "$0 products" means:** with surplus ≤ 0, a match may be `now` or `next` only if (a) it is an `education_tool`, or (b) its `minOpeningDeposit` is exactly 0, or (c) it is an everyday checking or savings account (the habit or Step-2 FNB fit) whose `minOpeningDeposit` ≤ the user's `savingsBalance` (opening it moves money they already have; it costs nothing new). Everything else (CDs, any card including SmartSecured, business products, a deposit account they can't fund from savings) is `later` with the unlock "when money is coming in each month" (surplus > 0). `null` deposit counts as not $0. The stress invariant is updated to this exact rule. **Clarified 4:25 AM:** under (c), an everyday *checking* account with a `null` deposit whose keyTerms say "no minimum balance" (FNB Student Checking) is allowed as `now`; FNB does not publish an opening deposit for it, so keep `null` in the catalog (do not set 0) and never show "$0 to open" for it; its fee line uses the published keyTerms.
+- **v3.3 (#107) no money goals:** if the user chose only habits, the whole savings share goes to the safety cushion (no 50/50 or 60/40 split). If the cushion is already met, the savings share stays in the bar labeled "Savings" and the headline reads "$X a month in savings, ready for your next goal". Never write "your savings goal" or put money in a "Goals" segment when no money goal exists.
+- **v3.3 (#130) products never matched:** retirement accounts (IRA Savings, IRA CD) for any goal (investing and taxes are an FNB advisor's job); any credit card or loan for the safety cushion (the cushion is savings, never borrowing); CardGuard is a habit tool, not a cushion product (drop its `emergency_fund` tag).
 
 **Inside savings:**
+- **Habits cost time, not money (v3.2):** `everyday_banking` and `credit_building` are habits. They get **no** savings allocation and no `Allocation` row; `goal_savings` is split only among money goals (P1/P2/P3 weights 60/25/15 by their priority order, renormalized). Habits become steps: credit building → "Check your free credit report" (learn) now, the secured card as its `later` match (unlock unchanged: 1 month of costs + deposit, or first paycheck); everyday banking → "Turn on low-balance alerts" (habit) plus the best-fit checking `now` match.
 - **Safety cushion (v3) = max($1,000, 3 × (fixed + debt)) for everyone.** Irregular income is exactly why: if money stops for 1 to 2 months, bills are still covered. (`cushionTarget` = `emergencyFundTarget` = this number.)
 - Existing `savingsBalance` counts toward it. If savings already cover it, the cushion is met and 100% of savings goes to goals.
 - **Milestone:** "1 month covered" at 1 × (fixed + debt); report it so the UI can show an early win (Maya: $650, reached in 3 months).
-- Until the cushion is met: 50% `emergency_fund`, 50% `goal_savings`. After: 100% `goal_savings`.
+- Until the cushion is met: 50% `emergency_fund`, 50% `goal_savings`. **v3.1 values tilt:** if the user's top value (`profile.topValues[0]`) is `security` or `family`, the split is **60% cushion / 40% goals**. After the cushion is met: 100% `goal_savings`. (Maya's top value is experiences, so her numbers are unchanged; her opposite-swipes version gets a visibly different plan.)
 - User-facing name is always **"safety cushion"** (never "starter cushion" or "full cushion"); an `emergency_fund` goal *is* the safety cushion and is labeled that way.
 - `goal_savings` split by priority: **P1 60%, P2 25%, P3 15%**, renormalized to the goals present; leftover dollars to P1.
+
+**v3.3 (#105) duplicate goal ids:** the engine keeps the first occurrence (highest priority) of each goal id, drops the rest, and renumbers priorities 1..n before any rule runs. No contract change; `/api/profile` and `/api/plan` accept the input and return a valid plan.
 
 ## Rule set C: goal feasibility and gap levers
 
@@ -64,14 +75,14 @@ For each goal:
 
 Step one is something the user can do **right now from their phone**. It is never "open an account". Title and detail are **templates** (Ben owns this text); the AI never rewrites them.
 
-Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-priority goal. Fund names: travel → "travel fund", first_home → "home fund", education → "education fund", small_business → "business fund", family → "family fund", emergency_fund → "safety cushion".
+Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-priority **money** goal (habits are never P1). Fund names: travel → "travel fund", first_home → "home fund", education → "education fund", small_business → "business fund", family → "family fund", emergency_fund → "safety cushion".
 
 | # | When | Title (template) | Detail (template) | kind |
 |---|---|---|---|---|
 | 1 | `monthlySurplus` ≤ 0 | Open your bank app and find last week's 3 biggest buys. | That's where we'll find your breathing room. | budget |
-| 2 | P1 = credit_building | Check your free credit report now. | 5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score. | learn |
-| 3 | P1 = everyday_banking | Turn on low-balance alerts in your bank app. | No surprise fees, ever. | habit |
-| 4 | P1 = emergency_fund, or no goals | Move $A into savings right now. | That starts your $<cushionTarget> safety cushion. | save |
+| 2 | (v3.2) no money goals, credit_building habit chosen | Check your free credit report now. | 5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score. | learn |
+| 3 | (v3.2) no money goals, everyday_banking habit chosen | Turn on low-balance alerts in your bank app. | No surprise fees, ever. | habit |
+| 4 | P1 money goal = emergency_fund, or no money goals, **or (v3.1) top value is security or family and the cushion is not met** | Move $A into savings right now. | That starts your $<cushionTarget> safety cushion. | save |
 | 5 | otherwise | Move $A into your <fund name> right now. | You'll put $<P1 monthlyAmount> a month toward it. This starts it. | save |
 
 `stepOne.monthlyAmount` is omitted; `startMonth` 0; no `productId`.
@@ -86,6 +97,9 @@ Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-prio
 - Student triggers: secured card → savings ≥ **1 month of (fixed + debt) + minimum deposit** (v3: decoupled from the 3-month cushion so credit building can start early), or `first_paycheck`. Income-dependent products → `first_paycheck` / `internship`. Mortgages and homebuyer programs → `full_time_job` + safety cushion met.
 - Habit step always present: **automate on payday**.
 - **Fit-first, fee-transparent:** recommend the FNB account that best fits the user's situation (not simply the cheapest). Every account card states its monthly fee and exactly how THIS user avoids it (e.g. "no monthly fee on Student Checking", "waived with direct deposit"). Framing: Sprout makes sure you never pay a fee you didn't see coming.
+- **No student loans (v3.1):** Sprout never recommends student loan products at any stage, including not-yet. Students usually handle loans with their family; Sprout stays on budgeting, saving, and credit. Mortgages and homebuyer programs for families are unaffected.
+- **No consumer loans (#118, Ben's default 2:15 AM):** Sprout never recommends consumer credit as a step: no CashPlease, auto loans, installment loans, personal or business lines of credit, business loans, or student loans, at any stage or in not-yet. The only lending products are **mortgages and homebuyer programs**, only for `first_home`, only as `later` with an unlock condition, never in Step one or step 2.
+- **Intro goal (v3.1):** `sproutSays` and `headline` templates talk about the **P1** goal, never a lower-priority goal picked by values.
 - Be honest about weak rates: if a product's published rate is low (e.g. a goal CD at 0.05% APY), the explanation sells the commitment, not the interest.
 
 ## Rule set F: Future You (investing, inside our boundary)
@@ -97,18 +111,23 @@ Sprout does not recommend investments, funds, or amounts per product. It shows o
 
 ## Golden test: Maya (must match exactly)
 
+> v3.2 (regenerated from the engine in #94): credit building is a habit with no allocation, so Maya's goal money splits travel/home only: travel $91, home $22, Japan gap $118.
+>
+> **v3.3 (#106, lead 2:15 AM, regenerated from the engine):** goal weights 60/25/15 go by **rank among money goals** (1st, 2nd, 3rd after habits are removed), not raw priority, so the persona fixture (credit P2, home P3) and the intake path (home P2, credit P3) compute the same plan. Maya: travel $80, home $33, Japan gap $129 (was $91 / $22 / $118).
+
 Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester; family $300 monthly; fixed $650; debt $0; savings $400; credit building; not an FNB customer; values [experiences, freedom] → **Experience Collector**. Goals: travel P1 $2,500 in 12 months ("study abroad in Japan"); credit_building P2 12 months; first_home P3 84 months.
 
 | Output | Value |
 |---|---|
 | Effective income | $1,133 (300 + 500 + 333) |
 | Fixed share | 57% (normal case) |
-| Savings 20% | $226 → cushion $113, goals $113 → Japan $69, credit $28, home $16 |
+| Savings 20% | $226 → cushion $113, goals $113 → Japan $80, home $33 (rank weights 60/25 renormalized; credit building is a habit: no allocation) |
 | Guilt-free | $257 (23%) |
-| Japan | needs $209/mo, has $69 → off track |
-| Levers | turn_up_dial: move $140 (guilt-free stays $117 = 10.3%); more_time: 37 months; smaller_target: $828 |
+| Japan | needs $209/mo, has $80 → off track ($129 a month away) |
+| Levers | turn_up_dial: move $129 (guilt-free stays $128 = 11.3%); more_time: 32 months; smaller_target: $960 |
 | Safety cushion | target $1,950 (3 × $650), $400 counted, $113/mo, full in 14 months; milestone "1 month covered" ($650) in 3 months |
-| Step one | "Move $20 into your travel fund right now." / "You'll put $69 a month toward it. This starts it." (rule D5) |
+| Step one | "Move $20 into your travel fund right now." / "You'll put $80 a month toward it. This starts it." (rule D5) |
+| Habit steps | credit building → "Check your free credit report" (learn, now); SmartSecured stays its `later` match |
 | FNB fit | FNB Student Checking (top `now` match; HUB branch), fee line first |
 | Now | Student Checking, Learning Center modules, FNB scholarship entry if in catalog |
 | Next | Savers Goal CD for the Japan fund |
@@ -118,7 +137,7 @@ Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester
 
 ## Sprout's voice
 
-1. **Possibility first.** Bad: "You can't afford Japan." Good: "Japan is $140 a month away."
+1. **Possibility first.** Bad: "You can't afford Japan." Good: "Japan is $129 a month away."
 2. **A number and a date.** Bad: "Save more." Good: "$113 a month covers your first month in 3 months."
 3. **Never shame.** Banned: only, just, behind, should have, can't afford, waste.
 4. **Plain and short.** Under 20 words per sentence; jargon gets a 5-word explanation ("APY, the interest you earn").

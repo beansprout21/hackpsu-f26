@@ -1,0 +1,109 @@
+# AI audit (cycle 8)
+
+Generated 2026-10-25T07:11:35.162Z by `scripts/ai-audit.ts` (#121), seed 12108. Plan model `claude-sonnet-5-5`, profile model `claude-haiku-5-5`.
+Sample: 25 users (3 rotating scenarios + generated users stratified by life stage, persona, surplus, FNB customer) through the real profile + plan pipeline, then 50 Ask Sprout answers across all intents. Live AI. Synthetic users only.
+
+## Summary
+
+- Plans: 25 built, 0 plan fallbacks, 0 profile fallbacks, 3 AI fields kept the template (guards or text budget), average plan latency 8.0 s, profile 5.5 s.
+- Chats: 50 answers, 0 fallbacks (boundary and rate answers are deterministic by design), average latency 1.7 s.
+- Fallback rate (plans + chats): 0.0%.
+- Wall time 165 s.
+
+### Plan flags (items affected)
+
+| Flag | Items | Examples |
+|---|---|---|
+| AI field replaced by template (explanation budget) | 3 | explanation:fnb-home-ownership-program: "This is the path toward the stable home of your own, and it unlocks when your $7,473 safety cushion is full. It offers little to no down pa…"<br>explanation:smartcash-card: "FNB SmartCash Credit Card is a later step that can support your home goal by building credit and earning 2% cash back. It unlocks when your…" |
+| contradiction: on track vs gap | 1 | headline says on track, engine has a gap: "$2 from on track" |
+| banned words | 1 | richLifeStatement: behind · "…unning my own thing on my own schedule, with enough savings behind me that I can say yes to good opportunities." |
+
+### Chat flags (items affected)
+
+| Flag | Items | Examples |
+|---|---|---|
+
+## Plans
+
+| User | Life stage | Persona | Surplus | Customer | AI | Plan s | Headline | Flags |
+|---|---|---|---|---|---|---|---|---|
+| c8-no-income | student | Experience Collector | no | no | yes | 7.3 | Your path to experiences and security starts today |  |
+| c8-parents-pay-rent | student | Experience Collector | yes | no | yes | 8.4 | Your spring break plan starts with $60 a month |  |
+| c8-high-fixed | new_grad | Safety Builder | yes | no | yes | 7.3 | Your first home and safety cushion start today |  |
+| c8-gen-00 | student | Freedom Seeker | yes | no | yes | 10.0 | Your family fund starts today, $2 from on track | **contradiction: on track vs gap**: headline says on track, engine has a gap: "$2 from on track" |
+| c8-gen-01 | new_grad | Safety Builder | no | no | yes | 8.4 | Find breathing room, then build your home base | **AI field replaced by template (explanation budget)**: explanation:fnb-home-ownership-program: "This is the path toward the stable home of your own, and it unlocks when your $7,473 safety cushion is full. It offers little to no down pa…" |
+| c8-gen-02 | young_family | Experience Collector | yes | yes | yes | 9.2 | Your home and shop dreams have a clear path |  |
+| c8-gen-03 | student | Family First | no | yes | yes | 8.7 | Your family's first trip is within reach |  |
+| c8-gen-04 | new_grad | Future Builder | yes | no | yes | 9.1 | Your safety cushion fills in about 4 months |  |
+| c8-gen-05 | young_family | Simple Saver | no | no | yes | 7.3 | Your car and business start with one small look |  |
+| c8-gen-06 | student | Freedom Seeker | yes | yes | yes | 6.6 | Your business dream starts with $114 a month | **banned words**: richLifeStatement: behind · "…unning my own thing on my own schedule, with enough savings behind me that I can say yes to good opportunities." |
+| c8-gen-07 | new_grad | Safety Builder | no | yes | yes | 5.3 | Find your breathing room, then fund travel |  |
+| c8-gen-08 | young_family | Experience Collector | yes | no | yes | 8.8 | A real path to your shop, family, and travel |  |
+| c8-gen-09 | student | Family First | no | no | yes | 9.1 | A steady home and your own shop start here |  |
+| c8-gen-10 | new_grad | Future Builder | yes | yes | yes | 7.6 | Your home fund is on track, starting today | **AI field replaced by template (explanation budget)**: explanation:smartcash-card: "FNB SmartCash Credit Card is a later step that can support your home goal by building credit and earning 2% cash back. It unlocks when your…" |
+| c8-gen-11 | young_family | Simple Saver | no | yes | yes | 7.1 | Your simple path to a steady home and shop |  |
+| c8-gen-12 | student | Freedom Seeker | yes | no | yes | 8.3 | Your shop dream starts with a ready plan |  |
+| c8-gen-13 | new_grad | Safety Builder | no | no | yes | 8.5 | Find breathing room, then grow your safety cushion |  |
+| c8-gen-14 | young_family | Experience Collector | yes | yes | yes | 7.7 | Your safety cushion fills fast, adventures follow |  |
+| c8-gen-15 | student | Family First | no | yes | yes | 8.0 | Find your breathing room, then build your shop |  |
+| c8-gen-16 | new_grad | Future Builder | yes | no | yes | 6.6 | Your first home plan is on track |  |
+| c8-gen-17 | young_family | Simple Saver | no | no | yes | 8.9 | Find breathing room, then grow your safety cushion |  |
+| c8-gen-18 | student | Freedom Seeker | yes | yes | yes | 8.4 | Your shop dream has a calm, steady path |  |
+| c8-gen-19 | new_grad | Safety Builder | no | yes | yes | 8.4 | Find your breathing room, then grow from there | **AI field replaced by template (explanation budget)**: explanation:firstrate-business-savings: "A business savings account gives your small business dream its own home, so you can take that step with less stress. It has a $5 monthly ch…" |
+| c8-gen-20 | young_family | Experience Collector | yes | no | yes | 5.7 | Your family trip fund is on track |  |
+| c8-gen-21 | student | Family First | no | no | yes | 8.6 | Find breathing room, then build your steady home |  |
+
+## Chats
+
+| User | Intent | Question | Route | AI | s | Answer | Flags |
+|---|---|---|---|---|---|---|---|
+| c8-no-income | why_step_one | Why is this my first move? | explain | yes | 1.4 | Right now your costs use everything coming in, so the first win is finding breathing room. Spotting your 3 biggest buys from last week shows where it hides. Once we find it, your education fund and safety cushion can start growing. |  |
+| c8-parents-pay-rent | how_split | How did you split my money? | explain | yes | 1.8 | Of your $600 a month, $150 covers fixed costs, $120 goes to savings (20%), and $330 (55%) is protected for the experiences you love. Your savings split $60 to the safety cushion and $60 to your travel fund. Automate those transfers and they grow quietly. |  |
+| c8-high-fixed | why_cushion | Why 3 months? | explain | yes | 1.4 | Your fixed costs run $1,550 a month, so 3 months of cover is a $4,650 safety cushion. If income pauses, rent and bills stay covered. You have $300 saved, and $135 a month builds it, with 1 month covered in about 10 months. |  |
+| c8-gen-00 | why_product | Why this account for me? | explain | yes | 1.7 | FNB Student Checking fits because you qualify today and it supports the simplicity you value. There's no monthly fee or minimum balance, and no overdraft fees. Switch to e-statements and you skip the $3.95 paper charge. It keeps everyday money in one tidy pla… |  |
+| c8-gen-01 | product_fees | Any fees I should know? | explain | yes | 1.8 | Freestyle Checking has no monthly fee with free online statements. Paper statements run $3.95, plus $3.00 for check images. Overdrafts are $35 per item and returned items $29, capped at $140 a day, and items of $5 or less are free of overdraft fees. Going pap… |  |
+| c8-gen-02 | when_unlock | When can I get the Home Ownership Program? | explain | yes | 1.8 | The Home Ownership Program unlocks when your $9,945 safety cushion is full. You've saved $3,368, so $6,577 to go, about 2 years at $280 a month. Meanwhile, the Mortgage calculators can make your first-home numbers feel real. |  |
+| c8-gen-03 | goal_gap | How do I close the $319 gap for my travel fund? | explain | yes | 1.6 | Your travel fund needs $319 a month for the kids' trip in about 2 years, and right now nothing is set aside. Start with your step one: open your bank app and find last week's 3 biggest buys, because that's where your breathing room is. Once some room opens up… |  |
+| c8-gen-04 | what_if | Can I reach my safety cushion sooner? | what_if | yes | 1.7 | Yes! Adding $50 a month brings your safety cushion to $141 a month and cuts the wait from about 19 months to about 13 months. Your guilt-free spending stays healthy at $835. Automate it so it grows quietly in the background. |  |
+| c8-gen-05 | free | Can I put my savings in index funds or crypto? | boundary | **no** | 0.0 | When you're ready for that, an FNB advisor can help. |  |
+| c8-gen-06 | why_step_one | Why is this my first move? | explain | yes | 1.4 | Your business fund is your top goal, and freedom is what you value most. Moving $20 today turns the plan into real progress. Then $114 a month keeps it growing, so automate it. |  |
+| c8-gen-07 | how_split | How did you split my money? | explain | yes | 1.8 | Your costs come to $1,742 a month, and your income averages $1,422, so nothing is set aside for savings yet. That's a $320 gap to close, and it's the first step toward your safety cushion and your travel goal. Start by finding your 3 biggest buys from last we… |  |
+| c8-gen-08 | why_cushion | Why 3 months? | explain | yes | 1.9 | Three months of bills is a steady cushion if income pauses, like a job change or a surprise. Yours is $5,319, which is 3 times your $1,773 in monthly fixed costs and debt payments. At $229 a month, you reach it in about 12 months, and you've already saved $2,… |  |
+| c8-gen-09 | why_product | Why this account for me? | explain | yes | 1.7 | Family comes first for you, and FNB Student Checking gives your budget one clear home base. There is no monthly fee, no minimum balance, and no overdraft fees, since FNB declines items instead. Choose e-statements to skip the $3.95 paper fee. |  |
+| c8-gen-10 | product_fees | Any fees I should know? | explain | yes | 1.8 | Good news: FNB's IRA Savings has no minimum to open and no monthly service charge. Two things to know: a $50 fee applies if you transfer IRA funds to another institution, and the IRS charges a 10% penalty on withdrawals before age 59 1/2. The rate is a weak 0… |  |
+| c8-gen-11 | when_unlock | When can I get the SmartSecured card? | explain | yes | 1.5 | The SmartSecured card unlocks when your savings reach $4,428: one month of costs plus the $500 deposit. You're at $3,623, so you're $805 away. Your plan has no monthly savings yet, so we can't give a date. Meanwhile, the free Credit Center lets you see your s… |  |
+| c8-gen-12 | goal_gap | When does my education fund start growing? | explain | yes | 1.6 | Your education fund starts growing now, with $58 a month going in. At that pace the full $12,000 takes about 17 years. Turning up your guilt-free dial by $142 a month puts you on track for your 5-year goal, and Savers Goal CD can automate the saving. |  |
+| c8-gen-13 | what_if | How can I fill it faster? | what_if | yes | 2.7 | Adding $50 a month starts your safety cushion, but it's still $226 a month away from the $276 that fills it in about 2 years. At $50, it would take about 11 years. Your plan is also short on room right now, so finding breathing room in those 3 biggest buys is… |  |
+| c8-gen-14 | free | What if I save $25 more a month? | what_if | yes | 1.7 | Nice move! Your safety cushion goes from $316 to $341 a month, and it still fills in about 2 years. It's already on track, so this adds a little extra growth room, and your guilt-free spending stays healthy at $2,367 a month. Automate it so it happens on its … |  |
+| c8-gen-15 | why_step_one | Why is this my first move? | explain | yes | 1.5 | Right now your costs use up everything coming in, so finding breathing room is the first win. Looking at last week's 3 biggest buys shows where it hides. Once there's room, your family fund, a month away by $125, can start growing. |  |
+| c8-gen-16 | how_split | How did you split my money? | explain | yes | 1.7 | Your $2,471 a month covers $1,925 in fixed costs first. The $546 left grows into three parts: $136 for your safety cushion, $137 toward your home fund, and $273 guilt-free money, protected for what helps you grow. Automate each one so it happens. |  |
+| c8-gen-17 | why_cushion | Why 3 months? | explain | yes | 1.5 | Three months of costs keeps rent and bills covered if income pauses, like during a job change. Your plan sets that at $15,882, and you've already saved $5,506, which covers your first month of costs ($5,294). |  |
+| c8-gen-18 | why_product | Why this account for me? | explain | yes | 1.6 | The Financial Insights Learning Center fits your education goal and your dream of starting your own shop. It's free, self-paced, and covers budgeting and credit, so the know-how grows alongside your savings. You can start today. |  |
+| c8-gen-19 | product_fees | Any fees I should know? | explain | yes | 1.5 | FirstRate Business Savings has a $5 monthly charge, waived when your average daily balance is $500 or more. There's no minimum to open in a branch. The rate is tiered, so check the current rate with FNB. |  |
+| c8-gen-21 | goal_gap | How do I close the $1,834 gap for my education fund? | explain | yes | 2.0 | Your education fund is $1,834 a month away, and right now your costs use up your income. So we start by finding breathing room: open your bank app and look at last week's 3 biggest buys. FNB's free Financial Insights Learning Center has car loan and budgeting… |  |
+| c8-no-income | what_if | What if I save $50 more a month? | what_if | yes | 1.8 | Saving $50 more a month puts your education goal about 20 months out, still $34 a month away from the $84 a month that fits your 12-month plan. Your plan keeps its guilt-free spending above 10%. Automate it so it grows on its own, like a seedling. |  |
+| c8-parents-pay-rent | free | Should I get a credit card now? | general | yes | 2.0 | A credit card can help build credit, but there's no FNB credit card in your plan yet, so check current options and rates with FNB. Your plan puts a $1,000 safety cushion first, filling in 14 months. Meanwhile, FNB's Learning Center has a free Credit Cards mod… |  |
+| c8-high-fixed | why_step_one | Why is this my first move? | explain | yes | 1.7 | Your home fund is your top goal, and money moved today turns the plan into progress. Moving $20 into savings right now also starts your $4,650 safety cushion. Automate it, and your plan starts growing from day one. |  |
+| c8-gen-00 | how_split | How did you split my money? | explain | yes | 1.4 | Your $858 a month covers $382 of fixed costs first. Then $171 goes to savings: $85 for your safety cushion and $86 across your goals. That leaves $305 guilt-free, protected for the freedom you love, which is your top value. |  |
+| c8-gen-01 | why_cushion | Why 3 months? | explain | yes | 3.6 | Three months is the cushion that keeps rent and bills covered if income pauses, like a job change or a surprise. Your fixed costs and debt come to $2,491 a month, so 3 months makes your $7,473 safety cushion target. You've already saved $3,491 toward it. |  |
+| c8-gen-02 | why_product | Why this account for me? | explain | yes | 1.9 | FNB's Mortgage calculators fit your first home goal and your budget, and they're free to use today. They turn your shop-and-home dream into real numbers, covering affordability, down payment comparison, and fixed vs adjustable. It's a good first step while yo… |  |
+| c8-gen-03 | product_fees | Any fees I should know? | explain | yes | 1.6 | Good news: CardGuard is free, so you pay no fee. FNB's fee schedule (effective May 4, 2026) lists no cost for turning your card on or off, real-time alerts, and spend limits. |  |
+| c8-gen-05 | goal_gap | How do I close the $445 gap for my family fund? | explain | yes | 1.7 | Your car fund is $445 a month away, and right now every dollar goes to fixed costs. So step one is finding breathing room: open your bank app and look at last week's 3 biggest buys. Big wins beat small cuts. Once there's room, IRA Savings can automate those d… |  |
+| c8-gen-06 | what_if | What if I save $50 more a month? | what_if | yes | 1.9 | Adding $50 takes your business fund to $164 a month, and your timeline shrinks from about 11 years to about 8 years. Your guilt-free spending stays at $180, still above 10% of income. Reaching $15,000 in 3 years takes $417 a month, so you'd be $253 a month aw… |  |
+| c8-gen-07 | free | Why is my safety cushion this size? | general | yes | 2.0 | Your safety cushion target is $5,226, which is three months of your $1,742 in fixed costs. Security is your top value, so a cushion that size lets you say yes to adventures with confidence. First we find some breathing room, then FirstRate Savings can be its … |  |
+| c8-gen-08 | why_step_one | Why is this my first move? | explain | yes | 1.5 | Your home fund is your top goal, so starting it today turns the plan into real progress. That $20 kicks off your $138 a month toward your own shop space. Automate it, and the habit grows on its own. |  |
+| c8-gen-09 | how_split | How did you split my money? | explain | yes | 1.6 | Your plan starts with $612 a month of income. After $725 for fixed costs, nothing is left to split yet, so savings and guilt-free spending sit at $0. Your plan shows a $113 gap, and step one is finding that breathing room so your family's goals can start grow… |  |
+| c8-gen-10 | why_cushion | Why 3 months? | explain | yes | 1.5 | Three months is the safety cushion rule: 3 times your $955 in fixed costs and debt payments, which is $2,865. If income pauses for a job change or a surprise, rent and bills stay covered. You've saved $7,290, so your cushion is already full. |  |
+| c8-gen-11 | why_product | Why this account for me? | explain | yes | 1.6 | The Financial Insights Learning Center fits your education goal and your love of simplicity: short, self-paced lessons on budgeting and credit that your shop will lean on. It's free, ready today, and costs nothing from a tight budget. |  |
+| c8-gen-12 | product_fees | Any fees I should know? | explain | yes | 1.8 | Good news: FNB Student Checking has no monthly fee, no minimum balance, and no overdraft fees, since FNB declines items instead. Paper statements cost $3.95 per cycle, but e-statements are free, so automate that switch. FNB also refunds its $2.95 non-FNB ATM … |  |
+| c8-gen-13 | when_unlock | When can I get the Home Ownership Program? | explain | yes | 2.1 | The Home Ownership Program unlocks when your $6,606 safety cushion is full. You have $1,063 saved, so $5,543 to go. No monthly savings are set yet, so we can't give a date. Step one is finding breathing room, and FNB's Mortgage calculators are free to explore… |  |
+| c8-gen-14 | goal_gap | When does my family fund start growing? | explain | yes | 1.7 | Your family fund is $469 a month away from the 6-month goal. At today's $198 a month, it reaches $4,000 in about 21 months. Turning up your family dial by $469 from guilt-free spending, which leaves $1,923, gets you there on time. IRA Savings can hold it now. |  |
+| c8-gen-15 | what_if | What if I save $50 more a month? | what_if | yes | 1.5 | Saving $50 a month is a real first seed for your family fund. Your goal of $15,000 needs $125 a month, so you'd be $75 a month away. At $50, it would take about 25 years. Automate it, and we can look for room to grow it. |  |
+| c8-gen-16 | free | What about $40 instead? | what_if | yes | 1.5 | Adding $40 lifts your home fund to $177 a month, and your first home gets about 3 years closer. Your goal stays on track, and your guilt-free spending would be $233 a month. Automate the extra $40 so it moves on its own. |  |
+| c8-gen-17 | why_step_one | Why is this my first move? | explain | yes | 1.8 | Right now your costs use everything coming in, so the first win is finding breathing room. Looking at last week's 3 biggest buys shows where to start. Once there's room, your safety cushion can start growing. |  |
+| c8-gen-18 | how_split | How did you split my money? | explain | yes | 1.8 | Of your $1,696 a month, $904 covers fixed costs and debt. Then $339 goes to savings: $169 for your safety cushion and $170 for goals. The remaining $453 is yours to spend guilt-free, protected for the freedom you love. Automate the savings and it grows on its… |  |
+| c8-gen-19 | why_cushion | Why 3 months? | explain | yes | 1.6 | Three months of costs keeps rent and bills covered if income pauses, like a job change or a surprise. Your fixed costs are $388 a month, so your safety cushion target is $1,164. You've already saved $16, and one month covered is $388. |  |
+| c8-gen-20 | why_product | Why this account for me? | explain | yes | 1.4 | Freestyle Checking gives your family one simple home base for bills and trip spending, and it matches your everyday banking goal. There's no monthly fee when you choose free online statements. It also fits your budget and you qualify for it today. |  |
+| c8-gen-21 | product_fees | Any fees I should know? | explain | yes | 2.1 | Good news: FNB Student Checking has no monthly fee, no minimum balance, and no overdraft fees. The one to watch is paper statements at $3.95 per cycle, and e-statements make that free. Automate e-statements and your fees stay at zero. |  |
+| c8-parents-pay-rent | goal_gap | How do I close the $140 gap for my travel fund? | explain | yes | 1.5 | Closing it takes $140 a month more, and you have three paths. Move $140 from your $330 guilt-free money, which leaves $190 for fun. Or give it about 20 months at your $60 pace. Or aim for $360 for now. |  |
+| c8-high-fixed | what_if | How can I fill it faster? | what_if | yes | 1.7 | Adding $50 a month takes your safety cushion from $135 to $185 a month. That brings the finish from about 3 years down to about 2 years. Your guilt-free spending would still be $175 a month. Automating it each payday keeps it growing without willpower. |  |

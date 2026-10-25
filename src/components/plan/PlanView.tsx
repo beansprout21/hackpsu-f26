@@ -1,19 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import { Tabs } from "@base-ui/react/tabs";
 import { LayoutDashboard, Map, Printer, Target, Wallet } from "lucide-react";
 import { AskSproutMobile, AskSproutProvider, SproutCopilot } from "@/components/chat/AskSprout";
-import { SharePlanCard } from "@/components/share/SharePlanCard";
-import type { GoalProfile, Plan, Stage } from "@/types";
+import { hasSession, SharePlanCard, signInReturningTo } from "@/components/share/SharePlanCard";
+import { buildOverview } from "@/lib/client/overview";
+import { useAppState } from "@/lib/client/state";
+import type { FinancialSnapshot, GoalProfile, Plan } from "@/types";
 import { GoalsProgress } from "./GoalsProgress";
 import { matchKey } from "./MatchRow";
 import { Overview } from "./Overview";
 import { PrintPlan } from "./PrintPlan";
-import { Roadmap, stagesFor } from "./Roadmap";
+import { Roadmap, stepKey } from "./Roadmap";
 import { SummaryHeader } from "./sections";
 import { SpendingPlan } from "./SpendingPlan";
+
+// /plan?mock= demo plans arrive without a snapshot; rebuild the fields the Overview reads from the plan.
+function snapshotFromPlan(plan: Plan): FinancialSnapshot {
+  return {
+    hasSteadyIncome: false,
+    incomeSources: [],
+    monthlyFixedCosts: plan.spendingPlan.find((b) => b.bucket === "fixed_costs")?.monthlyAmount ?? 0,
+    monthlyDebtPayments: 0,
+    savingsBalance: 0,
+    creditBand: "unsure",
+    isFnbCustomer: false,
+  };
+}
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -32,10 +48,12 @@ const readHash = (): TabId => {
 // right (desktop) or as a card + sheet (phones). The open tab lives in the URL hash.
 export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
   const [tab, setTabState] = useState<TabId>(readHash);
-  const [stage, setStage] = useState<Stage>("now");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ key: string; tick: number } | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
+  const [app] = useAppState();
+  const snapshot = useMemo(() => app.snapshot ?? snapshotFromPlan(plan), [app.snapshot, plan]);
+  const overview = useMemo(() => buildOverview(plan, profile, snapshot), [plan, profile, snapshot]);
 
   const toggleDone = useCallback((key: string) => {
     setDone((prev) => {
@@ -50,6 +68,37 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
     if (!plan.aiUsed) console.info("[plan] Rendering engine fallback text (aiUsed=false).");
   }, [plan.aiUsed]);
 
+  // Contracts v2.5 (#157): sign-in at the end. The PDF asks for sign-in and comes back to /plan?export=1;
+  // Share comes back to /plan?share=1. The plan itself stays in sessionStorage across the round trip (same tab).
+  const { user, isLoading } = useUser();
+  const pdfButton = useRef<HTMLButtonElement>(null);
+  const [pdfSignedIn, setPdfSignedIn] = useState(false);
+
+  const savePdf = async () => {
+    if (user || (await hasSession())) window.print();
+    else signInReturningTo("/plan?export=1");
+  };
+
+  useEffect(() => {
+    if (isLoading) return;
+    const params = new URLSearchParams(window.location.search);
+    const fromExport = params.get("export") === "1";
+    const fromShare = params.get("share") === "1";
+    if (!fromExport && !fromShare) return;
+    params.delete("export");
+    params.delete("share");
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+    void (async () => {
+      const signedIn = !!user || (await hasSession());
+      if (fromExport && signedIn) {
+        setPdfSignedIn(true);
+        requestAnimationFrame(() => pdfButton.current?.focus());
+      }
+      if (fromShare) requestAnimationFrame(() => document.getElementById("share-fnb")?.scrollIntoView({ block: "start" }));
+    })();
+  }, [isLoading, user]);
+
   useEffect(() => {
     const onPop = () => setTabState(readHash());
     window.addEventListener("popstate", onPop);
@@ -61,34 +110,33 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
     if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
   }, []);
 
-  const openStage = useCallback(
-    (next: Stage) => {
-      setStage(next);
-      setTab("roadmap");
-    },
-    [setTab],
-  );
-
-  // A product cited in Ask Sprout: open Roadmap, its stage, and its row, then scroll to it.
+  // A product cited in Ask Sprout (or tapped in the guide): open Roadmap and its trust layer, then scroll to it.
   const cite = useCallback(
     (productId: string) => {
       const match = plan.matches.find((m) => m.productId === productId);
       setTab("roadmap");
       if (!match) return;
-      setStage(match.stage);
       setOpenKey(matchKey(match));
       setFocus({ key: matchKey(match), tick: Date.now() });
     },
     [plan.matches, setTab],
   );
 
+  // Wait two frames so the tab switch and the opened trust layer are laid out before scrolling.
   useEffect(() => {
     if (!focus) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    document.getElementById(`product-${focus.key}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() =>
+        document.getElementById(`product-${focus.key}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }),
+      );
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
   }, [focus]);
-
-  const stages = stagesFor(plan);
 
   return (
     <AskSproutProvider plan={plan} profile={profile} onCite={cite}>
@@ -116,23 +164,31 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
 
             <Tabs.Panel value="overview" className="outline-none">
               <Overview
-                plan={plan}
-                stages={stages}
-                done={done}
+                model={overview}
+                personaId={profile.persona.id}
+                bankerSummary={plan.bankerSummary}
+                stepOneDone={done.has(stepKey(plan.stepOne))}
+                onStepOneDone={() => toggleDone(stepKey(plan.stepOne))}
                 onTab={setTab}
-                onStage={openStage}
+                onProduct={cite}
                 actions={
                   <>
+                    {pdfSignedIn && (
+                      <p role="status" className="w-full text-small">
+                        You&apos;re signed in. Save your plan as a PDF for your banker.
+                      </p>
+                    )}
                     <button
+                      ref={pdfButton}
                       type="button"
-                      onClick={() => window.print()}
+                      onClick={() => void savePdf()}
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-small font-semibold ring-1 ring-border outline-none transition-colors ring-inset hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
                     >
                       <Printer className="size-5" aria-hidden /> Save for my banker (PDF)
                     </button>
                     <Link
                       href="/banker"
-                      className="self-center text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                      className="inline-flex min-h-6 items-center self-center text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                     >
                       Banker view (demo)
                     </Link>
@@ -142,7 +198,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
               />
             </Tabs.Panel>
             <Tabs.Panel value="money" className="outline-none">
-              <SpendingPlan plan={plan} />
+              <SpendingPlan plan={plan} snapshot={snapshot} />
             </Tabs.Panel>
             <Tabs.Panel value="goals" className="outline-none">
               <GoalsProgress allocation={plan.allocation} />
@@ -150,8 +206,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
             <Tabs.Panel value="roadmap" className="outline-none">
               <Roadmap
                 plan={plan}
-                stage={stage}
-                onStage={setStage}
+                model={overview}
                 done={done}
                 onDone={toggleDone}
                 openKey={openKey}

@@ -9,6 +9,7 @@ import { personaFromValues } from "@/data/personaTaxonomy";
 import { estimateTarget, GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { describeAiError, getClient, requestOptions } from "./client";
 import { VOICE_RULES } from "./plan";
+import { voiceNormalize } from "./voice";
 
 // docs/SPROUT.md latency: profile is a short writing task, so it runs on a faster model.
 const profileModel = () => process.env.ANTHROPIC_PROFILE_MODEL || "claude-haiku-5-5";
@@ -151,8 +152,9 @@ export async function generateProfile(intake: IntakeAnswers): Promise<ProfileRes
     const def = personaFromValues(intake.values);
     const notes = ai.notes.map((n) => clean(n, 200)).filter(Boolean).slice(0, 3);
     const profile = GoalProfileSchema.parse({
-      persona: { id: def.id, label: def.label, description: clean(ai.personaDescription, 240) || def.tagline },
-      richLifeStatement: clean(ai.richLifeStatement, 400) || fallbackProfile(intake).richLifeStatement,
+      // Same wording rules as plan and chat text: "safety cushion", specific times (#121).
+      persona: { id: def.id, label: def.label, description: voiceNormalize(clean(ai.personaDescription, 240)) || def.tagline },
+      richLifeStatement: voiceNormalize(clean(ai.richLifeStatement, 400)) || fallbackProfile(intake).richLifeStatement,
       goals: buildGoals(intake, ai),
       topValues: intake.values,
       notes,
