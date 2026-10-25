@@ -1,14 +1,11 @@
 // POST /api/profile: { intake: IntakeAnswers } -> ApiResponse<GoalProfile>
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/server/auth";
 import { z } from "zod";
 import type { ApiResponse, GoalProfile } from "@/types";
 import { ProfileRequestSchema } from "@/types/schemas";
 import { generateProfile } from "@/lib/ai/profile";
 
 export async function POST(request: Request) {
-  const auth = await requireSession();
-  if (auth.response) return auth.response;
   let body: unknown;
   try {
     body = await request.json();

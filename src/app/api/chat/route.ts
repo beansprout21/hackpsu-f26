@@ -1,7 +1,6 @@
 // POST /api/chat (v2.3): { question, profile, plan, snapshot?, history?, intent? } -> ApiResponse<{ answer, citedProductIds }>
 // Logs route, intent kind, and timing only: never the question or the conversation history.
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/server/auth";
 import { z } from "zod";
 import type { ApiResponse } from "@/types";
 import { ChatRequestSchema } from "@/types/schemas";
@@ -10,8 +9,6 @@ import { answerQuestion, type ChatAnswer } from "@/lib/ai/chat";
 const MAX_QUESTION_CHARS = 500;
 
 export async function POST(request: Request) {
-  const auth = await requireSession();
-  if (auth.response) return auth.response;
   let body: unknown;
   try {
     body = await request.json();
