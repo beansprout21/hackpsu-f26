@@ -22,23 +22,24 @@ const STEPS = ["intro", "lifeStage", "swipes", "persona", "goals", "timeline", "
 type Step = (typeof STEPS)[number];
 
 const INTRO_ITEMS = [
-  { icon: Compass, label: "Where you are in life" },
-  { icon: Heart, label: "A few quick gut checks" },
-  { icon: Target, label: "Your goals, and when you want them" },
-  { icon: Sparkles, label: "What a rich life means to you" },
+  { icon: Compass, label: "Where you are in life", detail: "Student, first job, or growing a family." },
+  { icon: Heart, label: "A few quick gut checks", detail: "Pick what sounds like you. No wrong answers." },
+  { icon: Target, label: "Your goals, and when", detail: "Up to three, from a trip to a first home." },
+  { icon: Sparkles, label: "What a rich life means to you", detail: "Optional, in your own words." },
 ] as const;
 
 function IntroStep() {
   return (
     <ol className="grid gap-4 sm:grid-cols-2" aria-label="What we'll cover">
-      {INTRO_ITEMS.map(({ icon: Icon, label }, i) => (
-        <li key={label} className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-            <Icon className="size-5" aria-hidden />
+      {INTRO_ITEMS.map(({ icon: Icon, label, detail }, i) => (
+        <li key={label} className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card lg:flex-col lg:items-start lg:gap-4 lg:p-6">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 lg:size-12">
+            <Icon className="size-5 lg:size-6" aria-hidden />
           </span>
-          <span className="flex flex-col">
-            <span className="text-caption text-muted-foreground">Part {i + 1}</span>
-            <span className="text-body font-semibold">{label}</span>
+          <span className="flex flex-col gap-1">
+            <span className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">Part {i + 1}</span>
+            <span className="text-body font-semibold lg:text-lead">{label}</span>
+            <span className="hidden text-small text-muted-foreground lg:block">{detail}</span>
           </span>
         </li>
       ))}
@@ -119,7 +120,7 @@ export function IntakeWizard() {
   // Desktop (lg+): a pinned left column (progress, Sprout's line) beside a wide step area.
   // Phones keep the single column: progress, Sprout, step, buttons.
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start lg:gap-x-16">
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-x-12">
       <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-end gap-3 text-xs text-muted-foreground lg:justify-start">
