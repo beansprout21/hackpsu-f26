@@ -18,7 +18,7 @@ import {
 } from "./draft";
 import { SurplusReadout } from "./SurplusReadout";
 
-export const DISCLAIMER = "Educational prototype. Not financial advice. No data is stored.";
+export const DISCLAIMER = "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB.";
 
 function Choice({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (

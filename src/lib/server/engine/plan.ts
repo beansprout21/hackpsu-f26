@@ -24,7 +24,7 @@ import { buildSpending, type SpendingResult } from "./spending";
 import { isMortgageLike } from "./stage";
 import { chooseStepOne } from "./stepOne";
 
-export const DISCLAIMER = "Educational prototype. Not financial advice. No data is stored.";
+export const DISCLAIMER = "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB.";
 const MAX_STEPS = 8;
 const ACCOUNT_CATEGORIES = ["checking", "savings", "cd", "credit_card", "small_business"];
 

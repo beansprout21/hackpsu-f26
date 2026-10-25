@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Printer } from "lucide-react";
 import type { GoalProfile, Plan } from "@/types";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { SharePlanCard } from "@/components/share/SharePlanCard";
 import { Button } from "@/components/ui/button";
 import { GoalsProgress } from "./GoalsProgress";
 import { PrintPlan } from "./PrintPlan";
@@ -30,6 +31,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
         <Button type="button" variant="outline" size="lg" onClick={() => window.print()} className="-mt-8 h-11 gap-2 self-center px-5">
           <Printer aria-hidden /> Save for my banker (PDF)
         </Button>
+        <SharePlanCard plan={plan} profile={profile} />
         <p className="text-caption text-muted-foreground">{plan.disclaimer}</p>
         <ChatPanel plan={plan} profile={profile} />
       </div>
