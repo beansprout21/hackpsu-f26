@@ -77,8 +77,14 @@ function generatedUser(i: number): User {
       ...(chance(0.7) ? { targetAmount: chance(0.05) ? 0 : int(1, 400) * 50 } : {}),
       why: chance(0.5) ? "" : "because it matters to me",
     })),
-    // Habits get any priority (1..3), so "habits are never P1" is exercised.
-    ...habits.map((id) => ({ id, priority: int(1, 3) as 1 | 2 | 3, horizonMonths: int(1, 120), why: "" })),
+    // Two thirds are shaped like the intake sends them (habits ranked after money goals, capped at 3);
+    // the rest give habits any priority (1..3), as an API caller could, so "habits are never P1" is exercised.
+    ...habits.map((id, k) => ({
+      id,
+      priority: (i % 3 === 2 ? int(1, 3) : Math.min(moneyCount + k + 1, 3)) as 1 | 2 | 3,
+      horizonMonths: int(1, 120),
+      why: "",
+    })),
   ];
   const values = shuffle(ValueTagSchema.options).slice(0, int(1, 3)) as ValueTag[];
   const targetIncome = chance(0.08) ? 0 : int(0, 8000);
@@ -168,6 +174,9 @@ function record(invariant: string, user: User, ok: boolean, detail = "") {
 }
 
 const BANNED = /\b(only|just|behind|should have|can't afford|waste)\b/i;
+const ACCOUNT_CATEGORIES = ["checking", "savings", "cd", "credit_card", "small_business"];
+// Observation, not an invariant: loan products that reach the first 4 guide steps (the Overview), per product.
+const guideLoans = new Map<string, number>();
 const FUND: Partial<Record<GoalId, string>> = {
   travel: "travel fund",
   first_home: "home fund",
@@ -223,7 +232,7 @@ function badNumbers(value: unknown, path: string, out: string[] = []): string[] 
 
 // The Overview model changes shape in #94 (v2: `steps` replaces `fnbFit` + `path`, 4-part month bar);
 // read it structurally so the harness checks whichever shape is on main.
-interface OverviewItem { stage?: string; productId?: string; unlock?: string; kind?: string }
+interface OverviewItem { n?: number; stage?: string; productId?: string; unlock?: string; kind?: string; title?: string; feeLine?: string; url?: string }
 interface LooseOverview {
   goals: { goalId: GoalId; line: string; tone: string; lever?: { label: string; askSprout: string } }[];
   month: { sentence: string; toWorkWith: number; bar: Record<string, number>; income?: number; fixed?: number };
@@ -317,6 +326,30 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
   const laterMissing = plan.matches.filter((m) => m.stage === "later" && (!m.unlockCondition || !m.unlockTrigger));
   const laterItems = items.filter((s) => s.stage === "later" && !s.unlock);
   record("unlock condition on every later item", u, laterMissing.length === 0 && laterItems.length === 0, [...laterMissing.map((m) => m.productId), ...laterItems.map((s) => `overview:${s.productId}`)].join(", "));
+
+  // v2 guide: numbered 1..n, step 1 is Step one, product steps carry a catalog product, fee line and its FNB URL.
+  if (o.steps) {
+    const guide: string[] = [];
+    o.steps.forEach((st, k) => {
+      if (st.n !== k + 1) guide.push(`step ${k + 1} numbered ${st.n}`);
+      if (st.kind === "product") {
+        const product = st.productId ? getProduct(st.productId) : undefined;
+        if (!product) guide.push(`step ${st.n} product ${st.productId ?? "missing"}`);
+        // Rule set E: every *account* states its fee; tools, programs and loans carry no fee line by design.
+        if (product && ACCOUNT_CATEGORIES.includes(product.category) && !st.feeLine?.trim()) guide.push(`step ${st.n} (${st.productId}) has no fee line`);
+        if (product && /loan/.test(product.category) && (st.n ?? 99) <= 4) {
+          guideLoans.set(product.id, (guideLoans.get(product.id) ?? 0) + 1);
+        }
+        if (!st.url || (product && !product.sourceUrls.includes(st.url))) guide.push(`step ${st.n} (${st.productId}) url ${st.url ?? "missing"} not in catalog`);
+      } else if (st.productId) guide.push(`step ${st.n} (${st.kind}) has product ${st.productId}`);
+    });
+    if (o.steps[0]?.kind !== "move" || o.steps[0]?.title !== plan.stepOne.title) guide.push(`step 1 is "${o.steps[0]?.title}", not Step one`);
+    const ids = o.steps.flatMap((st) => (st.productId ? [st.productId] : []));
+    if (new Set(ids).size !== ids.length) guide.push(`duplicate products: ${ids.join(", ")}`);
+    record("step-by-step guide well-formed", u, guide.length === 0, guide.slice(0, 3).join("; "));
+  }
+  const habitLines = o.goals.filter((g) => isHabit(g.goalId) && /\$\d/.test(g.line));
+  record("habit goal lines have no dollar amounts", u, habitLines.length === 0, habitLines.map((g) => `"${g.line}"`).join("; "));
 
   // Months/years: every duration in a goal line matches the engine number, in the v2 format.
   const timeProblems: string[] = [];
@@ -522,8 +555,28 @@ async function main() {
     const ids = r.fail.map((f) => f.user.id);
     lines.push(`**${name}** (${r.fail.length}; e.g. ${ids.slice(0, 6).join(", ")}${ids.length > 6 ? ", ..." : ""})`, "");
     lines.push(`- ${smallest.user.id}: ${smallest.detail.replace(/\|/g, "\\|")}`, "");
+    // Distinct failure shapes (numbers normalized), so one invariant's separate bugs stay apart.
+    const shapes = new Map<string, number>();
+    for (const f of r.fail) {
+      for (const part of f.detail.split("; ")) {
+        const shape = part.replace(/\$[\d,.]+/g, "$N").replace(/\b\d+(\.\d+)?\b/g, "N");
+        shapes.set(shape, (shapes.get(shape) ?? 0) + 1);
+      }
+    }
+    if (shapes.size > 1) {
+      lines.push("Distinct shapes:", "");
+      for (const [shape, n] of [...shapes].sort((a, b) => b[1] - a[1]).slice(0, 10)) lines.push(`- ${n} x ${shape.replace(/\|/g, "\\|")}`);
+      lines.push("");
+    }
     lines.push("```json", JSON.stringify({ intake: { ...smallest.user.intake, swipes: `${smallest.user.intake.swipes.length} cards` }, snapshot: smallest.user.snapshot }), "```", "");
   }
+  lines.push("### Observation: loan products in the first 4 guide steps", "");
+  lines.push(
+    guideLoans.size
+      ? [...guideLoans].sort((a, b) => b[1] - a[1]).map(([id, n]) => `- ${id} (${getProduct(id)?.category}): ${n} users`).join("\n")
+      : "None.",
+    "",
+  );
   lines.push(`### Ask Sprout (${chatUsers.length} users, templates; live AI: ${liveNote})`, "");
   lines.push(`${chatCalls} answers, ${chatRows.length} problems.`, "");
   if (chatRows.length) {
