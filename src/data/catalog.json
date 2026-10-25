@@ -342,9 +342,7 @@
     "name": "IRA Savings",
     "category": "savings",
     "forWho": "Anyone saving for retirement in a tax-deferred savings account",
-    "goalTags": [
-      "family"
-    ],
+    "goalTags": [],
     "eligibility": {
       "lifeStages": [
         "new_grad",
@@ -499,9 +497,7 @@
     "name": "IRA Certificates of Deposit",
     "category": "cd",
     "forWho": "Retirement savers who want a fixed rate",
-    "goalTags": [
-      "family"
-    ],
+    "goalTags": [],
     "eligibility": {
       "lifeStages": [
         "new_grad",
@@ -634,8 +630,7 @@
     "category": "credit_card",
     "forWho": "Approved applicants who carry a balance or want to transfer one",
     "goalTags": [
-      "credit_building",
-      "emergency_fund"
+      "credit_building"
     ],
     "eligibility": {
       "creditBands": [
@@ -1647,8 +1642,7 @@
     "category": "small_business",
     "forWho": "Businesses setting aside reserves",
     "goalTags": [
-      "small_business",
-      "emergency_fund"
+      "small_business"
     ],
     "eligibility": {
       "lifeStages": [
@@ -1953,8 +1947,7 @@
     "forWho": "FNB debit card holders using online or mobile banking",
     "goalTags": [
       "everyday_banking",
-      "travel",
-      "emergency_fund"
+      "travel"
     ],
     "eligibility": {
       "lifeStages": [

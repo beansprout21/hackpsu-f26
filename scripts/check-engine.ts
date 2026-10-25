@@ -450,5 +450,34 @@ check(
   "Safety cushion goal keeps its savings home (FirstRate Savings) within 2 matches",
 );
 
+// #130: no retirement account (IRA) for any goal; no credit card for the safety cushion. Reuses the #126 sample.
+console.log("\n=== Product fit (#130): no IRA, no credit card for the safety cushion");
+const fitProblems: string[] = [];
+seed126 = 13001;
+for (let i = 0; i < 2000; i++) {
+  const goals: GoalAnswer[] = [...MONEY_GOALS]
+    .sort(() => rnd() - 0.5)
+    .slice(0, 1 + Math.floor(rnd() * 3))
+    .map((id, k) => ({ id, priority: (k + 1) as 1 | 2 | 3, horizonMonths: pick([12, 36, 120]), why: "" }));
+  const intake: IntakeAnswers = { ...jordan.intake, lifeStage: pick(LIFE), goals };
+  const snapshot: FinancialSnapshot = {
+    ...jordan.snapshot,
+    hasSteadyIncome: rnd() < 0.5,
+    incomeSources: [{ kind: "job", amount: pick([1500, 3200, 6000]), frequency: "monthly" }],
+    savingsBalance: pick([0, 2500, 15000]),
+    creditBand: pick(BANDS),
+    isFnbCustomer: rnd() < 0.3,
+  };
+  const profile = fallbackProfile(intake);
+  const plan = buildPlanSkeleton(profile, snapshot, intake);
+  for (const m of plan.matches) {
+    const p = getProduct(m.productId);
+    if (p && /\bIRA\b|retirement/i.test(p.name + " " + p.forWho)) fitProblems.push("user " + i + ": " + m.productId + " (" + m.goalId + ")");
+    if (p?.category === "credit_card" && m.goalId === "emergency_fund") fitProblems.push("user " + i + ": " + m.productId + " for the safety cushion");
+    if (m.productId === "cardguard" && m.goalId === "emergency_fund") fitProblems.push("user " + i + ": CardGuard for the safety cushion");
+  }
+}
+check(fitProblems.length === 0, "2,000 users: no retirement account, no credit card or CardGuard for the safety cushion" + (fitProblems.length ? " (" + fitProblems.length + ", e.g. " + fitProblems.slice(0, 2).join("; ") + ")" : ""));
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
