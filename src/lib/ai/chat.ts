@@ -495,11 +495,15 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
     if (l.kind === "more_time") return `${or}${i === 0 ? "Give" : "give"} it ${timeSpan(l.newHorizonMonths)} at your current pace.`;
     return `${or}${i === 0 ? "Aim" : "aim"} for ${usd(l.reachableAmount)} on your current timeline.`;
   });
+  // #144: no surplus and no lever: lead with the plan's real next move (SPROUT.md rule B: "First we find your breathing room").
+  const noRoom = !alloc.onTrack && alloc.levers.length === 0 && plan.monthlySurplus <= 0;
   const lead = alloc.onTrack
     ? `Your ${fund} is on track: ${usd(alloc.monthlyAmount)} a month gets you there in ${aboutTime(alloc.monthsToTarget)}.`
-    : alloc.monthlyAmount === 0 && laterMatch?.unlockCondition
-      ? `Your ${fund} starts growing ${lowerFirst(laterMatch.unlockCondition).replace(/\.$/, "")}.`
-      : `Your ${fund} needs ${usd(alloc.requiredMonthly)} a month and gets ${usd(alloc.monthlyAmount)}, so it's ${usd(gap)} a month away.`;
+    : noRoom
+      ? `First we find your breathing room. Your next move: ${lowerFirst(plan.stepOne.title).replace(/\.?$/, ".")} Once money is coming in each month, Sprout sets your ${fund} amount.`
+      : alloc.monthlyAmount === 0 && laterMatch?.unlockCondition
+        ? `Your ${fund} starts growing ${lowerFirst(laterMatch.unlockCondition).replace(/\.$/, "")}.`
+        : `Your ${fund} needs ${usd(alloc.requiredMonthly)} a month and gets ${usd(alloc.monthlyAmount)}, so it's ${usd(gap)} a month away.`;
   // #114: "What if I give it more time?" answers the what-if itself (the new time at the current pace), not the gap again.
   const moreTime = alloc.levers.find((l) => l.kind === "more_time");
   const dial = alloc.levers.find((l) => l.kind === "turn_up_dial");
