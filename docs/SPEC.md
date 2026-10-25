@@ -31,7 +31,7 @@ Every completed plan is a **warm lead with context**: a banker sees the customer
 4. **Money snapshot:** "Steady income?" Yes -> monthly income. No/irregular -> lump sums (summer savings, aid refund per semester, family, scholarships). Then costs, savings, credit range (self-reported), FNB customer yes/no. Persona prefill buttons. "Connect your bank (coming soon, via Plaid)" disabled.
 5. **Sprout builds the plan:** loading states narrated by Sprout.
 6. **Plan page (hero):**
-   - **Step one** first: one action doable this week, usually $0 (e.g. open FNB Student Checking: no monthly fee, no minimum).
+   - **Step one** first: one personal action doable right now from a phone (v3, e.g. "Move $20 into your travel fund right now"), with the FNB product that fits directly under it. Layout and copy: `docs/DASHBOARD.md`.
    - Sprout's 2-sentence intro + persona + rich life statement.
    - **Spending plan:** effective monthly income (math shown) split into fixed costs, emergency fund, goal savings, guilt-free.
    - **Interactive timeline:** Start here (now) -> Next -> Unlocks later. Later items unlock on money thresholds, credit, or **life events** (first paycheck, internship, graduation).
