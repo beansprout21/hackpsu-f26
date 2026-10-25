@@ -551,5 +551,58 @@ console.log("\n=== Goal weights by rank (#106): both Maya entry paths");
   );
 }
 
+// #109 (SPROUT.md v3.3): with no surplus, now/next products cost nothing new (education tool, $0 to open, or everyday
+// checking/savings funded from savings; Student Checking's unpublished deposit allowed). Everything else is later.
+console.log("\n=== No surplus (#109): only products that cost nothing new are now/next");
+{
+  const costsNothing = (id: string, saved: number) => {
+    const p = getProduct(id);
+    if (!p) return false;
+    if (p.category === "education_tool" || p.minOpeningDeposit === 0) return true;
+    if (p.category === "checking" && p.minOpeningDeposit === null && p.keyTerms.some((t) => /no minimum balance/i.test(t))) return true;
+    return (p.category === "checking" || p.category === "savings") && p.minOpeningDeposit !== null && p.minOpeningDeposit <= saved;
+  };
+  // Issue reproduction: Maya's intake, no income, $400 fixed, $100 saved.
+  const broke: FinancialSnapshot = { ...maya.snapshot, hasSteadyIncome: false, incomeSources: [], monthlyFixedCosts: 400, monthlyDebtPayments: 0, savingsBalance: 100 };
+  const brokePlan = buildPlanSkeleton(mayaProfile, broke, maya.intake);
+  const cd = brokePlan.matches.find((m) => m.productId === "savers-goal-cd");
+  check(
+    brokePlan.monthlySurplus <= 0 && brokePlan.matches.every((m) => m.stage === "later" || costsNothing(m.productId, broke.savingsBalance)),
+    "Maya, no income: every now/next match costs nothing new (" + brokePlan.matches.filter((m) => m.stage !== "later").map((m) => m.productId).join(", ") + ")",
+  );
+  check(!!cd && (cd.stage === "later" && cd.unlockCondition === "When money is coming in each month"), "Maya, no income: Savers Goal CD waits until money is coming in each month" + (cd ? " (" + cd.stage + ")" : ""));
+
+  const noSurplus: string[] = [];
+  let noSurplusUsers = 0;
+  seed126 = 10901;
+  for (let i = 0; i < 1500; i++) {
+    const goals: GoalAnswer[] = [...MONEY_GOALS, ...HABIT_IDS]
+      .sort(() => rnd() - 0.5)
+      .slice(0, 1 + Math.floor(rnd() * 3))
+      .map((id, k) => ({ id, priority: (k + 1) as 1 | 2 | 3, horizonMonths: pick([12, 36, 120]), why: "" }));
+    const intake: IntakeAnswers = { ...jordan.intake, lifeStage: pick(LIFE), goals };
+    const fixed = pick([300, 900, 1800]);
+    const snapshot: FinancialSnapshot = {
+      ...jordan.snapshot,
+      hasSteadyIncome: rnd() < 0.5,
+      incomeSources: rnd() < 0.5 ? [] : [{ kind: "job", amount: fixed - pick([0, 100]), frequency: "monthly" }],
+      monthlyFixedCosts: fixed,
+      monthlyDebtPayments: pick([0, 0, 200]),
+      savingsBalance: pick([0, 40, 300, 5000]),
+      creditBand: pick(BANDS),
+      isFnbCustomer: rnd() < 0.3,
+    };
+    const plan = buildPlanSkeleton(fallbackProfile(intake), snapshot, intake);
+    if (plan.monthlySurplus > 0) continue;
+    noSurplusUsers++;
+    for (const m of plan.matches)
+      if (m.stage !== "later" && !costsNothing(m.productId, snapshot.savingsBalance)) noSurplus.push("user " + i + ": " + m.stage + " " + m.productId);
+  }
+  check(
+    noSurplusUsers > 500 && noSurplus.length === 0,
+    noSurplusUsers + " no-surplus users: every now/next product costs nothing new" + (noSurplus.length ? " (" + noSurplus.length + ", e.g. " + noSurplus.slice(0, 3).join("; ") + ")" : ""),
+  );
+}
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

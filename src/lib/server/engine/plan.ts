@@ -101,7 +101,8 @@ function withEverydayChecking(matches: Candidate[], ctx: EngineContext): Candida
     const weakest = sameGoal.sort((a, b) => a.score - b.score)[0];
     matches = matches.filter((m) => m !== weakest);
   }
-  return [...matches, { ...c, staging: { stage: "now" } }];
+  // v3.3 (#109): with no surplus the fit stays `later` unless savings already cover its opening deposit (rule (c)).
+  return [...matches, { ...c, staging: c.staging.stage === "later" && ctx.math.monthlySurplus <= 0 ? c.staging : { stage: "now" } }];
 }
 
 // Rule set E: students always get the free education foundation (Learning Center, scholarship

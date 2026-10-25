@@ -54,8 +54,28 @@ export function isCreditBlocked(p: Product, ctx: EngineContext): boolean {
   return !!bands && !bands.includes(ctx.snapshot.creditBand);
 }
 
+// SPROUT.md v3.3 (#109): with no surplus, only products that cost nothing new can be now/next: an education tool,
+// a $0-to-open product, or an everyday checking/savings account funded from savings already there (null deposit
+// counts as not $0, except everyday checking with "no minimum balance", e.g. FNB Student Checking, clarified 4:25 AM).
+export function costsNothingNew(p: Product, ctx: EngineContext): boolean {
+  if (p.category === "education_tool" || p.minOpeningDeposit === 0) return true;
+  if (p.category === "checking" && p.minOpeningDeposit === null && p.keyTerms.some((t) => /no minimum balance/i.test(t))) return true;
+  return (p.category === "checking" || p.category === "savings") && p.minOpeningDeposit !== null && p.minOpeningDeposit <= ctx.snapshot.savingsBalance;
+}
+
 // Returns null when the product is dropped (fails with no reachable condition).
 export function stageFor(p: Product, ctx: EngineContext): StageResult | null {
+  const staged = stageByRules(p, ctx);
+  if (!staged || staged.stage === "later" || ctx.math.monthlySurplus > 0 || costsNothingNew(p, ctx)) return staged;
+  return {
+    stage: "later",
+    // The contract has no "surplus" trigger; a first paycheck is the life event that starts money coming in.
+    unlockTrigger: { kind: "life_event", event: "first_paycheck" },
+    unlockCondition: "When money is coming in each month",
+  };
+}
+
+function stageByRules(p: Product, ctx: EngineContext): StageResult | null {
   if (isHardIneligible(p, ctx)) return null;
   const { snapshot, math } = ctx;
   const steady = snapshot.hasSteadyIncome;
