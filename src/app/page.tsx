@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Landmark, Route, Shrub, Sprout, Target, TreeDeciduous } from "lucide-react";
+import { TypedPhrase } from "@/components/landing/TypedPhrase";
 import { LinkPendingIcon } from "@/components/layout/LinkPendingIcon";
 import { SproutSays } from "@/components/sprout/SproutSays";
 import { cn } from "@/lib/utils";
@@ -87,8 +88,12 @@ export default function Home() {
               Meet Sprout, your money guide
             </p>
             <h1 className="text-title font-semibold text-balance sm:text-display">
-              Most banks start with your credit score.{" "}
-              <span className="text-brand-700">Sprout starts with your life.</span>
+              {/* Screen readers get the sentence once; the typing line is decorative. */}
+              <span className="sr-only">Most banks start with your credit score. Sprout starts with your life.</span>
+              <TypedPhrase />
+              <span aria-hidden className="block text-brand-700">
+                Sprout starts with your life.
+              </span>
             </h1>
             <p className="max-w-prose text-lead text-muted-foreground">
               Tell Sprout what you&apos;re working toward and get a step-by-step plan, starting with
@@ -108,6 +113,7 @@ export default function Home() {
             Hi, I&apos;m Sprout! Let&apos;s start with what you want, like a trip, a safety cushion,
             or your first place. The numbers come after.
           </SproutSays>
+          <p className="-mb-2 text-caption text-muted-foreground">Your plan will look like this</p>
           <ol className="flex flex-col" aria-label="Example plan">
             {PREVIEW.map(({ icon: Icon, ...item }, i) => (
               <li key={item.stage} className="flex gap-4">
