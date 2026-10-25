@@ -97,3 +97,6 @@ Lead decisions made overnight (Ben may override):
 
 ### 8:30 AM
 Deploy test: merged this docs-only change to trigger a production deploy of `main` (Ben asked).
+
+### 9:25 AM
+Deploy retry: docs-only merge to trigger a production deploy of main (Ben asked).
