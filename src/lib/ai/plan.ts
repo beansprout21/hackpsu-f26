@@ -17,7 +17,7 @@ const PLAN_TIMEOUT_MS = 20_000;
 // docs/SPROUT.md "Sprout's voice", shared with /api/profile.
 export const VOICE_RULES = [
   "Voice rules:",
-  '1. Possibility first ("Japan is $140 a month away", never "You can\'t afford Japan").',
+  '1. Possibility first ("Japan is $129 a month away", never "You can\'t afford Japan").',
   '2. A number and a date ("$113 a month covers your first month of costs in 3 months").',
   "3. Never shame. Never use these words: only, just, behind, should have, can't afford, waste. This applies to neutral uses too: write \"one\", \"a single\", or \"no other\" instead of \"only\", and \"for\" or \"that powers\" instead of \"behind\".",
   "4. Plain and short: under 20 words per sentence; explain jargon in 5 words (\"APY, the interest you earn\").",
@@ -160,7 +160,7 @@ function userPrompt(facts: ReturnType<typeof planFacts>): string {
     "",
     "Rewrite ONLY the wording:",
     `- headline: at most ${TEXT_BUDGET.headlineWords} words (count them; aim for 6 to 8), optimistic, about what this plan gets them.`,
-    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total (count them; aim for 25 to 30). If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $140 a month away"). Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". Mention when the safety cushion fills if cushionFillsInTime is set, in those words. Call it the "safety cushion".`,
+    `- sproutSays: exactly ${TEXT_BUDGET.sproutSaysSentences} sentences, at most ${TEXT_BUDGET.sproutSaysWords} words in total (count them; aim for 25 to 30). If the user's top-value goal has a turn_up_dial lever, lead with it ("Japan is $129 a month away"). Say "a month away" ONLY for a goal whose onTrack is false, with its gapMonthly or its turn_up_dial amount; an on-track goal is "on track", never "away". Mention when the safety cushion fills if cushionFillsInTime is set, in those words. Call it the "safety cushion".`,
     "- stepOne is FINAL: do not write a title or detail for it. Step 1 in steps is the same action; leave it as given.",
     `- explanations: one per productId above, 1 to 2 sentences on why it fits THIS user, tied to that goal's motivation or why. The first sentence is at most ${TEXT_BUDGET.explanationFirstSentenceWords} words (it is shown on its own): say why it fits this user's goal, with no rates, terms, or minimums. Put the fee line, rate, or term in the second sentence. Account cards must keep the fee line from termsToKnow (the fee and how this user avoids it). For the top-value goal's match, mention its lever in plain words. For later items, say what unlocks it in the second sentence, not the first.`,
     "- steps: one per order number above except order 1; short imperative title and a 1-sentence detail. Keep the same action, product, and amount.",
