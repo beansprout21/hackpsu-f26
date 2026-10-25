@@ -4,6 +4,9 @@
 // points: a docked panel on desktop, a card + bottom sheet on phones, and AskChip buttons across the
 // plan. Answers come from the server's grounded chat (POST /api/chat via askSprout); this file only
 // renders them. Cited products call onCite so the dashboard can open the right tab and row.
+// v2.3 (#76): chips come from src/lib/client/chatCopy.ts and send on tap, follow-ups appear after each
+// answer, and the last 6 turns are kept in AppState.chat as Sprout's memory. Other components ask with
+// useAskSprout().ask(chip) and get the Overview's "?" chips from useAskSprout().blockChips().
 import {
   createContext,
   useCallback,
@@ -20,33 +23,48 @@ import { SproutAvatar } from "@/components/sprout/SproutAvatar";
 import { SproutSays } from "@/components/sprout/SproutSays";
 import { productName } from "@/components/plan/format";
 import { ApiError, askSprout } from "@/lib/client/api";
+import {
+  blockChips as buildBlockChips,
+  chipForQuestion,
+  followUpChips,
+  starterChips,
+  type BlockChips,
+  type Chip,
+} from "@/lib/client/chatCopy";
+import { useAppState } from "@/lib/client/state";
 import { cn } from "@/lib/utils";
-import type { GoalProfile, Plan } from "@/types";
+import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalProfile, Plan } from "@/types";
 
-const CHIPS = ["Why this first?", "What if I save $50 more?", "When can I get a credit card?"];
 const MAX_QUESTION_CHARS = 500; // same limit as /api/chat
+const MAX_TURN_CHARS = 600; // ChatTurn.text limit
+const MEMORY_TURNS = 6; // AppState.chat keeps the last 6 turns
 const DISCLAIMER = "Educational prototype. Not financial advice. Nothing is stored unless you choose to share it with FNB.";
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
-type Turn =
-  | { id: number; question: string; status: "pending" }
-  | { id: number; question: string; status: "done"; answer: string; cited: string[] }
-  | { id: number; question: string; status: "error"; message: string };
+type Turn = { id: number; question: string; intent: ChatIntent } & (
+  | { status: "pending" }
+  | { status: "done"; answer: string; cited: string[] }
+  | { status: "error"; message: string }
+);
 
 type AskSproutState = {
   intro: string;
   turns: Turn[];
+  chips: Chip[]; // starters before the first answer, then follow-ups to the latest answer
   busy: boolean;
   isDesktop: boolean;
   sheetOpen: boolean;
   setSheetOpen: (open: boolean) => void;
-  ask: (question: string, retryId?: number) => Promise<void>;
+  ask: (chip: Chip | string) => Promise<void>; // opens the sheet on phones and sends
+  retry: (turnId: number) => Promise<void>;
+  clear: () => void;
+  blockChips: () => BlockChips; // the "?" chips for each Overview block (docs/ASK_SPROUT.md)
   cite: (productId: string) => void;
 };
 
 const AskSproutContext = createContext<AskSproutState | null>(null);
 
-function useAskSprout() {
+export function useAskSprout() {
   const ctx = useContext(AskSproutContext);
   if (!ctx) throw new Error("useAskSprout must be used inside <AskSproutProvider>");
   return ctx;
@@ -75,36 +93,75 @@ export function AskSproutProvider({
   onCite: (productId: string) => void;
   children: ReactNode;
 }) {
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [app, update] = useAppState();
+  const snapshot = app.snapshot;
+  // Memory survives tab switches and reloads within the session; restored turns get their chip's intent back.
+  const [turns, setTurns] = useState<Turn[]>(() => restoreTurns(app.chat ?? [], plan, profile, snapshot));
   const [sheetOpen, setSheetOpen] = useState(false);
-  const nextId = useRef(1);
+  const nextId = useRef(turns.length + 1);
   const isDesktop = useIsDesktop();
   const busy = turns.some((t) => t.status === "pending");
+  const memory = useMemo(() => memoryFrom(turns), [turns]);
 
-  const ask = useCallback(
-    async (raw: string, retryId?: number) => {
+  useEffect(() => {
+    const chat = memory.length > 0 ? memory : undefined;
+    if (JSON.stringify(chat) !== JSON.stringify(app.chat)) update({ chat });
+  }, [memory, app.chat, update]);
+
+  const send = useCallback(
+    async (raw: string, intent: ChatIntent, retryId?: number) => {
       const question = raw.trim().slice(0, MAX_QUESTION_CHARS);
       if (!question || busy) return;
       if (!isDesktop) setSheetOpen(true);
       const id = retryId ?? nextId.current++;
+      const history = memoryFrom(turns.filter((t) => t.id !== id));
       setTurns((prev) =>
         retryId
-          ? prev.map((t) => (t.id === id ? { id, question, status: "pending" } : t))
-          : [...prev, { id, question, status: "pending" }],
+          ? prev.map((t) => (t.id === id ? { id, question, intent, status: "pending" } : t))
+          : [...prev, { id, question, intent, status: "pending" }],
       );
       try {
-        const { answer, citedProductIds } = await askSprout(question, profile, plan);
+        const { answer, citedProductIds } = await askSprout(question, profile, plan, { snapshot, history, intent });
         setTurns((prev) =>
-          prev.map((t) => (t.id === id ? { id, question, status: "done", answer, cited: citedProductIds } : t)),
+          prev.map((t) => (t.id === id ? { id, question, intent, status: "done", answer, cited: citedProductIds } : t)),
         );
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return; // redirecting to login
         const message = error instanceof ApiError ? error.message : "Sprout couldn't answer that. Try again.";
-        setTurns((prev) => prev.map((t) => (t.id === id ? { id, question, status: "error", message } : t)));
+        setTurns((prev) => prev.map((t) => (t.id === id ? { id, question, intent, status: "error", message } : t)));
       }
     },
-    [busy, isDesktop, plan, profile],
+    [busy, isDesktop, plan, profile, snapshot, turns],
   );
+
+  // A typed question (or a plain-text AskChip) still gets its chip's intent when it matches one.
+  const ask = useCallback(
+    (input: Chip | string) => {
+      if (typeof input !== "string") return send(input.question, input.intent);
+      return send(input, chipForQuestion(input, plan, profile, snapshot)?.intent ?? { kind: "free" });
+    },
+    [send, plan, profile, snapshot],
+  );
+
+  const retry = useCallback(
+    async (turnId: number) => {
+      const turn = turns.find((t) => t.id === turnId);
+      if (turn) await send(turn.question, turn.intent, turn.id);
+    },
+    [send, turns],
+  );
+
+  const clear = useCallback(() => setTurns([]), []);
+
+  const chips = useMemo(() => {
+    const asked: ChatTurn[] = turns.map((t) => ({ role: "user", text: t.question }));
+    const lastDone = [...turns].reverse().find((t) => t.status === "done");
+    return lastDone
+      ? followUpChips(lastDone.intent, plan, profile, snapshot, asked)
+      : starterChips(plan, profile, snapshot, asked);
+  }, [turns, plan, profile, snapshot]);
+
+  const blockChips = useCallback(() => buildBlockChips(plan, profile, snapshot, memory), [plan, profile, snapshot, memory]);
 
   const cite = useCallback(
     (productId: string) => {
@@ -115,27 +172,54 @@ export function AskSproutProvider({
   );
 
   const value = useMemo(
-    () => ({ intro: plan.sproutSays, turns, busy, isDesktop, sheetOpen, setSheetOpen, ask, cite }),
-    [plan.sproutSays, turns, busy, isDesktop, sheetOpen, ask, cite],
+    () => ({ intro: plan.sproutSays, turns, chips, busy, isDesktop, sheetOpen, setSheetOpen, ask, retry, clear, blockChips, cite }),
+    [plan.sproutSays, turns, chips, busy, isDesktop, sheetOpen, ask, retry, clear, blockChips, cite],
   );
   return <AskSproutContext.Provider value={value}>{children}</AskSproutContext.Provider>;
 }
 
+// The last 6 turns of finished exchanges (question, answer): what AppState.chat keeps and /api/chat receives.
+function memoryFrom(turns: Turn[]): ChatTurn[] {
+  return turns
+    .flatMap((t): ChatTurn[] =>
+      t.status === "done"
+        ? [
+            { role: "user", text: t.question.slice(0, MAX_TURN_CHARS) },
+            { role: "sprout", text: t.answer.slice(0, MAX_TURN_CHARS) },
+          ]
+        : [],
+    )
+    .slice(-MEMORY_TURNS);
+}
+
+function restoreTurns(chat: ChatTurn[], plan: Plan, profile: GoalProfile, snapshot?: FinancialSnapshot): Turn[] {
+  const turns: Turn[] = [];
+  chat.forEach((t, i) => {
+    const answer = chat[i + 1];
+    if (t.role !== "user" || answer?.role !== "sprout") return;
+    const intent = chipForQuestion(t.text, plan, profile, snapshot)?.intent ?? { kind: "free" as const };
+    turns.push({ id: turns.length + 1, question: t.text, intent, status: "done", answer: answer.text, cited: [] });
+  });
+  return turns;
+}
+
 // A ready-made question placed next to the thing it asks about (goal, stage, product).
-export function AskChip({ question, className }: { question: string; className?: string }) {
+// Pass a `chip` from chatCopy (preferred: it carries the intent) or a plain `question`.
+export function AskChip({ question, chip, className }: { question?: string; chip?: Chip; className?: string }) {
   const { ask, busy } = useAskSprout();
+  const label = chip?.label ?? question ?? "";
   return (
     <button
       type="button"
       disabled={busy}
-      onClick={() => void ask(question)}
+      onClick={() => void ask(chip ?? label)}
       className={cn(
         "inline-flex items-center gap-1 self-start rounded-full bg-highlight/10 px-3 py-1 text-left text-small font-medium text-highlight outline-none transition-colors duration-200 hover:bg-highlight/20 focus-visible:ring-4 focus-visible:ring-ring/30 active:bg-highlight/25 disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
     >
       <Sparkles className="size-4 shrink-0" aria-hidden />
-      {question}
+      {label}
     </button>
   );
 }
@@ -166,7 +250,7 @@ function PanelHeader({ onClose }: { onClose?: () => void }) {
 }
 
 function Thread({ autoFocus = false }: { autoFocus?: boolean }) {
-  const { intro, turns, busy, ask, cite } = useAskSprout();
+  const { intro, turns, chips, busy, ask, retry, clear, cite } = useAskSprout();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -222,7 +306,7 @@ function Thread({ autoFocus = false }: { autoFocus?: boolean }) {
                 <span>{t.message}</span>
                 <button
                   type="button"
-                  onClick={() => void ask(t.question, t.id)}
+                  onClick={() => void retry(t.id)}
                   disabled={busy}
                   className="rounded-full bg-card px-3 py-1 text-caption font-semibold text-foreground shadow-card disabled:opacity-50"
                 >
@@ -235,11 +319,13 @@ function Thread({ autoFocus = false }: { autoFocus?: boolean }) {
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Suggested questions">
-          {CHIPS.map((chip) => (
-            <AskChip key={chip} question={chip} />
-          ))}
-        </div>
+        {chips.length > 0 && (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Suggested questions">
+            {chips.map((chip) => (
+              <AskChip key={chip.question} chip={chip} />
+            ))}
+          </div>
+        )}
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -266,7 +352,17 @@ function Thread({ autoFocus = false }: { autoFocus?: boolean }) {
             <Send className="size-5" aria-hidden />
           </button>
         </form>
-        <p className="text-center text-caption text-muted-foreground">{DISCLAIMER}</p>
+        <p className="text-center text-caption text-muted-foreground">
+          {DISCLAIMER}
+          {turns.length > 0 && (
+            <>
+              {" "}
+              <button type="button" onClick={clear} disabled={busy} className="underline underline-offset-2 disabled:opacity-50">
+                Clear chat
+              </button>
+            </>
+          )}
+        </p>
       </div>
     </>
   );

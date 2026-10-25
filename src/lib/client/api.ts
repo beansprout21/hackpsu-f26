@@ -7,6 +7,7 @@ import studentProfileMock from "@/data/mocks/profile.student.json";
 import familyProfileMock from "@/data/mocks/profile.family.json";
 import studentPlanMock from "@/data/mocks/plan.student.json";
 import familyPlanMock from "@/data/mocks/plan.family.json";
+import type { ChatIntent, ChatTurn } from "@/types";
 
 // Mocks are off by default now that the real routes exist; set NEXT_PUBLIC_USE_MOCKS=1 to use them.
 export const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
@@ -73,8 +74,14 @@ export async function getPlan(profile: GoalProfile, snapshot: FinancialSnapshot,
   return post<Plan>("/api/plan", { profile, snapshot, intake });
 }
 
-export async function askSprout(question: string, profile: GoalProfile, plan: Plan): Promise<{ answer: string; citedProductIds: string[] }> {
-  return post("/api/chat", { question, profile, plan });
+// v2.3: the conversation memory (`history`, last 6 turns) and the chip's `intent` go with every question.
+export async function askSprout(
+  question: string,
+  profile: GoalProfile,
+  plan: Plan,
+  context: { snapshot?: FinancialSnapshot; history?: ChatTurn[]; intent?: ChatIntent } = {},
+): Promise<{ answer: string; citedProductIds: string[] }> {
+  return post("/api/chat", { question, profile, plan, ...context });
 }
 
 // Share with FNB (v2.2). The server takes the contact from the Auth0 session, never from here.
