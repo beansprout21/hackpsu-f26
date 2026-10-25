@@ -1,4 +1,4 @@
-# Sprout's Brain (v3)
+# Sprout's Brain (v3.2)
 
 Sprout is the app and its advisor. The **engine** (deterministic code) decides numbers, stages, levers, and Step one. The **AI** explains them in Sprout's voice. The AI never changes an amount, a stage, a trigger, a lever, or the Step one choice.
 
@@ -42,6 +42,7 @@ Amounts are floored to whole dollars; leftover dollars go to `guilt_free`.
 **Surplus ≤ 0:** savings and guilt-free are 0; plan is `budget` and `habit` steps plus $0 products. Sprout: "First we find your breathing room."
 
 **Inside savings:**
+- **Habits cost time, not money (v3.2):** `everyday_banking` and `credit_building` are habits. They get **no** savings allocation and no `Allocation` row; `goal_savings` is split only among money goals (P1/P2/P3 weights 60/25/15 by their priority order, renormalized). Habits become steps: credit building → "Check your free credit report" (learn) now, the secured card as its `later` match (unlock unchanged: 1 month of costs + deposit, or first paycheck); everyday banking → "Turn on low-balance alerts" (habit) plus the best-fit checking `now` match.
 - **Safety cushion (v3) = max($1,000, 3 × (fixed + debt)) for everyone.** Irregular income is exactly why: if money stops for 1 to 2 months, bills are still covered. (`cushionTarget` = `emergencyFundTarget` = this number.)
 - Existing `savingsBalance` counts toward it. If savings already cover it, the cushion is met and 100% of savings goes to goals.
 - **Milestone:** "1 month covered" at 1 × (fixed + debt); report it so the UI can show an early win (Maya: $650, reached in 3 months).
@@ -64,14 +65,14 @@ For each goal:
 
 Step one is something the user can do **right now from their phone**. It is never "open an account". Title and detail are **templates** (Ben owns this text); the AI never rewrites them.
 
-Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-priority goal. Fund names: travel → "travel fund", first_home → "home fund", education → "education fund", small_business → "business fund", family → "family fund", emergency_fund → "safety cushion".
+Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-priority **money** goal (habits are never P1). Fund names: travel → "travel fund", first_home → "home fund", education → "education fund", small_business → "business fund", family → "family fund", emergency_fund → "safety cushion".
 
 | # | When | Title (template) | Detail (template) | kind |
 |---|---|---|---|---|
 | 1 | `monthlySurplus` ≤ 0 | Open your bank app and find last week's 3 biggest buys. | That's where we'll find your breathing room. | budget |
-| 2 | P1 = credit_building | Check your free credit report now. | 5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score. | learn |
-| 3 | P1 = everyday_banking | Turn on low-balance alerts in your bank app. | No surprise fees, ever. | habit |
-| 4 | P1 = emergency_fund, or no goals, **or (v3.1) top value is security or family and the cushion is not met** | Move $A into savings right now. | That starts your $<cushionTarget> safety cushion. | save |
+| 2 | (v3.2) no money goals, credit_building habit chosen | Check your free credit report now. | 5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score. | learn |
+| 3 | (v3.2) no money goals, everyday_banking habit chosen | Turn on low-balance alerts in your bank app. | No surprise fees, ever. | habit |
+| 4 | P1 money goal = emergency_fund, or no money goals, **or (v3.1) top value is security or family and the cushion is not met** | Move $A into savings right now. | That starts your $<cushionTarget> safety cushion. | save |
 | 5 | otherwise | Move $A into your <fund name> right now. | You'll put $<P1 monthlyAmount> a month toward it. This starts it. | save |
 
 `stepOne.monthlyAmount` is omitted; `startMonth` 0; no `productId`.
@@ -98,6 +99,8 @@ Sprout does not recommend investments, funds, or amounts per product. It shows o
 - Otherwise: handoff only with the unlock condition.
 
 ## Golden test: Maya (must match exactly)
+
+> v3.2: credit building is now a habit with no allocation, so Maya's goal money splits travel/home only. The builder regenerates the numbers below from the engine (expected: travel about $91, home about $22, Japan gap about $118) and updates this table in the same PR.
 
 Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester; family $300 monthly; fixed $650; debt $0; savings $400; credit building; not an FNB customer; values [experiences, freedom] → **Experience Collector**. Goals: travel P1 $2,500 in 12 months ("study abroad in Japan"); credit_building P2 12 months; first_home P3 84 months.
 
