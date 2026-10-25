@@ -271,6 +271,13 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
     const total = bucket("fixed_costs") + saved;
     record("buckets sum to income", u, Math.abs(total - plan.effectiveMonthlyIncome) < 1, `buckets ${total} vs income ${plan.effectiveMonthlyIncome}`);
   }
+  // Every goal-savings dollar lands on a money goal (no orphan goal money when only habits or a cushion goal remain).
+  const goalAlloc = plan.allocation.filter((a) => a.goalId !== "emergency_fund").reduce((s, a) => s + a.monthlyAmount, 0);
+  const efAlloc = plan.allocation.find((a) => a.goalId === "emergency_fund")?.monthlyAmount ?? 0;
+  const goalBucket = bucket("goal_savings");
+  const homed = goalAlloc === goalBucket || (efAlloc > 0 && goalAlloc === 0 && efAlloc === bucket("emergency_fund") + goalBucket);
+  record("goal bucket lands on money goals", u, homed, `goal bucket $${goalBucket}, money-goal allocations $${goalAlloc}, goals: ${profile.goals.map((g) => g.id).join(", ")}`);
+
   const costs = u.snapshot.monthlyFixedCosts + u.snapshot.monthlyDebtPayments;
   const cushion = Math.max(1000, Math.round(3 * costs * 100) / 100);
   record("cushion = max($1,000, 3 x costs)", u, plan.cushionTarget === cushion && plan.emergencyFundTarget === cushion, `got ${plan.cushionTarget}, expected ${cushion}`);
@@ -288,6 +295,17 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
   record("no student loans", u, loans.length === 0, loans.join(", "));
   const unknown = productIds.filter((id) => !isCatalogId(id));
   record("every product id is in the catalog", u, unknown.length === 0, unknown.join(", "));
+
+  // Rule set B: with no surplus the plan is budget/habit steps plus $0 products (null = deposit not published).
+  if (plan.monthlySurplus <= 0) {
+    const costly = plan.matches.filter((m) => m.stage !== "later" && (getProduct(m.productId)?.minOpeningDeposit ?? 0) > 0);
+    record(
+      "no surplus: only $0 products now/next",
+      u,
+      costly.length === 0,
+      costly.map((m) => `${m.stage} ${m.productId} ($${getProduct(m.productId)?.minOpeningDeposit} to open)`).join(", "),
+    );
+  }
 
   const want = expectedStepOne(u, profile, plan);
   record(
@@ -417,6 +435,11 @@ async function checkChat(u: User, plan: Plan, profile: GoalProfile, live: boolea
       if (words(r.answer) > 70) problems.push(`${words(r.answer)} words`);
       if (BANNED.test(r.answer)) problems.push(`banned word: "${r.answer.match(BANNED)?.[0]}"`);
       if (/10\+\s*years/i.test(r.answer)) problems.push('"10+ years"');
+      // DASHBOARD.md v2: time is always specific, Ask Sprout answers included: 24+ months reads as years.
+      // product_fees answers quote catalog terms ("1.00% APY for 3 to 48 months"), which are product facts.
+      const longMonths =
+        intent.kind === "product_fees" ? [] : [...r.answer.matchAll(/\b(\d+) months\b/g)].map((x) => Number(x[1])).filter((n) => n >= 24);
+      if (longMonths.length) problems.push(`"${longMonths[0]} months" should be years`);
       if (/NaN|Infinity|undefined|\$-/.test(r.answer)) problems.push(`bad value in "${r.answer}"`);
       const uncited = r.citedProductIds.filter((id) => !isCatalogId(id));
       if (uncited.length) problems.push(`unknown cited ids ${uncited.join(", ")}`);
@@ -580,6 +603,12 @@ async function main() {
   lines.push(`### Ask Sprout (${chatUsers.length} users, templates; live AI: ${liveNote})`, "");
   lines.push(`${chatCalls} answers, ${chatRows.length} problems.`, "");
   if (chatRows.length) {
+    const chatShapes = new Map<string, number>();
+    for (const r of chatRows) {
+      const shape = `${r.intent.split(":")[0]}: ${r.problem.split(" | answer:")[0].replace(/\$[\d,.]+/g, "$N").replace(/\b\d+\b/g, "N")}`;
+      chatShapes.set(shape, (chatShapes.get(shape) ?? 0) + 1);
+    }
+    lines.push("Distinct shapes:", "", ...[...chatShapes].sort((a, b) => b[1] - a[1]).map(([s, n]) => `- ${n} x ${s.replace(/\|/g, "\\|")}`), "");
     lines.push("| User | Intent | Problem |", "| --- | --- | --- |");
     for (const r of chatRows.slice(0, 40)) lines.push(`| ${r.user} | ${r.intent} | ${r.problem.replace(/\|/g, "\\|")} |`);
     if (chatRows.length > 40) lines.push(`| ... | | ${chatRows.length - 40} more |`);
