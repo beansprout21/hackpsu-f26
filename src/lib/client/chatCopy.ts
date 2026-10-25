@@ -4,7 +4,7 @@
 // block's chip always names what that block shows.
 import rawCatalog from "@/data/catalog.json";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GapLever, GoalId, GoalProfile, Match, Plan, Product, Stage } from "@/types";
-import { buildOverview } from "./overview";
+import { buildOverview, statedGap } from "./overview";
 import { FUND_NAME, leverMoreTime, leverSmallerTarget, leverTurnUpDial } from "./planCopy";
 
 export interface Chip {
@@ -116,11 +116,14 @@ export function starterChips(plan: Plan, profile: GoalProfile, snapshot?: Financ
   const p1 = p1GoalId(profile);
   const alloc = p1 ? plan.allocation.find((a) => a.goalId === p1) : undefined;
   if (p1 && alloc) {
-    const gap = alloc.requiredMonthly - alloc.monthlyAmount;
+    // DASHBOARD.md v2.1 (#159): name the gap only when guilt-free money can close it.
+    const gap = statedGap(alloc);
     chips.push(
-      alloc.onTrack || gap <= 0
-        ? chip(`Can I reach my ${fundName(p1)} sooner?`, { kind: "what_if", amount: NUDGE, goalId: p1 })
-        : chip(`How do I close the ${usd(gap)} gap for my ${fundName(p1)}?`, { kind: "goal_gap", goalId: p1 }),
+      gap !== null
+        ? chip(`How do I close the ${usd(gap)} gap for my ${fundName(p1)}?`, { kind: "goal_gap", goalId: p1 })
+        : alloc.onTrack
+          ? chip(`Can I reach my ${fundName(p1)} sooner?`, { kind: "what_if", amount: NUDGE, goalId: p1 })
+          : chip(`How can I reach my ${fundName(p1)} sooner?`, { kind: "goal_gap", goalId: p1 }),
     );
   }
 
