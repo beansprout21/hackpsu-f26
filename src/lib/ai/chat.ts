@@ -6,13 +6,13 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, IncomeKind, Match, Plan, Product, SpendingBucketId, ValueTag } from "@/types";
 import { fnbFitMatch, fundName, p1GoalId, productShortName } from "@/lib/client/chatCopy";
-import { aboutTime } from "@/lib/client/time";
+import { aboutTime, timeSpan } from "@/lib/client/time";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
 import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 import { monthsToTarget } from "@/lib/server/engine/math";
 import { describeAiError, getClient, getModel } from "./client";
 import { VOICE_RULES } from "./plan";
-import { voiceSafe } from "./voice";
+import { goalWord, voiceNormalize, voiceSafe } from "./voice";
 
 const CHAT_TIMEOUT_MS = 15_000;
 const ADVISOR_LINE = "When you're ready for that, an FNB advisor can help.";
@@ -33,6 +33,8 @@ export interface ChatContext {
   snapshot?: FinancialSnapshot;
   history?: ChatTurn[];
   intent?: ChatIntent;
+  // Audit hook (scripts/ai-audit.ts): the AI's raw answer and the facts it saw, before any guard runs.
+  onRaw?: (rawAnswer: string, facts: unknown) => void;
 }
 
 const CHAT_SYSTEM = [
@@ -42,6 +44,8 @@ const CHAT_SYSTEM = [
   "`history` is the conversation so far (oldest first). Refer back to it naturally when it helps, for example \"Like we said about Japan...\".",
   "Do not ask the user a question; suggested next questions are shown separately.",
   "Never invent rates, fees, or products. If a rate isn't published, say to check the current rate with FNB.",
+  'Call the emergency savings the "safety cushion", never "emergency fund".',
+  "Durations: under 24 months say months; from 24 months say whole years, written the way the JSON's *Time fields are (\"about 4 years\"). Never write 24 or more months.",
   `Stay within budgeting, saving, credit building, and FNB products; for investing or taxes say "${ADVISOR_LINE}" and stop.`,
   "List every productId you mention in citedProductIds. Output JSON only.",
   "",
@@ -162,7 +166,7 @@ export function whatIfFor(goalIdIn: GoalId | undefined, deltaMonthly: number, pr
   const newMonthly = Math.max(0, alloc.monthlyAmount + deltaMonthly);
   return {
     goalId,
-    goalLabel: GOAL_LABELS[goalId],
+    goalLabel: goalWord(goalId),
     deltaMonthly,
     currentMonthly: alloc.monthlyAmount,
     newMonthly,
@@ -346,7 +350,7 @@ function explainCushion(plan: Plan, snapshot?: FinancialSnapshot): Explained {
   const timing = met
     ? "It's already full, so every savings dollar goes to your goals."
     : monthly > 0 && plan.cushionFillsInMonths
-      ? `At ${usd(monthly)} a month, ${showMilestone ? `you're 1 month covered in ${milestoneInMonths} months and ` : ""}it's full in ${plan.cushionFillsInMonths} months.`
+      ? `At ${usd(monthly)} a month, ${showMilestone ? `you're 1 month covered in ${timeSpan(milestoneInMonths)} and ` : ""}it's full in ${timeSpan(plan.cushionFillsInMonths)}.`
       : "";
   return {
     facts: {
@@ -360,6 +364,7 @@ function explainCushion(plan: Plan, snapshot?: FinancialSnapshot): Explained {
       monthlyToCushion: monthly,
       milestone: { label: "1 month covered", amount: fpd, inMonths: milestoneInMonths },
       fullInMonths: plan.cushionFillsInMonths,
+      fullInTime: plan.cushionFillsInMonths ? aboutTime(plan.cushionFillsInMonths) : null,
       met,
       why: "Irregular money: if it stops for a month or two, rent and bills are still covered.",
     },
@@ -380,7 +385,7 @@ function feeLine(product?: Product) {
 }
 
 function fitReasons(m: Match): string[] {
-  const goal = GOAL_LABELS[m.goalId];
+  const goal = goalWord(m.goalId);
   return [
     m.breakdown.goalFit >= 28 && `it fits your ${goal} goal`,
     m.breakdown.eligibility >= 18 && "you qualify for it today",
@@ -400,7 +405,7 @@ function explainProduct(kind: "why_product" | "product_fees", plan: Plan, profil
     productId: match.productId,
     product: name,
     stage: match.stage,
-    goal: GOAL_LABELS[match.goalId],
+    goal: goalWord(match.goalId),
     feeLine: fee,
     rateNote: product?.rateNote ?? null,
     keyTerms: product?.keyTerms ?? [],
@@ -414,7 +419,7 @@ function explainProduct(kind: "why_product" | "product_fees", plan: Plan, profil
       : [
           match.explanation.trim()
             ? firstSentence(match.explanation.trim())
-            : `${name} is in your ${STAGE_WORDS[match.stage]} for your ${GOAL_LABELS[match.goalId]} goal.`,
+            : `${name} is in your ${STAGE_WORDS[match.stage]} for your ${goalWord(match.goalId)} goal.`,
           fee ? `${fee.replace(/\.$/, "")}.` : "",
         ]
           .filter(Boolean)
@@ -437,7 +442,7 @@ function explainUnlock(plan: Plan, profile: GoalProfile, snapshot: FinancialSnap
   const short = productShortName(match.productId);
   const distance =
     gap !== null && gap > 0
-      ? `You have ${usd(saved ?? 0)} saved, so you're ${usd(gap)} away${monthsAway ? `: about ${monthsAway} months at ${usd(monthly)} a month` : ""}.`
+      ? `You have ${usd(saved ?? 0)} saved, so you're ${usd(gap)} away${monthsAway ? `: ${aboutTime(monthsAway)} at ${usd(monthly)} a month` : ""}.`
       : trigger?.kind === "life_event"
         ? `That starts with ${EVENT_WORDS[trigger.event]}.`
         : "";
@@ -445,12 +450,13 @@ function explainUnlock(plan: Plan, profile: GoalProfile, snapshot: FinancialSnap
     facts: {
       productId: match.productId,
       product: short,
-      goal: GOAL_LABELS[match.goalId],
+      goal: goalWord(match.goalId),
       unlockCondition: match.unlockCondition,
       unlockTrigger: trigger,
       savedSoFar: saved,
       dollarsAway: gap,
       monthsAway,
+      timeAway: monthsAway ? aboutTime(monthsAway) : null,
       monthlySaving: monthly,
       meanwhile: meanwhile ? { productId: meanwhile.productId, product: meanwhileName } : { stepOne: plan.stepOne.title },
       p1Goal: p1GoalId(profile) ?? null,
@@ -481,11 +487,11 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
   const leverLines = levers.map((l, i) => {
     const or = i === 0 ? "" : "Or ";
     if (l.kind === "turn_up_dial") return `${or}${i === 0 ? "Move" : "move"} ${usd(l.moveFromGuiltFree)} from guilt-free and you'd still have ${usd(guiltFree - l.moveFromGuiltFree)} for fun.`;
-    if (l.kind === "more_time") return `${or}${i === 0 ? "Give" : "give"} it ${l.newHorizonMonths} months at your current pace.`;
+    if (l.kind === "more_time") return `${or}${i === 0 ? "Give" : "give"} it ${timeSpan(l.newHorizonMonths)} at your current pace.`;
     return `${or}${i === 0 ? "Aim" : "aim"} for ${usd(l.reachableAmount)} on your current timeline.`;
   });
   const lead = alloc.onTrack
-    ? `Your ${fund} is on track: ${usd(alloc.monthlyAmount)} a month gets you there in ${alloc.monthsToTarget} months.`
+    ? `Your ${fund} is on track: ${usd(alloc.monthlyAmount)} a month gets you there in ${aboutTime(alloc.monthsToTarget)}.`
     : alloc.monthlyAmount === 0 && laterMatch?.unlockCondition
       ? `Your ${fund} starts growing ${lowerFirst(laterMatch.unlockCondition).replace(/\.$/, "")}.`
       : `Your ${fund} needs ${usd(alloc.requiredMonthly)} a month and gets ${usd(alloc.monthlyAmount)}, so it's ${usd(gap)} a month away.`;
@@ -497,8 +503,15 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
       allocatedMonthly: alloc.monthlyAmount,
       gapMonthly: gap,
       monthsToTarget: alloc.monthsToTarget,
+      timeAtPace: alloc.monthsToTarget > 0 ? aboutTime(alloc.monthsToTarget) : null,
       onTrack: alloc.onTrack,
-      levers: levers.map((l) => (l.kind === "turn_up_dial" ? { ...l, guiltFreeAfter: guiltFree - l.moveFromGuiltFree } : l)),
+      levers: levers.map((l) =>
+        l.kind === "turn_up_dial"
+          ? { ...l, guiltFreeAfter: guiltFree - l.moveFromGuiltFree }
+          : l.kind === "more_time"
+            ? { ...l, newHorizonTime: aboutTime(l.newHorizonMonths) }
+            : l,
+      ),
       guiltFreeMonthly: guiltFree,
       unlockCondition: laterMatch?.unlockCondition ?? null,
     },
@@ -533,13 +546,17 @@ function chatFacts(question: string, profile: GoalProfile, plan: Plan, extra: { 
     question,
     intent: extra.intent,
     explain: extra.explain,
-    whatIf: extra.whatIf,
+    whatIf: extra.whatIf && {
+      ...extra.whatIf,
+      currentTime: extra.whatIf.currentMonthsToTarget > 0 ? aboutTime(extra.whatIf.currentMonthsToTarget) : null,
+      newTime: extra.whatIf.newMonthsToTarget > 0 ? aboutTime(extra.whatIf.newMonthsToTarget) : null,
+    },
     persona: profile.persona.label,
     topValues: profile.topValues,
     richLife: profile.richLifeStatement,
     goals: profile.goals.map((g) => {
       const a = plan.allocation.find((x) => x.goalId === g.id);
-      return { id: g.id, label: GOAL_LABELS[g.id], fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, allocation: a ?? null };
+      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ?? null, timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null };
     }),
     money: {
       effectiveMonthlyIncome: plan.effectiveMonthlyIncome,
@@ -555,7 +572,7 @@ function chatFacts(question: string, profile: GoalProfile, plan: Plan, extra: { 
       return {
         productId: m.productId,
         product: p?.name,
-        goal: GOAL_LABELS[m.goalId],
+        goal: goalWord(m.goalId),
         stage: m.stage,
         unlockCondition: m.unlockCondition ?? null,
         explanation: m.explanation,
@@ -659,19 +676,21 @@ export async function answerQuestion(question: string, profile: GoalProfile, pla
   try {
     const facts = chatFacts(q, profile, plan, { whatIf, explain: explained?.facts ?? null, intent: intent.kind });
     const ai = await aiAnswer(facts, history);
+    context.onRaw?.(ai.answer, facts);
     const raw = clean(ai.answer, 700);
     if (!raw) throw new Error("empty answer");
     const userTyped = [q, ...history.filter((t) => t.role === "user").map((t) => t.text)];
     if (!numbersAllowed(raw, facts, userTyped)) throw new Error("number guard");
     const short = withinLength(raw);
     if (!short) throw new Error("length guard");
-    const answer = voiceSafe(short);
-    if (!answer) throw new Error("voice guard");
+    const voiced = voiceSafe(short);
+    if (!voiced) throw new Error("voice guard");
+    const answer = voiceNormalize(voiced);
     return { answer, citedProductIds: keepCited([...ai.citedProductIds, ...(explained?.cited.slice(0, 1) ?? [])], plan), aiUsed: true, route, intent: intent.kind };
   } catch (error) {
     return {
       ...fallback,
-      answer: capitalize(fallback.answer),
+      answer: capitalize(voiceNormalize(fallback.answer)),
       citedProductIds: keepCited(fallback.citedProductIds, plan),
       aiUsed: false,
       route,

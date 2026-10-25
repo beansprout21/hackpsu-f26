@@ -8,6 +8,9 @@ import { jordan, maya } from "../src/data/personas";
 import { blockChips, followUpChips, starterChips, type BlockChips, type Chip } from "../src/lib/client/chatCopy";
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { answerQuestion } from "../src/lib/ai/chat";
+import { generatePlan } from "../src/lib/ai/plan";
+import { specificTimes, voiceNormalize } from "../src/lib/ai/voice";
+import { scenarios } from "../src/data/scenarios";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalProfile, Plan } from "../src/types";
 
 let failures = 0;
@@ -126,9 +129,41 @@ async function templates() {
       if (seen.has(c.question)) continue;
       seen.add(c.question);
       const r = await askChip(c, plan, profile, snapshot);
-      const ok = !r.aiUsed && r.answer.length > 0 && sentences(r.answer) <= 4 && words(r.answer) <= 70;
+      const ok = !r.aiUsed && r.answer.length > 0 && sentences(r.answer) <= 4 && words(r.answer) <= 70 && voiceClean(r.answer);
       check(ok, `${name} · ${c.intent.kind} · "${c.label}" -> ${r.answer}`);
     }
+  }
+}
+
+// #121 audit: user-facing text never says "emergency fund" and never gives 24+ months (ranges like a CD's
+// "3 to 48 months" are product terms and allowed).
+function voiceClean(text: string) {
+  const longMonths = [...text.matchAll(/\b(\d[\d,]*)\s*months?\b/gi)].some(
+    (m) => Number(m[1].replace(/,/g, "")) >= 24 && !/\d\s*(?:to|-|–|and)\s*$/.test(text.slice(Math.max(0, m.index - 12), m.index)),
+  );
+  return !/emergency fund/i.test(text) && !longMonths && !/10\+\s*years/i.test(text);
+}
+
+async function voiceNormalizer() {
+  console.log("\n=== Voice normalizer (#121): safety cushion, specific times");
+  const cases: [string, string][] = [
+    ["Your safety cushion fills in 48 months.", "Your safety cushion fills in about 4 years."],
+    ["That takes about 36 months at this pace.", "That takes about 3 years at this pace."],
+    ["Pick a term from 3 to 48 months.", "Pick a term from 3 to 48 months."],
+    ["You reach it in 18 months.", "You reach it in 18 months."],
+    ["Your 120-month plan works.", "Your 10-year plan works."],
+    ["It would take 700 months.", "It would take more than 50 years."],
+  ];
+  for (const [input, expected] of cases) check(specificTimes(input) === expected, `specificTimes: "${input}" -> "${specificTimes(input)}"`);
+  check(voiceNormalize("Emergency fund first, then your emergency fund goal.") === "Safety cushion first, then your safety cushion goal.", "voiceNormalize renames emergency fund");
+
+  // With AI off, /api/plan returns the engine's template text through the same normalizer.
+  for (const s of scenarios) {
+    const skeleton = buildPlanSkeleton(s.profile, s.snapshot, s.intake);
+    const { plan } = await generatePlan(skeleton, s.profile);
+    const texts = [plan.headline, plan.sproutSays, plan.bankerSummary, ...plan.matches.map((m) => m.explanation), ...plan.steps.filter((x) => x.order !== 1).flatMap((x) => [x.title, x.detail])];
+    const bad = texts.filter((t) => !voiceClean(t));
+    check(bad.length === 0 && plan.stepOne.title === skeleton.stepOne.title, `${s.id}: fallback plan text clean${bad.length ? ` (${bad.length} field(s) not clean)` : ""}`);
   }
 }
 
@@ -145,6 +180,7 @@ async function main() {
   blocks();
   await templates();
   await boundary();
+  await voiceNormalizer();
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
 }
