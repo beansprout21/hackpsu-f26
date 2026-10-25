@@ -19,7 +19,7 @@ export const VOICE_RULES = [
   "Voice rules:",
   '1. Possibility first ("Japan is $140 a month away", never "You can\'t afford Japan").',
   '2. A number and a date ("$113 a month covers your first month of costs in 3 months").',
-  "3. Never shame. Never use these words: only, just, behind, should have, can't afford, waste. This applies to neutral uses too: write \"one\", \"a single\", or \"no other\" instead of \"only\".",
+  "3. Never shame. Never use these words: only, just, behind, should have, can't afford, waste. This applies to neutral uses too: write \"one\", \"a single\", or \"no other\" instead of \"only\", and \"for\" or \"that powers\" instead of \"behind\".",
   "4. Plain and short: under 20 words per sentence; explain jargon in 5 words (\"APY, the interest you earn\").",
   "5. Spend on what you love: celebrate their top dial, trim what they don't care about.",
   '6. Systems over willpower: "automate it", not "try to remember".',
