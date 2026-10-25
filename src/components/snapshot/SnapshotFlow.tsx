@@ -57,7 +57,7 @@ export function SnapshotFlow() {
   if (!state.intake) {
     return (
       <div className="flex flex-col gap-6">
-        <SproutSays>Let&apos;s start with what you want your money to do. It takes about two minutes.</SproutSays>
+        <SproutSays>Let&apos;s start with what you want your money to do.</SproutSays>
         <Link href="/intake" className={buttonVariants({ size: "lg", className: "h-12 self-start" })}>
           Start with your goals
         </Link>
