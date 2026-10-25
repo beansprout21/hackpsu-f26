@@ -276,3 +276,20 @@ Each cycle runs `STRESS_SEED=<new seed> STRESS_USERS=500 AI_DISABLED=1 DEMO_AUTH
   - 375 px: no overflow, 4 guide steps. "See it at FNB" and "Banker view (demo)" are under 24 px (#115).
 - **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
 - **Issues:** no new signatures. New reproductions commented on #104, #107, #108, #109.
+
+### Cycle 2 (3:06 AM ET, seed 83923, main `6f4e26c`)
+
+- **Main moved 10 commits:** #122 (no consumer loans), #127 (cushion wording, years), #129 (max 2 matches per goal), and #121 AI audit cycles 1–6.
+- **Harness:** 514 users, 0.6 s, 0 crashes, 0 API problems. New check: "safety cushion", never "emergency fund" in user-facing text.
+  - plan is schema-valid: **0** fail (was 11): #104 verified fixed
+  - "safety cushion" wording: 0 fail: #110 verified fixed
+  - Ask Sprout templates: **0** of 734 with raw months (was 17): #108 verified fixed
+  - Loan products in the guide: none (#122)
+  - goal bucket lands on money goals: 69 fail (#107, plus the duplicate-id case #105)
+  - no surplus: only $0 products now/next: 184 of 203 fail (#109)
+- **Browser (Maya opposite swipes, 1280 + 375 px):** snapshot shortcut → plan → gap chip → Save PDF (`print()` called).
+  - Safety Builder, Step one D4, cushion $135/mo.
+  - Chat now says "give it 3 years" (#108 nit: no "about").
+  - 375 px: no overflow.
+- **Live AI:** skipped (no key). Cumulative: 0 plans, 0 chats.
+- **Issues:** none opened. Updated #104, #105, #107, #108, #109, #110.

@@ -345,6 +345,9 @@ function checkUser(u: User): { plan: Plan; profile: GoalProfile } | null {
   ];
   const banned = voice.filter((s) => BANNED.test(s));
   record("no banned voice words", u, banned.length === 0, banned.slice(0, 2).map((s) => `"${s}"`).join("; "));
+  // SPROUT.md: the user-facing name is always "safety cushion", never "emergency fund".
+  const efWording = [...voice, plan.bankerSummary].filter((s) => /emergency fund/i.test(s));
+  record('"safety cushion", never "emergency fund"', u, efWording.length === 0, efWording.slice(0, 2).map((s) => `"${s}"`).join("; "));
 
   const laterMissing = plan.matches.filter((m) => m.stage === "later" && (!m.unlockCondition || !m.unlockTrigger));
   const laterItems = items.filter((s) => s.stage === "later" && !s.unlock);
