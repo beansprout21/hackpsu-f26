@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { SproutAvatar } from "@/components/sprout/SproutAvatar";
+import { PersonaArt } from "@/components/sprout/PersonaArt";
 import { personaFromValues } from "@/data/personaTaxonomy";
 import { cn } from "@/lib/utils";
 import type { GoalId, LifeStage, ValueTag } from "@/types";
@@ -49,12 +49,13 @@ const withArticle = (label: string) => `${article(label)} ${label}`;
 export function PersonaReveal({ values }: { values: ValueTag[] }) {
   const persona = personaFromValues(values);
   return (
-    <div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-2xl border border-border bg-secondary px-6 py-8 text-center duration-500">
-      <SproutAvatar size="lg" />
+    // Desktop: a tall, narrow "profile card" rather than a wide banner.
+    <div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-2xl border border-border bg-secondary px-6 py-8 text-center duration-500 lg:w-full lg:max-w-md lg:gap-5 lg:py-12">
+      <PersonaArt id={persona.id} label={persona.label} className="size-24 lg:size-32" />
       <p className="text-sm font-semibold tracking-wide text-highlight uppercase">You&apos;re {article(persona.label)}</p>
       <h2 className="-mt-3 text-3xl font-semibold tracking-tight">{persona.label}</h2>
       <p className="max-w-md text-muted-foreground">{persona.tagline}</p>
-      <ul className="flex flex-wrap justify-center gap-2" aria-label="Your top values">
+      <ul className="flex flex-wrap justify-center gap-2 lg:flex-col lg:items-center" aria-label="Your top values">
         {values.map((v) => (
           <li key={v} className="rounded-full bg-background px-3 py-1 text-sm font-medium">
             {VALUE_LABELS[v]}
