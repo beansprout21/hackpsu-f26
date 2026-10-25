@@ -604,5 +604,18 @@ console.log("\n=== No surplus (#109): only products that cost nothing new are no
   );
 }
 
+// #114: Ask Sprout's "What if I give it more time?" answers the what-if (new time at the current pace), not the gap again.
+console.log("\n=== Ask Sprout more-time what-if (#114): Maya's travel fund");
+{
+  const gapIntent = { kind: "goal_gap", goalId: "travel" } as const;
+  const gapAnswer = explain(gapIntent, "How do I close the $129 gap for my travel fund?", mayaProfile, m, maya.snapshot)?.template ?? "";
+  const timeAnswer = explain(gapIntent, "What if I give it more time?", mayaProfile, m, maya.snapshot)?.template ?? "";
+  check(/\$129 a month away/.test(gapAnswer), "gap answer still leads with the gap: " + gapAnswer.slice(0, 70));
+  check(
+    timeAnswer === "At $80 a month, your travel fund gets there in about 3 years instead of 12 months. To keep your timeline, move $129 from guilt-free instead.",
+    "more-time answer is the what-if: " + timeAnswer,
+  );
+}
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

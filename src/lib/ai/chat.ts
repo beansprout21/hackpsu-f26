@@ -485,7 +485,8 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
   const gap = Math.max(0, alloc.requiredMonthly - alloc.monthlyAmount);
   const laterMatch = plan.matches.find((m) => m.stage === "later" && m.goalId === goalId && m.unlockCondition);
   // "What if I give it more time?" leads with the more-time lever; otherwise the engine's order (dial first).
-  const levers = /\b(time|longer|months?|years?)\b/i.test(question)
+  const askedTime = /\b(time|longer|months?|years?)\b/i.test(question);
+  const levers = askedTime
     ? [...alloc.levers].sort((a, b) => Number(b.kind === "more_time") - Number(a.kind === "more_time"))
     : alloc.levers;
   const leverLines = levers.map((l, i) => {
@@ -499,6 +500,19 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
     : alloc.monthlyAmount === 0 && laterMatch?.unlockCondition
       ? `Your ${fund} starts growing ${lowerFirst(laterMatch.unlockCondition).replace(/\.$/, "")}.`
       : `Your ${fund} needs ${usd(alloc.requiredMonthly)} a month and gets ${usd(alloc.monthlyAmount)}, so it's ${usd(gap)} a month away.`;
+  // #114: "What if I give it more time?" answers the what-if itself (the new time at the current pace), not the gap again.
+  const moreTime = alloc.levers.find((l) => l.kind === "more_time");
+  const dial = alloc.levers.find((l) => l.kind === "turn_up_dial");
+  const horizon = profile.goals.find((g) => g.id === goalId)?.horizonMonths;
+  const moreTimeAnswer =
+    askedTime && moreTime && !alloc.onTrack && alloc.monthlyAmount > 0
+      ? [
+          `At ${usd(alloc.monthlyAmount)} a month, your ${fund} gets there in ${aboutTime(moreTime.newHorizonMonths)}${horizon ? ` instead of ${timeSpan(horizon)}` : ""}.`,
+          dial ? `To keep your timeline, move ${usd(dial.moveFromGuiltFree)} from guilt-free instead.` : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      : null;
   return {
     facts: {
       goalId,
@@ -518,7 +532,7 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
       guiltFreeMonthly: guiltFree,
       unlockCondition: laterMatch?.unlockCondition ?? null,
     },
-    template: [lead, ...(alloc.onTrack ? [] : leverLines)].slice(0, MAX_SENTENCES).join(" "),
+    template: moreTimeAnswer ?? [lead, ...(alloc.onTrack ? [] : leverLines)].slice(0, MAX_SENTENCES).join(" "),
     cited: [],
   };
 }
