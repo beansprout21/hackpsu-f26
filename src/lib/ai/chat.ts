@@ -4,7 +4,7 @@
 // so Sprout never invents a rate or gives investing advice. Question and history text are never logged.
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, IncomeKind, Match, Plan, Product, SpendingBucketId, ValueTag } from "@/types";
+import type { Allocation, ChatIntent, ChatTurn, FinancialSnapshot, GoalId, GoalProfile, IncomeKind, Match, Plan, Product, SpendingBucketId, ValueTag } from "@/types";
 import { fnbFitMatch, fundName, p1GoalId, productShortName } from "@/lib/client/chatCopy";
 import { aboutTime, timeSpan } from "@/lib/client/time";
 import { getProduct, isCatalogId } from "@/lib/server/catalog";
@@ -363,11 +363,14 @@ function explainCushion(plan: Plan, snapshot?: FinancialSnapshot): Explained {
       savedSoFar: saved,
       savedCounts: true,
       monthlyToCushion: monthly,
-      milestone: { label: "1 month covered", amount: fpd, inMonths: milestoneInMonths },
-      fullInMonths: plan.cushionFillsInMonths,
+      milestone: { label: "1 month covered", amount: fpd, inTime: milestoneInMonths ? aboutTime(milestoneInMonths) : null },
       fullInTime: plan.cushionFillsInMonths ? aboutTime(plan.cushionFillsInMonths) : null,
       met,
-      why: "Irregular money: if it stops for a month or two, rent and bills are still covered.",
+      // Only irregular income gets the irregular-income reason (cycle 3: steady earners were told their income is irregular).
+      steadyIncome: snapshot?.hasSteadyIncome ?? null,
+      why: snapshot?.hasSteadyIncome
+        ? "If income stops for a while (a job change or a surprise), 3 months keeps rent and bills covered."
+        : "Irregular money: if it stops for a month or two, rent and bills are still covered.",
     },
     template: [
       lead,
@@ -456,7 +459,6 @@ function explainUnlock(plan: Plan, profile: GoalProfile, snapshot: FinancialSnap
       unlockTrigger: trigger,
       savedSoFar: saved,
       dollarsAway: gap,
-      monthsAway,
       timeAway: monthsAway ? aboutTime(monthsAway) : null,
       monthlySaving: monthly,
       meanwhile: meanwhile ? { productId: meanwhile.productId, product: meanwhileName } : { stepOne: plan.stepOne.title },
@@ -503,14 +505,13 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
       requiredMonthly: alloc.requiredMonthly,
       allocatedMonthly: alloc.monthlyAmount,
       gapMonthly: gap,
-      monthsToTarget: alloc.monthsToTarget,
       timeAtPace: alloc.monthsToTarget > 0 ? aboutTime(alloc.monthsToTarget) : null,
       onTrack: alloc.onTrack,
       levers: levers.map((l) =>
         l.kind === "turn_up_dial"
           ? { ...l, guiltFreeAfter: guiltFree - l.moveFromGuiltFree }
           : l.kind === "more_time"
-            ? { ...l, newHorizonTime: aboutTime(l.newHorizonMonths) }
+            ? leverFacts(l)
             : l,
       ),
       guiltFreeMonthly: guiltFree,
@@ -521,7 +522,8 @@ function explainGap(plan: Plan, profile: GoalProfile, question: string, goalIdIn
   };
 }
 
-function explain(intent: ChatIntent, question: string, profile: GoalProfile, plan: Plan, snapshot?: FinancialSnapshot): Explained | null {
+// Exported for scripts/check-chat.ts (deterministic facts; no AI).
+export function explain(intent: ChatIntent, question: string, profile: GoalProfile, plan: Plan, snapshot?: FinancialSnapshot): Explained | null {
   switch (intent.kind) {
     case "why_step_one":
       return explainStepOne(plan, profile);
@@ -542,23 +544,42 @@ function explain(intent: ChatIntent, question: string, profile: GoalProfile, pla
 }
 
 // ---------- AI ----------
+// AI-facing durations are the formatted *Time strings only: raw month counts invite "about 3 years instead
+// of 38" and 24+ month phrasing (#121), and leaving them out lets the number guard block them.
+type Lever = Allocation["levers"][number];
+const leverFacts = (l: Lever) => (l.kind === "more_time" ? { kind: l.kind, newHorizonTime: aboutTime(l.newHorizonMonths) } : l);
+function allocationFacts(a: Allocation) {
+  return {
+    goalId: a.goalId,
+    monthlyAmount: a.monthlyAmount,
+    requiredMonthly: a.requiredMonthly,
+    onTrack: a.onTrack,
+    timeAtPace: a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null,
+    levers: a.levers.map(leverFacts),
+  };
+}
+function whatIfFacts(w: WhatIf) {
+  const { currentMonthsToTarget, newMonthsToTarget, ...rest } = w;
+  return {
+    ...rest,
+    currentTime: currentMonthsToTarget > 0 ? aboutTime(currentMonthsToTarget) : null,
+    newTime: newMonthsToTarget > 0 ? aboutTime(newMonthsToTarget) : null,
+    gapAfter: !w.cushion && !w.onTrackAfter ? Math.round(w.requiredMonthly - w.newMonthly) : null,
+  };
+}
+
 function chatFacts(question: string, profile: GoalProfile, plan: Plan, extra: { whatIf: WhatIf | null; explain: Record<string, unknown> | null; intent: ChatIntent["kind"] }) {
   return {
     question,
     intent: extra.intent,
     explain: extra.explain,
-    whatIf: extra.whatIf && {
-      ...extra.whatIf,
-      currentTime: extra.whatIf.currentMonthsToTarget > 0 ? aboutTime(extra.whatIf.currentMonthsToTarget) : null,
-      newTime: extra.whatIf.newMonthsToTarget > 0 ? aboutTime(extra.whatIf.newMonthsToTarget) : null,
-      gapAfter: !extra.whatIf.cushion && !extra.whatIf.onTrackAfter ? Math.round(extra.whatIf.requiredMonthly - extra.whatIf.newMonthly) : null,
-    },
+    whatIf: extra.whatIf && whatIfFacts(extra.whatIf),
     persona: profile.persona.label,
     topValues: profile.topValues,
     richLife: profile.richLifeStatement,
     goals: profile.goals.map((g) => {
       const a = plan.allocation.find((x) => x.goalId === g.id);
-      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ?? null, timeAtPace: a && a.monthsToTarget > 0 ? aboutTime(a.monthsToTarget) : null, gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null };
+      return { id: g.id, label: goalWord(g.id), fund: fundName(g.id), why: g.why, motivation: g.motivation, targetAmount: g.targetAmount, horizonMonths: g.horizonMonths, horizonTime: aboutTime(g.horizonMonths), allocation: a ? allocationFacts(a) : null, gapMonthly: a && !a.onTrack ? Math.round(a.requiredMonthly - a.monthlyAmount) : null };
     }),
     money: {
       effectiveMonthlyIncome: plan.effectiveMonthlyIncome,

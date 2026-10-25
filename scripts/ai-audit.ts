@@ -166,7 +166,7 @@ interface Flag {
 
 // Checks every AI-facing text: banned words, investing/tax advice without the advisor handoff,
 // "emergency fund", months where years are required, FNB naming, products the plan doesn't hold.
-function textFlags(field: string, text: string, planProductIds: Set<string>, allowAdvisorLine = true): Flag[] {
+function textFlags(field: string, text: string, planProductIds: Set<string>, allowAdvisorLine = true, termsText = ""): Flag[] {
   const out: Flag[] = [];
   const banned = [...new Set((text.match(BANNED) ?? []).map((w) => w.toLowerCase()))];
   if (banned.length) out.push({ type: "banned words", detail: `${field}: ${banned.join(", ")} · "${around(text, BANNED)}"` });
@@ -187,7 +187,14 @@ function textFlags(field: string, text: string, planProductIds: Set<string>, all
   const wrong = [
     ...new Set(
       productNames
-        .filter((p) => lower.includes(p.name.toLowerCase()) && !planProductIds.has(p.id) && !planNames.some((n) => n !== p.name.toLowerCase() && n.includes(p.name.toLowerCase())))
+        .filter(
+          (p) =>
+            lower.includes(p.name.toLowerCase()) &&
+            !planProductIds.has(p.id) &&
+            !planNames.some((n) => n !== p.name.toLowerCase() && n.includes(p.name.toLowerCase())) &&
+            // A product named inside this product's own published terms ("free on Student Checking") is a fee fact.
+            !termsText.toLowerCase().includes(p.name.toLowerCase()),
+        )
         .map((p) => p.name),
     ),
   ];
@@ -215,6 +222,7 @@ interface PlanItem {
   aiUsed: boolean;
   profileAiUsed: boolean;
   fallbackReason?: string;
+  rejectedFields: number; // AI fields the number/voice/consistency guards or text budget replaced with the template
   profileMs: number;
   planMs: number;
   flags: Flag[];
@@ -267,7 +275,12 @@ async function auditPlan(user: User): Promise<PlanItem> {
     ...plan.steps.filter((s) => s.order !== 1).flatMap((s): [string, string][] => [[`step${s.order}.title`, s.title], [`step${s.order}.detail`, s.detail]]),
     ["bankerSummary", plan.bankerSummary],
   ];
-  for (const [field, text] of shown) flags.push(...textFlags(field, text, productIds));
+  const termsOf = (field: string) => {
+    const id = field.startsWith("explanation:") ? field.slice("explanation:".length) : null;
+    const m = id ? plan.matches.find((x) => x.productId === id) : undefined;
+    return m ? [...m.termsToKnow, ...(catalog.find((p) => p.id === m.productId)?.keyTerms ?? [])].join(" ") : "";
+  };
+  for (const [field, text] of shown) flags.push(...textFlags(field, text, productIds, true, termsOf(field)));
   flags.push(...trackFlags("headline", plan.headline, p1OnTrack, plan), ...trackFlags("sproutSays", plan.sproutSays, p1OnTrack, plan));
   if (words(plan.headline) > 10) flags.push({ type: "headline > 10 words", detail: `"${clip(plan.headline)}"` });
   if (words(plan.sproutSays) > 35) flags.push({ type: "sproutSays > 35 words", detail: `${words(plan.sproutSays)} words` });
@@ -304,7 +317,7 @@ async function auditPlan(user: User): Promise<PlanItem> {
     }
   }
 
-  return { user, profile, plan, aiUsed: result.aiUsed, profileAiUsed: profileResult.aiUsed, fallbackReason: result.fallbackReason, profileMs, planMs, flags };
+  return { user, profile, plan, aiUsed: result.aiUsed, profileAiUsed: profileResult.aiUsed, fallbackReason: result.fallbackReason, rejectedFields: result.rejectedFields ?? 0, profileMs, planMs, flags };
 }
 
 // ---------- chat audit ----------
@@ -468,7 +481,7 @@ async function main() {
     "",
     "## Summary",
     "",
-    `- Plans: ${plans.length} built, ${planFallbacks} plan fallbacks, ${profileFallbacks} profile fallbacks, average plan latency ${(avg(plans.map((p) => p.planMs)) / 1000).toFixed(1)} s, profile ${(avg(plans.map((p) => p.profileMs)) / 1000).toFixed(1)} s.`,
+    `- Plans: ${plans.length} built, ${planFallbacks} plan fallbacks, ${profileFallbacks} profile fallbacks, ${plans.reduce((t, p) => t + p.rejectedFields, 0)} AI fields kept the template (guards or text budget), average plan latency ${(avg(plans.map((p) => p.planMs)) / 1000).toFixed(1)} s, profile ${(avg(plans.map((p) => p.profileMs)) / 1000).toFixed(1)} s.`,
     `- Chats: ${chats.length} answers, ${chatFallbacks} fallbacks (boundary and rate answers are deterministic by design), average latency ${(avg(chats.map((c) => c.ms)) / 1000).toFixed(1)} s.`,
     `- Fallback rate (plans + chats): ${(fallbackRate * 100).toFixed(1)}%.`,
     `- Wall time ${Math.round((Date.now() - started) / 1000)} s.`,
@@ -514,6 +527,7 @@ async function main() {
       chats: chats.length,
       planFallbacks,
       profileFallbacks,
+      fieldsKeptTemplate: plans.reduce((t, p) => t + p.rejectedFields, 0),
       chatFallbacks,
       fallbackRatePct: Math.round(fallbackRate * 1000) / 10,
       avgPlanMs: avg(plans.map((p) => p.planMs)),
