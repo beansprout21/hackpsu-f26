@@ -13,7 +13,7 @@ export function SproutSays({
   return (
     <div className={cn("flex items-start gap-3", className)}>
       <SproutAvatar mood={mood} />
-      <div className="min-w-0 rounded-2xl rounded-tl-sm bg-secondary px-4 py-3 text-sm leading-relaxed text-secondary-foreground sm:text-base">
+      <div className="min-w-0 rounded-2xl rounded-tl-sm bg-secondary px-4 py-3 text-body text-secondary-foreground">
         {children}
       </div>
     </div>

@@ -12,7 +12,7 @@ export function UserMenu() {
 
   if (!user) {
     return (
-      <a href="/auth/login?returnTo=/snapshot" className={buttonVariants({ variant: "outline", size: "sm" })}>
+      <a href="/auth/login?returnTo=/snapshot" className={buttonVariants({ variant: "ghost" })}>
         Log in
       </a>
     );
@@ -24,7 +24,7 @@ export function UserMenu() {
       <span className="hidden max-w-40 truncate text-sm text-muted-foreground sm:inline" title={user.email ?? undefined}>
         {name}
       </span>
-      <a href="/auth/logout" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+      <a href="/auth/logout" className={buttonVariants({ variant: "ghost" })}>
         Log out
       </a>
     </div>

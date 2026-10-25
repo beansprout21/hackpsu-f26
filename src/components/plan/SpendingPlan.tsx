@@ -9,18 +9,23 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
   const { futureYou } = plan;
 
   return (
-    <section aria-labelledby="spending" className="flex flex-col gap-5 rounded-2xl border border-border p-5">
+    <section aria-labelledby="spending" className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-card">
       <div className="flex flex-col gap-1">
-        <h2 id="spending" className="text-lg font-semibold tracking-tight">
+        <h2 id="spending" className="text-small font-semibold tracking-wide text-muted-foreground uppercase">
           Your spending plan
         </h2>
-        <p className="text-sm text-muted-foreground tabular-nums">
-          {usd(plan.effectiveMonthlyIncome)} comes in each month − {usd(costs)} in costs ={" "}
-          <span className="font-semibold text-foreground">{usd(plan.monthlySurplus)} to work with</span>
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-title font-semibold text-brand-700 tabular-nums">
+            {usd(Math.max(plan.monthlySurplus, 0))}
+          </span>
+          <span className="text-body text-muted-foreground">a month to work with</span>
+        </p>
+        <p className="text-small text-muted-foreground tabular-nums">
+          {usd(plan.effectiveMonthlyIncome)} comes in − {usd(costs)} in costs
         </p>
       </div>
 
-      <div className="flex h-4 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label="Spending plan split">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label="Spending plan split">
         {plan.spendingPlan.map((b) => (
           <span
             key={b.bucket}
@@ -30,25 +35,25 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
         ))}
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid gap-4 sm:grid-cols-2">
         {plan.spendingPlan.map((b) => (
           <li key={b.bucket} className="flex gap-3">
-            <span className={cn("mt-1.5 size-3 shrink-0 rounded-full", BUCKETS[b.bucket].color)} aria-hidden />
-            <span className="flex flex-col gap-0.5">
-              <span className="font-medium tabular-nums">
+            <span className={cn("mt-2 size-2 shrink-0 rounded-full", BUCKETS[b.bucket].color)} aria-hidden />
+            <span className="flex flex-col">
+              <span className="text-body font-semibold tabular-nums">
                 {BUCKETS[b.bucket].label} · {usd(b.monthlyAmount)}/mo{" "}
-                <span className="text-sm font-normal text-muted-foreground">({Math.round(b.percent)}%)</span>
+                <span className="text-small font-normal text-muted-foreground">({Math.round(b.percent)}%)</span>
               </span>
-              <span className="text-sm text-muted-foreground">{b.note}</span>
+              <span className="text-small text-muted-foreground">{b.note}</span>
             </span>
           </li>
         ))}
       </ul>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex gap-3 rounded-xl bg-secondary p-4">
-          <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden />
-          <p className="text-sm leading-relaxed">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex gap-3 rounded-xl bg-brand-50 p-4">
+          <ShieldCheck className="size-5 shrink-0 text-brand-600" aria-hidden />
+          <p className="text-small">
             <span className="font-semibold">Your {usd(plan.cushionTarget)} cushion</span>{" "}
             {plan.cushionFillsInMonths !== null
               ? `fills in about ${formatMonths(plan.cushionFillsInMonths)}.`
@@ -57,9 +62,9 @@ export function SpendingPlan({ plan }: { plan: Plan }) {
                 : "starts once there's room in your budget."}
           </p>
         </div>
-        <div className="flex gap-3 rounded-xl bg-secondary p-4">
-          <Sparkles className="size-5 shrink-0 text-primary" aria-hidden />
-          <p className="text-sm leading-relaxed">
+        <div className="flex gap-3 rounded-xl bg-brand-50 p-4">
+          <Sparkles className="size-5 shrink-0 text-brand-600" aria-hidden />
+          <p className="text-small">
             <span className="font-semibold">Future You: </span>
             {futureYou.earmarkMonthly !== null
               ? `about ${usd(futureYou.earmarkMonthly)}/month for the long term. `
