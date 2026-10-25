@@ -57,12 +57,12 @@ All strings live in `src/lib/client/planCopy.ts` so Ben can edit text in one pla
 
 **Your goals** (the `emergency_fund` goal is not listed here; it is the cushion block)
 - P1, on track: "<Fund> is on track: $<monthlyAmount> a month gets you there."
-- P1, off track: "<Fund> is $<gap> a month away." Lever button = first lever (turn_up_dial first):
+- P1, off track: "<Fund> is $<gap> a month away." Lever button (v3.1 order): turn_up_dial if offered; else more_time **only if newHorizonMonths ≤ 60**; else smaller_target; else, if the plan has the Big Win step, "Review your biggest fixed cost" → Ask Sprout "How can I lower my biggest fixed cost?"; else no button.
   - turn_up_dial: "See what moving $<move> from guilt-free does" → Ask Sprout: "What if I move $<move> a month from guilt-free to my <fund>?"
   - more_time: "See it with more time" → "What if I give my <fund> <newHorizonMonths> months?"
   - smaller_target: "See a smaller target" → "What if my <fund> target were $<reachableAmount>?"
-- Other goals, allocated > 0 and months at current pace ≤ 2 × horizon: "<Fund>: on your path, about <N> months at your pace."
-- Other goals, otherwise: "<Fund>: starts growing after <unlock>", where unlock = the `unlockCondition` of that goal's `later` match, else "your safety cushion is full".
+- Other goals with money going in (v3.1): "<Fund>: $<monthlyAmount> a month going in", plus ", about <N> months at your pace" only when N ≤ 2 × horizon.
+- Other goals with $0 going in: "<Fund>: starts growing after <unlock>", where unlock = the `unlockCondition` of that goal's `later` match; else "your safety cushion is full" if it isn't; else "your top goal is on track".
 - Never red, never "off track" wording for non-P1 goals.
 
 **Your path**
