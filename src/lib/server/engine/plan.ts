@@ -327,7 +327,12 @@ export function buildPlanSkeleton(profile: GoalProfile, snapshot: FinancialSnaps
     math.monthlySurplus > 0
       ? ctx.moneyGoals.length > 1 && p1
         ? `${usd(spending.goalMonthly)} a month toward your goals, starting with ${GOAL_LABELS[p1.id]}`
-        : `${usd(spending.goalMonthly)} a month toward your ${p1 ? GOAL_LABELS[p1.id] : "savings"} goal`
+        : p1
+          ? `${usd(spending.goalMonthly)} a month toward your ${GOAL_LABELS[p1.id]} goal`
+          : // v3.3 (#107): habits only never says "your savings goal".
+            spending.emergencyMonthly > 0
+            ? `${usd(spending.emergencyMonthly)} a month toward your safety cushion`
+            : `${usd(spending.goalMonthly)} a month in savings, ready for your next goal`
       : "First, let's find your breathing room";
 
   return {

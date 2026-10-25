@@ -177,7 +177,7 @@ function Month({ model, chips, onTab }: { model: OverviewModel; chips: BlockChip
   const parts = [
     { key: "fixed", label: copy.MONTH_BAR_LABELS.fixed, amount: bar.fixed, color: BUCKETS.fixed_costs.color },
     { key: "cushion", label: copy.MONTH_BAR_LABELS.cushion, amount: bar.cushion, color: BUCKETS.emergency_fund.color },
-    { key: "goals", label: copy.MONTH_BAR_LABELS.goals, amount: bar.goals, color: BUCKETS.goal_savings.color },
+    { key: "goals", label: model.month.goalsLabel, amount: bar.goals, color: BUCKETS.goal_savings.color },
     { key: "guiltFree", label: copy.MONTH_BAR_LABELS.guiltFree, amount: bar.guiltFree, color: BUCKETS.guilt_free.color },
   ];
   const total = parts.reduce((s, p) => s + p.amount, 0);

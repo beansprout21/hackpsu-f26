@@ -27,6 +27,8 @@ export interface OverviewModel {
     toWorkWith: number;
     sentence: string;
     bar: { fixed: number; cushion: number; goals: number; guiltFree: number };
+    // v3.3 (#107): "Savings" when there is no money goal to receive the goals segment.
+    goalsLabel: string;
   };
   cushion: {
     target: number;
@@ -193,6 +195,7 @@ export function buildOverview(plan: Plan, profile: GoalProfile, snapshot: Financ
       goals: bucket(plan, "goal_savings"),
       guiltFree: bucket(plan, "guilt_free"),
     },
+    goalsLabel: p1 ? copy.MONTH_BAR_LABELS.goals : copy.MONTH_BAR_SAVINGS_LABEL,
   };
 
   // 3. Your safety cushion (savings count toward it; milestone = 1 month of fixed + debt)

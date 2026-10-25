@@ -97,7 +97,9 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   // Inside savings: safety cushion first (50/50) until it is met; existing savings count toward it.
   const cushionMet = snapshot.savingsBalance >= ctx.cushionTarget;
   // v3.1 values tilt: security/family top value puts 60% toward the cushion instead of 50%.
-  const emergencyMonthly = cushionMet ? 0 : Math.floor(savingsMonthly * (ctx.cushionFirst ? 0.6 : 0.5));
+  // v3.3 (#107): habits only (no money goal) -> the whole savings share goes to the cushion until it is met.
+  const habitsOnly = ctx.moneyGoals.length === 0;
+  const emergencyMonthly = cushionMet ? 0 : habitsOnly ? savingsMonthly : Math.floor(savingsMonthly * (ctx.cushionFirst ? 0.6 : 0.5));
   const goalMonthly = savingsMonthly - emergencyMonthly;
   const cushionFillsInMonths =
     !cushionMet && emergencyMonthly > 0 ? monthsToTarget(ctx.cushionTarget, snapshot.savingsBalance, emergencyMonthly) : null;
@@ -136,8 +138,10 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   const emergencyNote = noRoom
     ? "First we find your breathing room, then this starts growing."
     : cushionMet
-      ? "Your safety cushion is full, so all savings go to your goals."
-      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${timeSpan(cushionFillsInMonths)}` : ""}. After that, your goals get the full amount.`;
+      ? habitsOnly
+        ? "Your safety cushion is full, so savings stay ready for your next goal."
+        : "Your safety cushion is full, so all savings go to your goals."
+      : `Builds your safety cushion to ${usd(ctx.cushionTarget)}${cushionFillsInMonths ? ` in about ${timeSpan(cushionFillsInMonths)}` : ""}. ${habitsOnly ? "After that, savings stay ready for your next goal." : "After that, your goals get the full amount."}`;
 
   const spendingPlan: SpendingBucket[] = [
     {
@@ -154,7 +158,11 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
       bucket: "goal_savings",
       monthlyAmount: goalMonthly,
       percent: pct(goalMonthly),
-      note: noRoom ? "Goals start as soon as there's room." : `Split across ${goalNames}, by priority.`,
+      note: noRoom
+        ? "Goals start as soon as there's room."
+        : habitsOnly
+          ? "Savings, ready for your next goal."
+          : `Split across ${goalNames}, by priority.`,
     },
     {
       bucket: "guilt_free",

@@ -33,6 +33,8 @@ export const DETAILS_LABEL = "Details";
 export const OPEN_ROADMAP_LABEL = "Open roadmap";
 export const MILESTONE_LABEL = "1 month covered";
 export const MONTH_BAR_LABELS = { fixed: "Fixed costs", cushion: "Safety cushion", goals: "Goals", guiltFree: "Guilt-free" } as const;
+// SPROUT.md v3.3 (#107): the goals segment's label when the user chose only habits.
+export const MONTH_BAR_SAVINGS_LABEL = "Savings";
 export const PATH_STAGE_LABELS = { now: "Now", next: "Next", later: "Later" } as const;
 
 // Fund names, lowercase for use mid-sentence ("my travel fund"); fund() capitalizes for line starts.
