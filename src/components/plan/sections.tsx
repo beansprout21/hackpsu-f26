@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { CalendarCheck, Check, Quote, Sprout } from "lucide-react";
+import { CalendarCheck, Check, Quote } from "lucide-react";
 import { toast } from "sonner";
+import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
 import { cn } from "@/lib/utils";
 import type { GoalProfile, Plan, PlanStep } from "@/types";
 import { formatMonths, productName, usd } from "./format";
@@ -11,6 +12,7 @@ import { STEP_ICONS } from "./icons";
 const BANKER_URL = "https://www.fnb-online.com/schedule-an-appointment";
 
 export function SummaryHeader({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
+  const PersonaIcon = PERSONA_ICONS[profile.persona.id];
   const onTrack = plan.allocation.filter((a) => a.onTrack).length;
   const steps = plan.steps.some((s) => s.order === plan.stepOne.order && s.title === plan.stepOne.title)
     ? plan.steps.length
@@ -29,7 +31,7 @@ export function SummaryHeader({ plan, profile }: { plan: Plan; profile: GoalProf
     <section aria-labelledby="plan-headline" className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-100 px-3 py-1 text-small font-semibold text-brand-700">
-          <Sprout className="size-5" aria-hidden />
+          <PersonaIcon className="size-5 text-foreground" aria-hidden />
           {profile.persona.label}
         </span>
         <h1 id="plan-headline" className="text-lead font-semibold text-balance sm:text-title">

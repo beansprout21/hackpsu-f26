@@ -78,6 +78,15 @@ export function TimelineTrack({
 
   return (
     <div className="rounded-3xl border border-border bg-gradient-to-b from-secondary to-background px-5 pt-4 pb-3 sm:px-8">
+      <p className="mb-2 min-h-6 text-body text-muted-foreground" aria-hidden>
+        {labeled ? (
+          <span className="font-semibold text-foreground">
+            {goalMeta(labeled.id).label} · in {formatHorizon(labeled.horizonMonths)}
+          </span>
+        ) : (
+          "Drag each goal to when you want it"
+        )}
+      </p>
       <div className="relative mx-2" style={{ height }}>
         {TICKS.map((t) => (
           <span
@@ -147,7 +156,7 @@ export function TimelineTrack({
                   style={{ width: MARKER, height: MARKER }}
                   className={cn(
                     "flex cursor-grab touch-none items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground outline-none transition-[box-shadow,transform] duration-150 select-none focus-visible:ring-4 focus-visible:ring-ring/50 active:cursor-grabbing",
-                    isDragging ? "scale-110 shadow-xl" : "shadow-md hover:scale-105",
+                    isDragging ? "scale-125 shadow-xl" : "shadow-md hover:scale-105",
                   )}
                 >
                   <meta.icon className="size-5" aria-hidden />
@@ -182,15 +191,6 @@ export function TimelineTrack({
           </span>
         ))}
       </div>
-      <p className="mt-1 text-center text-xs text-muted-foreground" aria-hidden>
-        {labeled ? (
-          <span className="font-semibold text-foreground">
-            {goalMeta(labeled.id).label} · in {formatHorizon(labeled.horizonMonths)}
-          </span>
-        ) : (
-          "Drag each goal to when you want it"
-        )}
-      </p>
     </div>
   );
 }

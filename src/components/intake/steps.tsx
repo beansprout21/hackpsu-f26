@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { SproutAvatar } from "@/components/sprout/SproutAvatar";
+import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
 import { personaFromValues } from "@/data/personaTaxonomy";
 import { cn } from "@/lib/utils";
 import type { GoalId, LifeStage, ValueTag } from "@/types";
@@ -20,7 +20,7 @@ export function LifeStageStep({
   onPick: (stage: LifeStage) => void;
 }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
+    <div className="grid gap-3">
       {LIFE_STAGES.map((s) => (
         <button
           key={s.id}
@@ -28,7 +28,7 @@ export function LifeStageStep({
           aria-pressed={value === s.id}
           onClick={() => onPick(s.id)}
           className={cn(
-            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left lg:min-h-32 lg:items-start transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex min-h-20 items-center justify-between gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             value === s.id ? "border-primary bg-secondary" : "border-border hover:border-primary/60 hover:bg-secondary/60",
           )}
         >
@@ -48,13 +48,17 @@ const withArticle = (label: string) => `${article(label)} ${label}`;
 
 export function PersonaReveal({ values }: { values: ValueTag[] }) {
   const persona = personaFromValues(values);
+  const Icon = PERSONA_ICONS[persona.id];
   return (
-    <div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-2xl border border-border bg-secondary px-6 py-8 text-center duration-500">
-      <SproutAvatar size="lg" />
+    // Desktop: a tall, narrow "profile card" rather than a wide banner.
+    <div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-2xl border border-border bg-secondary px-6 py-8 text-center duration-500 lg:gap-5 lg:py-12">
+      <span className="flex size-20 items-center justify-center rounded-full bg-brand-200 text-foreground shadow-sm ring-2 ring-white lg:size-24">
+        <Icon className="size-8 lg:size-10" aria-hidden />
+      </span>
       <p className="text-sm font-semibold tracking-wide text-highlight uppercase">You&apos;re {article(persona.label)}</p>
       <h2 className="-mt-3 text-3xl font-semibold tracking-tight">{persona.label}</h2>
       <p className="max-w-md text-muted-foreground">{persona.tagline}</p>
-      <ul className="flex flex-wrap justify-center gap-2" aria-label="Your top values">
+      <ul className="flex flex-wrap justify-center gap-2 lg:flex-col lg:items-center" aria-label="Your top values">
         {values.map((v) => (
           <li key={v} className="rounded-full bg-background px-3 py-1 text-sm font-medium">
             {VALUE_LABELS[v]}
