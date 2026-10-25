@@ -45,7 +45,7 @@ Amounts are floored to whole dollars; leftover dollars go to `guilt_free`.
 - **Safety cushion (v3) = max($1,000, 3 × (fixed + debt)) for everyone.** Irregular income is exactly why: if money stops for 1 to 2 months, bills are still covered. (`cushionTarget` = `emergencyFundTarget` = this number.)
 - Existing `savingsBalance` counts toward it. If savings already cover it, the cushion is met and 100% of savings goes to goals.
 - **Milestone:** "1 month covered" at 1 × (fixed + debt); report it so the UI can show an early win (Maya: $650, reached in 3 months).
-- Until the cushion is met: 50% `emergency_fund`, 50% `goal_savings`. After: 100% `goal_savings`.
+- Until the cushion is met: 50% `emergency_fund`, 50% `goal_savings`. **v3.1 values tilt:** if the user's top value (`profile.topValues[0]`) is `security` or `family`, the split is **60% cushion / 40% goals**. After the cushion is met: 100% `goal_savings`. (Maya's top value is experiences, so her numbers are unchanged; her opposite-swipes version gets a visibly different plan.)
 - User-facing name is always **"safety cushion"** (never "starter cushion" or "full cushion"); an `emergency_fund` goal *is* the safety cushion and is labeled that way.
 - `goal_savings` split by priority: **P1 60%, P2 25%, P3 15%**, renormalized to the goals present; leftover dollars to P1.
 
@@ -71,7 +71,7 @@ Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-prio
 | 1 | `monthlySurplus` ≤ 0 | Open your bank app and find last week's 3 biggest buys. | That's where we'll find your breathing room. | budget |
 | 2 | P1 = credit_building | Check your free credit report now. | 5 minutes at annualcreditreport.com. Free, and it doesn't hurt your score. | learn |
 | 3 | P1 = everyday_banking | Turn on low-balance alerts in your bank app. | No surprise fees, ever. | habit |
-| 4 | P1 = emergency_fund, or no goals | Move $A into savings right now. | That starts your $<cushionTarget> safety cushion. | save |
+| 4 | P1 = emergency_fund, or no goals, **or (v3.1) top value is security or family and the cushion is not met** | Move $A into savings right now. | That starts your $<cushionTarget> safety cushion. | save |
 | 5 | otherwise | Move $A into your <fund name> right now. | You'll put $<P1 monthlyAmount> a month toward it. This starts it. | save |
 
 `stepOne.monthlyAmount` is omitted; `startMonth` 0; no `productId`.
@@ -86,6 +86,8 @@ Amount `$A` = $20, or $10 if `monthlySurplus` < $100. P1 goal = the highest-prio
 - Student triggers: secured card → savings ≥ **1 month of (fixed + debt) + minimum deposit** (v3: decoupled from the 3-month cushion so credit building can start early), or `first_paycheck`. Income-dependent products → `first_paycheck` / `internship`. Mortgages and homebuyer programs → `full_time_job` + safety cushion met.
 - Habit step always present: **automate on payday**.
 - **Fit-first, fee-transparent:** recommend the FNB account that best fits the user's situation (not simply the cheapest). Every account card states its monthly fee and exactly how THIS user avoids it (e.g. "no monthly fee on Student Checking", "waived with direct deposit"). Framing: Sprout makes sure you never pay a fee you didn't see coming.
+- **No student loans (v3.1):** Sprout never recommends student loan products at any stage, including not-yet. Students usually handle loans with their family; Sprout stays on budgeting, saving, and credit. Mortgages and homebuyer programs for families are unaffected.
+- **Intro goal (v3.1):** `sproutSays` and `headline` templates talk about the **P1** goal, never a lower-priority goal picked by values.
 - Be honest about weak rates: if a product's published rate is low (e.g. a goal CD at 0.05% APY), the explanation sells the commitment, not the interest.
 
 ## Rule set F: Future You (investing, inside our boundary)
