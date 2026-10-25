@@ -61,5 +61,5 @@ Copy lives in `src/lib/client/chatCopy.ts` as functions of `(plan, profile, snap
 - Next (not tonight): save memory to the user's account with consent, together with Share with FNB.
 
 ## Demo check (Maya)
-- Starters: "Why is this my first move?" · "How do I close the $140 gap for my travel fund?" · "When can I get the SmartSecured card?"
-- Tap 1 → answer cites rule D5 and $69/month; follow-ups appear; tap "What if I move $140 from guilt-free?" → engine numbers (on track, $117 left for fun).
+- Starters: "Why is this my first move?" · "How do I close the $129 gap for my travel fund?" · "When can I get the SmartSecured card?"
+- Tap 1 → answer cites rule D5 and $80/month; follow-ups appear; tap "What if I move $129 from guilt-free?" → engine numbers (on track, $128 left for fun).
