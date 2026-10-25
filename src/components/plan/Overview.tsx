@@ -2,16 +2,15 @@
 
 import type { ReactNode } from "react";
 import { ArrowRight, Check, CircleCheck, CircleHelp, ExternalLink, Hourglass, Sparkles, Sprout, TrendingUp, type LucideIcon } from "lucide-react";
-import { AskChip, useAskSprout } from "@/components/chat/AskSprout";
+import { useAskSprout } from "@/components/chat/AskSprout";
 import type { BlockChips, Chip } from "@/lib/client/chatCopy";
 import { PERSONA_ICONS } from "@/components/sprout/personaIcons";
-import type { OverviewModel } from "@/lib/client/overview";
 import * as copy from "@/lib/client/planCopy";
 import { cn } from "@/lib/utils";
-import type { PersonaId, Stage, StepKind } from "@/types";
+import type { PersonaId } from "@/types";
 import { BUCKETS, usd } from "./format";
-import { STEP_ICONS } from "./icons";
-import { stageMeta } from "./Roadmap";
+import { GuideStepRow, productChip } from "./guide";
+import { OVERVIEW_STEPS, V2_COPY, type OverviewModelV2 } from "./overviewV2";
 import { BankerCta } from "./sections";
 
 type Tab = "money" | "goals" | "roadmap";
@@ -80,104 +79,103 @@ function Block({
   );
 }
 
-// 1. Your next move: persona chip, Step one (templates), Done, "Why this first?", and the FNB fit under it.
-function NextMove({
+// 1. Your step-by-step plan: persona chip, then up to 4 numbered steps (move, the FNB account that holds
+// it, the next product, what unlocks later). Step 1 keeps Done and "Why this first?".
+function StepGuide({
   model,
   chips,
   personaId,
-  stepKind,
   done,
   onDone,
+  onTab,
   onProduct,
 }: {
-  model: OverviewModel;
+  model: OverviewModelV2;
   chips: BlockChips;
   personaId: PersonaId;
-  stepKind: StepKind;
   done: boolean;
   onDone: () => void;
+  onTab: (tab: Tab) => void;
   onProduct: (productId: string) => void;
 }) {
   const PersonaIcon = PERSONA_ICONS[personaId];
-  const StepIcon = STEP_ICONS[stepKind];
-  const { nextMove, fnbFit, persona } = model;
+  const steps = model.steps.slice(0, OVERVIEW_STEPS);
   return (
-    <section aria-labelledby="next-move" className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card ring-2 ring-success/30">
+    <section aria-labelledby="step-guide" className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card ring-2 ring-success/30">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="next-move" className="flex items-center gap-2 text-caption font-semibold tracking-wide text-success uppercase">
-          <StepIcon className="size-5" aria-hidden />
-          {copy.BLOCK_TITLES.nextMove}
+        <h2 id="step-guide" className="flex items-center gap-2 text-caption font-semibold tracking-wide text-success uppercase">
+          <Sprout className="size-5" aria-hidden />
+          {V2_COPY.guideTitle}
         </h2>
-        <span
-          title={persona.tagline}
-          className="inline-flex items-center gap-2 rounded-full bg-brand-100 px-3 py-1 text-caption font-semibold text-brand-700"
-        >
-          <PersonaIcon className="size-4 text-foreground" aria-hidden />
-          {persona.label}
+        <span className="flex flex-wrap items-center gap-2">
+          <span
+            title={model.persona.tagline}
+            className="inline-flex items-center gap-2 rounded-full bg-brand-100 px-3 py-1 text-caption font-semibold text-brand-700"
+          >
+            <PersonaIcon className="size-4 text-foreground" aria-hidden />
+            {model.persona.label}
+          </span>
+          {model.steps.length > steps.length && (
+            <button
+              type="button"
+              onClick={() => onTab("roadmap")}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-small font-semibold text-brand-700 outline-none transition-colors hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
+            >
+              {copy.OPEN_ROADMAP_LABEL}
+              <ArrowRight className="size-4" aria-hidden />
+            </button>
+          )}
         </span>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <p className={cn("text-lead font-semibold text-balance", done && "text-muted-foreground line-through")}>{nextMove.title}</p>
-        <p className="text-small text-muted-foreground">{nextMove.detail}</p>
-      </div>
-
-      {nextMove.link && (
-        <a
-          href={nextMove.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 self-start text-small font-semibold text-info underline-offset-4 hover:underline focus-visible:ring-4 focus-visible:ring-info/30 focus-visible:outline-none"
-        >
-          {copy.CREDIT_REPORT_LINK_LABEL}
-          <ExternalLink className="size-4" aria-hidden />
-          <span className="sr-only">(opens in a new tab)</span>
-        </a>
-      )}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          aria-pressed={done}
-          onClick={onDone}
-          className={cn(
-            "inline-flex h-11 items-center gap-2 rounded-xl px-5 text-small font-semibold outline-none transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/30 active:translate-y-px motion-reduce:transition-none",
-            done ? "bg-success text-white" : "ring-1 ring-border ring-inset hover:bg-success-soft",
-          )}
-        >
-          <Check className={cn("size-5", done && "animate-in zoom-in-50 duration-150 motion-reduce:animate-none")} aria-hidden />
-          {copy.DONE_LABEL}
-        </button>
-        {done && (
-          <span role="status" className="animate-in fade-in text-small font-semibold text-success duration-200 motion-reduce:animate-none">
-            {copy.DONE_MESSAGE}
-          </span>
+      <ol className="flex flex-col">
+        {steps.map((s, i) =>
+          s.kind === "move" ? (
+            <GuideStepRow key={s.n} step={s} last={i === steps.length - 1} chip={chips.nextMove[0]} onProduct={onProduct}>
+              <button
+                type="button"
+                aria-pressed={done}
+                onClick={onDone}
+                className={cn(
+                  "inline-flex h-11 items-center gap-2 rounded-xl px-5 text-small font-semibold outline-none transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/30 active:translate-y-px motion-reduce:transition-none",
+                  done ? "bg-success text-white" : "ring-1 ring-border ring-inset hover:bg-success-soft",
+                )}
+              >
+                <Check className={cn("size-5", done && "animate-in zoom-in-50 duration-150 motion-reduce:animate-none")} aria-hidden />
+                {copy.DONE_LABEL}
+              </button>
+              {done && (
+                <span role="status" className="animate-in fade-in text-small font-semibold text-success duration-200 motion-reduce:animate-none">
+                  {copy.DONE_MESSAGE}
+                </span>
+              )}
+              {model.nextMove.link && (
+                <a
+                  href={model.nextMove.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-small font-semibold text-info underline-offset-4 hover:underline focus-visible:ring-4 focus-visible:ring-info/30 focus-visible:outline-none"
+                >
+                  {copy.CREDIT_REPORT_LINK_LABEL}
+                  <ExternalLink className="size-4" aria-hidden />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+              )}
+            </GuideStepRow>
+          ) : (
+            <GuideStepRow key={s.n} step={s} last={i === steps.length - 1} chip={productChip(chips, s.productId)} onProduct={onProduct} />
+          ),
         )}
-        {chips.nextMove[0] && <AskChip chip={chips.nextMove[0]} className="self-center" />}
-      </div>
-
-      {fnbFit && (
-        <div className="flex items-start gap-2 rounded-xl bg-brand-50 pr-3">
-          <button
-            type="button"
-            onClick={() => onProduct(fnbFit.productId)}
-            className="flex min-w-0 flex-1 flex-col gap-1 rounded-xl px-4 py-3 text-left outline-none transition-colors hover:bg-brand-100 focus-visible:ring-4 focus-visible:ring-ring/30"
-          >
-            <span className="text-caption font-semibold tracking-wide text-brand-700 uppercase">{copy.FNB_FIT_LABEL}</span>
-            <span className="text-body font-semibold">{fnbFit.name}</span>
-            <span className="text-small text-muted-foreground">{fnbFit.line}</span>
-          </button>
-          <HelpChip chip={chips.fnbFit[0]} className="mt-3" />
-        </div>
-      )}
+      </ol>
     </section>
   );
 }
 
-// 2. Your month: one sentence and one 3-part bar (safety cushion / goals / guilt-free).
-function Month({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
+// 2. Your month: the v2 sentence and one 4-part bar (fixed costs / safety cushion / goals / guilt-free).
+function Month({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockChips; onTab: (tab: Tab) => void }) {
   const { bar } = model.month;
   const parts = [
+    { key: "fixed", label: V2_COPY.barFixed, amount: bar.fixed, color: BUCKETS.fixed_costs.color },
     { key: "cushion", label: copy.MONTH_BAR_LABELS.cushion, amount: bar.cushion, color: BUCKETS.emergency_fund.color },
     { key: "goals", label: copy.MONTH_BAR_LABELS.goals, amount: bar.goals, color: BUCKETS.goal_savings.color },
     { key: "guiltFree", label: copy.MONTH_BAR_LABELS.guiltFree, amount: bar.guiltFree, color: BUCKETS.guilt_free.color },
@@ -189,7 +187,7 @@ function Month({ model, chips, onTab }: { model: OverviewModel; chips: BlockChip
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label={parts.map((p) => `${p.label} ${usd(p.amount)}`).join(", ")}>
         {total > 0 && parts.map((p) => <span key={p.key} className={cn("h-full", p.color)} style={{ width: `${(100 * p.amount) / total}%` }} />)}
       </div>
-      <ul className="grid grid-cols-3 gap-2">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {parts.map((p) => (
           <li key={p.key} className="flex flex-col gap-0.5">
             <span className="flex items-center gap-2 text-caption text-muted-foreground">
@@ -205,7 +203,7 @@ function Month({ model, chips, onTab }: { model: OverviewModel; chips: BlockChip
 }
 
 // 3. Your safety cushion: target, reason, progress bar with the "1 month covered" marker.
-function Cushion({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
+function Cushion({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockChips; onTab: (tab: Tab) => void }) {
   const c = model.cushion;
   const markAt = c.target > 0 ? Math.min(100, (100 * c.milestone) / c.target) : 0;
   const showMark = !c.met && c.milestone < c.target;
@@ -239,7 +237,7 @@ function Cushion({ model, chips, onTab }: { model: OverviewModel; chips: BlockCh
 }
 
 // 4. Your goals: one line each; tone as an icon (never red); the P1 lever opens Ask Sprout.
-const TONE: Record<OverviewModel["goals"][number]["tone"], { icon: LucideIcon; className: string }> = {
+const TONE: Record<OverviewModelV2["goals"][number]["tone"], { icon: LucideIcon; className: string }> = {
   gap: { icon: TrendingUp, className: "text-warning" },
   on_track: { icon: CircleCheck, className: "text-success" },
   on_path: { icon: Sprout, className: "text-brand-600" },
@@ -262,7 +260,7 @@ function LeverButton({ label, chip, question }: { label: string; chip?: Chip; qu
   );
 }
 
-function Goals({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
+function Goals({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockChips; onTab: (tab: Tab) => void }) {
   if (model.goals.length === 0) return null;
   return (
     <Block id="your-goals" title={copy.BLOCK_TITLES.goals} more={copy.DETAILS_LABEL} onMore={() => onTab("goals")}>
@@ -285,57 +283,10 @@ function Goals({ model, chips, onTab }: { model: OverviewModel; chips: BlockChip
   );
 }
 
-// 5. Your path: Now / Next / Later, one product each; a row opens that product in the Roadmap tab.
-function Path({
-  model,
-  chips,
-  onTab,
-  onProduct,
-}: {
-  model: OverviewModel;
-  chips: BlockChips;
-  onTab: (tab: Tab) => void;
-  onProduct: (productId: string) => void;
-}) {
-  if (model.path.length === 0) return null;
-  return (
-    <Block id="your-path" title={copy.BLOCK_TITLES.path} more={copy.OPEN_ROADMAP_LABEL} onMore={() => onTab("roadmap")}>
-      <ol className="-mx-2 flex flex-col">
-        {model.path.map((p) => {
-          const meta = stageMeta(p.stage as Stage);
-          return (
-            <li key={p.stage} className="flex items-start gap-1">
-              <button
-                type="button"
-                onClick={() => p.productId && onProduct(p.productId)}
-                className="flex min-w-0 flex-1 items-start gap-3 rounded-xl px-2 py-2 text-left outline-none transition-colors hover:bg-brand-50 focus-visible:ring-4 focus-visible:ring-ring/30"
-              >
-                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", meta.dot)} aria-hidden>
-                  <meta.icon className="size-5" />
-                </span>
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-body font-semibold">
-                    <span className={cn("mr-2 text-caption font-semibold tracking-wide uppercase", meta.text)}>{copy.PATH_STAGE_LABELS[p.stage]}</span>
-                    {p.title}
-                  </span>
-                  <span className="text-small text-muted-foreground">{p.detail}</span>
-                  {p.unlock && <span className="text-small font-medium text-warning">{p.unlock}</span>}
-                </span>
-              </button>
-              <HelpChip chip={chips.path[p.stage]?.[0]} className="mt-2" />
-            </li>
-          );
-        })}
-      </ol>
-    </Block>
-  );
-}
-
-// The Overview (docs/DASHBOARD.md): six blocks in order, every string and number from buildOverview().
+// The Overview (docs/DASHBOARD.md v2): step-by-step plan, month, cushion, goals, take it to FNB.
 export function Overview({
   model,
   personaId,
-  stepKind,
   bankerSummary,
   stepOneDone,
   onStepOneDone,
@@ -344,9 +295,8 @@ export function Overview({
   actions,
   share,
 }: {
-  model: OverviewModel;
+  model: OverviewModelV2;
   personaId: PersonaId;
-  stepKind: StepKind;
   bankerSummary: string;
   stepOneDone: boolean;
   onStepOneDone: () => void;
@@ -358,14 +308,12 @@ export function Overview({
   const chips = useAskSprout().blockChips();
   return (
     <div className="flex flex-col gap-6">
-      <NextMove model={model} chips={chips} personaId={personaId} stepKind={stepKind} done={stepOneDone} onDone={onStepOneDone} onProduct={onProduct} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <Month model={model} chips={chips} onTab={onTab} />
+      <StepGuide model={model} chips={chips} personaId={personaId} done={stepOneDone} onDone={onStepOneDone} onTab={onTab} onProduct={onProduct} />
+      {/* v2: the 4-part month bar needs the full width; cushion and goals share the next row. */}
+      <Month model={model} chips={chips} onTab={onTab} />
+      <div className="grid items-start gap-6 md:grid-cols-2">
         <Cushion model={model} chips={chips} onTab={onTab} />
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
         <Goals model={model} chips={chips} onTab={onTab} />
-        <Path model={model} chips={chips} onTab={onTab} onProduct={onProduct} />
       </div>
       <section aria-label={copy.BLOCK_TITLES.fnb} className="grid items-start gap-6 md:grid-cols-2">
         <BankerCta summary={bankerSummary} title={copy.BLOCK_TITLES.fnb}>

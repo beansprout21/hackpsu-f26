@@ -19,10 +19,12 @@ export const productName = (id: string) => {
 export const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+// Time is always specific (DASHBOARD.md v2): months under 24, whole years from 24, capped at 50 years.
+// TODO(#95): switch to the shared formatter from #94 (src/lib/client/time.ts) once it merges.
 export function formatMonths(months: number) {
-  if (months > 120) return "10+ years";
+  if (months > 600) return "more than 50 years";
   if (months < 24) return months === 1 ? "1 month" : `${months} months`;
-  return `${Math.round((months / 12) * 2) / 2} years`;
+  return `${Math.round(months / 12)} years`;
 }
 
 export const whenLabel = (startMonth: number) => (startMonth <= 0 ? "Now" : `Month ${startMonth}`);

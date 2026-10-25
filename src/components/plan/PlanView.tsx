@@ -8,10 +8,11 @@ import { AskSproutMobile, AskSproutProvider, SproutCopilot } from "@/components/
 import { SharePlanCard } from "@/components/share/SharePlanCard";
 import { buildOverview } from "@/lib/client/overview";
 import { useAppState } from "@/lib/client/state";
-import type { FinancialSnapshot, GoalProfile, Plan, Stage } from "@/types";
+import type { FinancialSnapshot, GoalProfile, Plan } from "@/types";
 import { GoalsProgress } from "./GoalsProgress";
 import { matchKey } from "./MatchRow";
 import { Overview } from "./Overview";
+import { toOverviewV2 } from "./overviewV2";
 import { PrintPlan } from "./PrintPlan";
 import { Roadmap, stepKey } from "./Roadmap";
 import { SummaryHeader } from "./sections";
@@ -47,13 +48,13 @@ const readHash = (): TabId => {
 // right (desktop) or as a card + sheet (phones). The open tab lives in the URL hash.
 export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }) {
   const [tab, setTabState] = useState<TabId>(readHash);
-  const [stage, setStage] = useState<Stage>("now");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ key: string; tick: number } | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
   const [app] = useAppState();
   const snapshot = useMemo(() => app.snapshot ?? snapshotFromPlan(plan), [app.snapshot, plan]);
-  const overview = useMemo(() => buildOverview(plan, profile, snapshot), [plan, profile, snapshot]);
+  // TODO(#95): buildOverview() returns v2 once #94 merges; drop toOverviewV2 then.
+  const overview = useMemo(() => toOverviewV2(buildOverview(plan, profile, snapshot), plan, profile, snapshot), [plan, profile, snapshot]);
 
   const toggleDone = useCallback((key: string) => {
     setDone((prev) => {
@@ -79,23 +80,32 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
     if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
   }, []);
 
-  // A product cited in Ask Sprout: open Roadmap, its stage, and its row, then scroll to it.
+  // A product cited in Ask Sprout (or tapped in the guide): open Roadmap and its trust layer, then scroll to it.
   const cite = useCallback(
     (productId: string) => {
       const match = plan.matches.find((m) => m.productId === productId);
       setTab("roadmap");
       if (!match) return;
-      setStage(match.stage);
       setOpenKey(matchKey(match));
       setFocus({ key: matchKey(match), tick: Date.now() });
     },
     [plan.matches, setTab],
   );
 
+  // Wait two frames so the tab switch and the opened trust layer are laid out before scrolling.
   useEffect(() => {
     if (!focus) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    document.getElementById(`product-${focus.key}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() =>
+        document.getElementById(`product-${focus.key}`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }),
+      );
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
   }, [focus]);
 
   return (
@@ -126,7 +136,6 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
               <Overview
                 model={overview}
                 personaId={profile.persona.id}
-                stepKind={plan.stepOne.kind}
                 bankerSummary={plan.bankerSummary}
                 stepOneDone={done.has(stepKey(plan.stepOne))}
                 onStepOneDone={() => toggleDone(stepKey(plan.stepOne))}
@@ -161,8 +170,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
             <Tabs.Panel value="roadmap" className="outline-none">
               <Roadmap
                 plan={plan}
-                stage={stage}
-                onStage={setStage}
+                model={overview}
                 done={done}
                 onDone={toggleDone}
                 openKey={openKey}
