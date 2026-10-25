@@ -6,9 +6,13 @@ import type { ReactNode } from "react";
 import { ExternalLink, ReceiptText, Shrub, Sprout, TreeDeciduous, type LucideIcon } from "lucide-react";
 import { AskChip } from "@/components/chat/AskSprout";
 import type { BlockChips, Chip } from "@/lib/client/chatCopy";
+import type { OverviewStep } from "@/lib/client/overview";
+import * as copy from "@/lib/client/planCopy";
 import { cn } from "@/lib/utils";
 import type { Stage } from "@/types";
-import { V2_COPY, type GuideStep } from "./overviewV2";
+
+// Stage headings for the guide (#95). Not in planCopy.ts yet; move there if Ben edits them.
+export const STAGE_HEADINGS: Record<Stage, string> = { now: "Start now", next: "Next", later: "Unlocks later" };
 
 // Semantic stage colors: success = start now, brand = next, warning = unlocks later.
 // Growing icon sizes (seedling, shrub, tree) are a deliberate exception to "icon = line height".
@@ -27,7 +31,7 @@ export const STAGES: {
 }[] = [
   {
     id: "now",
-    label: V2_COPY.stageHeadings.now,
+    label: STAGE_HEADINGS.now,
     title: "Set up the basics",
     purpose: "A few small moves that make the rest of the plan run on its own.",
     ask: "Why should I do these first?",
@@ -39,7 +43,7 @@ export const STAGES: {
   },
   {
     id: "next",
-    label: V2_COPY.stageHeadings.next,
+    label: STAGE_HEADINGS.next,
     title: "Build momentum",
     purpose: "Once the basics are set, point your savings at your goals.",
     ask: "What has to happen before I move on to Next?",
@@ -51,7 +55,7 @@ export const STAGES: {
   },
   {
     id: "later",
-    label: V2_COPY.stageHeadings.later,
+    label: STAGE_HEADINGS.later,
     title: "Make the bigger moves",
     purpose: "These open up as your income and credit grow. Not yet, on purpose.",
     ask: "What do I need before the Later steps?",
@@ -65,14 +69,17 @@ export const STAGES: {
 
 export const stageMeta = (id: Stage) => STAGES.find((s) => s.id === id) ?? STAGES[0];
 
-// The Ask Sprout chip for a product step: the FNB fit or path chip that names this product (docs/ASK_SPROUT.md).
-export function productChip(chips: BlockChips, productId?: string): Chip | undefined {
-  if (!productId) return undefined;
-  const all = [...chips.fnbFit, ...(chips.path.now ?? []), ...(chips.path.next ?? []), ...(chips.path.later ?? [])];
-  return all.find((c) => c.intent.productId === productId);
+// The Ask Sprout chip for a step: "Why this first?" on the move (its block chip carries the intent);
+// product steps ask the model's askSprout ("Why this account?") as a why_product question about that product.
+export function stepChip(chips: BlockChips, step: OverviewStep): Chip | undefined {
+  if (step.kind === "move") return chips.nextMove[0];
+  if (!step.productId) return undefined;
+  const question = step.askSprout ?? copy.WHY_THIS_ACCOUNT;
+  return { label: question, question, intent: { kind: "why_product", productId: step.productId } };
 }
 
-function FnbLink({ url }: { url: string }) {
+// Product steps link to the product's FNB page; the credit-report habit links to annualcreditreport.com.
+function StepLink({ url, label }: { url: string; label: string }) {
   return (
     <a
       href={url}
@@ -80,7 +87,7 @@ function FnbLink({ url }: { url: string }) {
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1 text-small font-semibold text-info underline-offset-4 hover:underline focus-visible:ring-4 focus-visible:ring-info/30 focus-visible:outline-none"
     >
-      {V2_COPY.seeAtFnb}
+      {label}
       <ExternalLink className="size-4" aria-hidden />
       <span className="sr-only">(opens in a new tab)</span>
     </a>
@@ -98,7 +105,7 @@ export function GuideStepRow({
   children,
   after,
 }: {
-  step: GuideStep;
+  step: OverviewStep;
   last: boolean;
   chip?: Chip;
   id?: string;
@@ -119,7 +126,7 @@ export function GuideStepRow({
         {/* Stage label inline before the title, as the old "Your path" rows had it. */}
         <span className={cn("text-balance", step.kind === "move" ? "text-lead font-semibold" : "text-body font-semibold")}>
           <span className={cn("mr-2 text-caption font-semibold tracking-wide whitespace-nowrap uppercase", meta.text)}>
-            {V2_COPY.stageHeadings[step.stage]}
+            {STAGE_HEADINGS[step.stage]}
           </span>
           {step.productId ? (
             <button
@@ -144,7 +151,7 @@ export function GuideStepRow({
               </span>
             )}
             {children}
-            {step.url && <FnbLink url={step.url} />}
+            {step.url && <StepLink url={step.url} label={step.productId ? copy.SEE_AT_FNB_LABEL : copy.CREDIT_REPORT_LINK_LABEL} />}
             {chip && <AskChip chip={chip} />}
           </div>
         )}

@@ -12,7 +12,6 @@ import type { FinancialSnapshot, GoalProfile, Plan } from "@/types";
 import { GoalsProgress } from "./GoalsProgress";
 import { matchKey } from "./MatchRow";
 import { Overview } from "./Overview";
-import { toOverviewV2 } from "./overviewV2";
 import { PrintPlan } from "./PrintPlan";
 import { Roadmap, stepKey } from "./Roadmap";
 import { SummaryHeader } from "./sections";
@@ -53,8 +52,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
   const [done, setDone] = useState<Set<string>>(() => new Set());
   const [app] = useAppState();
   const snapshot = useMemo(() => app.snapshot ?? snapshotFromPlan(plan), [app.snapshot, plan]);
-  // TODO(#95): buildOverview() returns v2 once #94 merges; drop toOverviewV2 then.
-  const overview = useMemo(() => toOverviewV2(buildOverview(plan, profile, snapshot), plan, profile, snapshot), [plan, profile, snapshot]);
+  const overview = useMemo(() => buildOverview(plan, profile, snapshot), [plan, profile, snapshot]);
 
   const toggleDone = useCallback((key: string) => {
     setDone((prev) => {

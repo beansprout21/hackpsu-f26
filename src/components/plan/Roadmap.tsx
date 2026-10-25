@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 import type { Match, Plan, PlanStep, Stage } from "@/types";
 import { LIFE_EVENTS, productName } from "./format";
 import { MatchRow, TrustLayer, matchKey } from "./MatchRow";
-import { GuideStepRow, STAGES, productChip } from "./guide";
-import type { GuideStep, OverviewModelV2 } from "./overviewV2";
+import type { OverviewModel, OverviewStep } from "@/lib/client/overview";
+import { GuideStepRow, STAGES, stepChip } from "./guide";
 
 export const stepKey = (s: PlanStep) => `${s.order}-${s.title}`;
 // Done state for a guide step: step 1 shares Step one's key, so ticking it on Overview shows here too.
-export const guideKey = (plan: Plan, s: GuideStep) => (s.kind === "move" ? stepKey(plan.stepOne) : `guide-${s.n}-${s.title}`);
+export const guideKey = (plan: Plan, s: OverviewStep) => (s.kind === "move" ? stepKey(plan.stepOne) : `guide-${s.n}-${s.title}`);
 
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -131,7 +131,7 @@ export function Roadmap({
   onProduct,
 }: {
   plan: Plan;
-  model: OverviewModelV2;
+  model: OverviewModel;
   done: Set<string>;
   onDone: (key: string) => void;
   openKey: string | null;
@@ -142,11 +142,10 @@ export function Roadmap({
   const [otherOpen, setOtherOpen] = useState<Partial<Record<Stage, boolean>>>({});
   const [notYetOpen, setNotYetOpen] = useState(false);
 
-  const matchFor = (s: GuideStep) => (s.productId ? plan.matches.find((m) => m.productId === s.productId) : undefined);
+  const matchFor = (s: OverviewStep) => (s.productId ? plan.matches.find((m) => m.productId === s.productId) : undefined);
   const inGuide = new Set(model.steps.flatMap((s) => (s.productId ? [s.productId] : [])));
+  // Same numbers as the Overview (the model's guide order); each stage lists its steps in that order.
   const byStage = (id: Stage) => model.steps.filter((s) => s.stage === id);
-  // Numbered in reading order here (stage by stage), so each section counts on from the one before.
-  const shown = new Map(STAGES.flatMap((s) => byStage(s.id)).map((step, i) => [step, i + 1]));
   const totals = { now: byStage("now").length, next: byStage("next").length, later: byStage("later").length };
   const finished = Object.fromEntries(
     STAGES.map((s) => [s.id, byStage(s.id).filter((x) => done.has(guideKey(plan, x))).length]),
@@ -194,9 +193,9 @@ export function Roadmap({
                       <GuideStepRow
                         key={step.n}
                         id={key ? `product-${key}` : undefined}
-                        step={{ ...step, n: shown.get(step) ?? step.n }}
+                        step={step}
                         last={i === steps.length - 1}
-                        chip={step.kind === "move" ? chips.nextMove[0] : productChip(chips, step.productId)}
+                        chip={stepChip(chips, step)}
                         onProduct={onProduct}
                         after={
                           match &&

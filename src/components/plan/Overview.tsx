@@ -9,8 +9,8 @@ import * as copy from "@/lib/client/planCopy";
 import { cn } from "@/lib/utils";
 import type { PersonaId } from "@/types";
 import { BUCKETS, usd } from "./format";
-import { GuideStepRow, productChip } from "./guide";
-import { OVERVIEW_STEPS, V2_COPY, type OverviewModelV2 } from "./overviewV2";
+import { overviewSteps, type OverviewModel } from "@/lib/client/overview";
+import { GuideStepRow, stepChip } from "./guide";
 import { BankerCta } from "./sections";
 
 type Tab = "money" | "goals" | "roadmap";
@@ -90,7 +90,7 @@ function StepGuide({
   onTab,
   onProduct,
 }: {
-  model: OverviewModelV2;
+  model: OverviewModel;
   chips: BlockChips;
   personaId: PersonaId;
   done: boolean;
@@ -99,13 +99,13 @@ function StepGuide({
   onProduct: (productId: string) => void;
 }) {
   const PersonaIcon = PERSONA_ICONS[personaId];
-  const steps = model.steps.slice(0, OVERVIEW_STEPS);
+  const steps = overviewSteps(model);
   return (
     <section aria-labelledby="step-guide" className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-card ring-2 ring-success/30">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="step-guide" className="flex items-center gap-2 text-caption font-semibold tracking-wide text-success uppercase">
           <Sprout className="size-5" aria-hidden />
-          {V2_COPY.guideTitle}
+          {copy.BLOCK_TITLES.steps}
         </h2>
         <span className="flex flex-wrap items-center gap-2">
           <span
@@ -149,7 +149,7 @@ function StepGuide({
                   {copy.DONE_MESSAGE}
                 </span>
               )}
-              {model.nextMove.link && (
+              {model.nextMove.link && !s.url && (
                 <a
                   href={model.nextMove.link}
                   target="_blank"
@@ -163,7 +163,7 @@ function StepGuide({
               )}
             </GuideStepRow>
           ) : (
-            <GuideStepRow key={s.n} step={s} last={i === steps.length - 1} chip={productChip(chips, s.productId)} onProduct={onProduct} />
+            <GuideStepRow key={s.n} step={s} last={i === steps.length - 1} chip={stepChip(chips, s)} onProduct={onProduct} />
           ),
         )}
       </ol>
@@ -172,10 +172,10 @@ function StepGuide({
 }
 
 // 2. Your month: the v2 sentence and one 4-part bar (fixed costs / safety cushion / goals / guilt-free).
-function Month({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockChips; onTab: (tab: Tab) => void }) {
+function Month({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
   const { bar } = model.month;
   const parts = [
-    { key: "fixed", label: V2_COPY.barFixed, amount: bar.fixed, color: BUCKETS.fixed_costs.color },
+    { key: "fixed", label: copy.MONTH_BAR_LABELS.fixed, amount: bar.fixed, color: BUCKETS.fixed_costs.color },
     { key: "cushion", label: copy.MONTH_BAR_LABELS.cushion, amount: bar.cushion, color: BUCKETS.emergency_fund.color },
     { key: "goals", label: copy.MONTH_BAR_LABELS.goals, amount: bar.goals, color: BUCKETS.goal_savings.color },
     { key: "guiltFree", label: copy.MONTH_BAR_LABELS.guiltFree, amount: bar.guiltFree, color: BUCKETS.guilt_free.color },
@@ -203,7 +203,7 @@ function Month({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockCh
 }
 
 // 3. Your safety cushion: target, reason, progress bar with the "1 month covered" marker.
-function Cushion({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockChips; onTab: (tab: Tab) => void }) {
+function Cushion({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
   const c = model.cushion;
   const markAt = c.target > 0 ? Math.min(100, (100 * c.milestone) / c.target) : 0;
   const showMark = !c.met && c.milestone < c.target;
@@ -237,7 +237,7 @@ function Cushion({ model, chips, onTab }: { model: OverviewModelV2; chips: Block
 }
 
 // 4. Your goals: one line each; tone as an icon (never red); the P1 lever opens Ask Sprout.
-const TONE: Record<OverviewModelV2["goals"][number]["tone"], { icon: LucideIcon; className: string }> = {
+const TONE: Record<OverviewModel["goals"][number]["tone"], { icon: LucideIcon; className: string }> = {
   gap: { icon: TrendingUp, className: "text-warning" },
   on_track: { icon: CircleCheck, className: "text-success" },
   on_path: { icon: Sprout, className: "text-brand-600" },
@@ -260,7 +260,7 @@ function LeverButton({ label, chip, question }: { label: string; chip?: Chip; qu
   );
 }
 
-function Goals({ model, chips, onTab }: { model: OverviewModelV2; chips: BlockChips; onTab: (tab: Tab) => void }) {
+function Goals({ model, chips, onTab }: { model: OverviewModel; chips: BlockChips; onTab: (tab: Tab) => void }) {
   if (model.goals.length === 0) return null;
   return (
     <Block id="your-goals" title={copy.BLOCK_TITLES.goals} more={copy.DETAILS_LABEL} onMore={() => onTab("goals")}>
@@ -295,7 +295,7 @@ export function Overview({
   actions,
   share,
 }: {
-  model: OverviewModelV2;
+  model: OverviewModel;
   personaId: PersonaId;
   bankerSummary: string;
   stepOneDone: boolean;
