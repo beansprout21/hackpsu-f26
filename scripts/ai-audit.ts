@@ -206,7 +206,7 @@ function textFlags(field: string, text: string, planProductIds: Set<string>, all
 }
 
 // "on track" said about the P1 goal the engine has off track (no conditional); "$N a month away" that isn't a real gap.
-const CONDITIONAL = /\b(if|would|could|move|moving|turn|get|put|puts|stay|keep|once|by|when|to be|away from|from being)\b/i;
+const CONDITIONAL = /\b(if|would|could|move|moving|turn|get|put|puts|stay|keep|once|by|when|to be|away from|from being|stretch|stretching|give|giving)\b/i;
 // Goal words used to tell which goal an "on track" clause is about.
 const GOAL_WORDS: [GoalId, RegExp][] = [
   ["travel", /\b(travel|trip|japan|abroad|vacation)\b/i],
@@ -217,7 +217,7 @@ const GOAL_WORDS: [GoalId, RegExp][] = [
   ["emergency_fund", /\bcushion\b/i],
 ];
 
-function trackFlags(field: string, text: string, p1OnTrack: boolean | null, plan?: Plan): Flag[] {
+function trackFlags(field: string, text: string, p1OnTrack: boolean | null, plan?: Plan, goals: { id: GoalId; why: string }[] = []): Flag[] {
   const out: Flag[] = [];
   if (plan && !gapClaimsConsistent(text, plan)) out.push({ type: "contradiction: on track vs gap", detail: `${field} claims a gap the engine doesn't have: "${clip(text)}"` });
   if (p1OnTrack === null) return out;
@@ -227,7 +227,11 @@ function trackFlags(field: string, text: string, p1OnTrack: boolean | null, plan
     if (!/\bon track\b/i.test(sentence) || CONDITIONAL.test(sentence.slice(0, sentence.search(/\bon track\b/i)))) continue;
     const clause = sentence.split(/,\s*|;\s*|\s+(?:and|but)\s+/).find((c) => /\bon track\b/i.test(c)) ?? sentence;
     if (CONDITIONAL.test(clause)) continue;
-    const named = GOAL_WORDS.filter(([, re]) => re.test(clause)).map(([id]) => id);
+    // A goal is named by its own words or by the user's "why" for it ("a car for work").
+    const named = [
+      ...GOAL_WORDS.filter(([, re]) => re.test(clause)).map(([id]) => id),
+      ...goals.filter((g) => g.why.trim().length > 3 && clause.toLowerCase().includes(g.why.trim().toLowerCase())).map((g) => g.id),
+    ];
     const offTrack = named.length
       ? named.some((id) => plan?.allocation.find((a) => a.goalId === id)?.onTrack === false)
       : !p1OnTrack;
@@ -303,7 +307,7 @@ async function auditPlan(user: User): Promise<PlanItem> {
     return m ? [...m.termsToKnow, ...(catalog.find((p) => p.id === m.productId)?.keyTerms ?? [])].join(" ") : "";
   };
   for (const [field, text] of shown) flags.push(...textFlags(field, text, productIds, true, termsOf(field)));
-  flags.push(...trackFlags("headline", plan.headline, p1OnTrack, plan), ...trackFlags("sproutSays", plan.sproutSays, p1OnTrack, plan));
+  flags.push(...trackFlags("headline", plan.headline, p1OnTrack, plan, profile.goals), ...trackFlags("sproutSays", plan.sproutSays, p1OnTrack, plan, profile.goals));
   if (words(plan.headline) > 10) flags.push({ type: "headline > 10 words", detail: `"${clip(plan.headline)}"` });
   if (words(plan.sproutSays) > 35) flags.push({ type: "sproutSays > 35 words", detail: `${words(plan.sproutSays)} words` });
   for (const m of plan.matches) {
@@ -454,7 +458,7 @@ async function auditChat(item: PlanItem, intent: ChatIntent["kind"], question: s
   const goalId = chipIntent?.goalId;
   if (intent === "goal_gap" && goalId) {
     const a = plan.allocation.find((x) => x.goalId === goalId);
-    if (a) flags.push(...trackFlags("answer", r.answer, a.onTrack, plan));
+    if (a) flags.push(...trackFlags("answer", r.answer, a.onTrack, plan, profile.goals));
   }
   if (intent === "what_if" && chipIntent?.amount !== undefined) {
     const w = whatIfFor(goalId, Math.round(chipIntent.amount), profile, plan, user.snapshot);

@@ -1,5 +1,6 @@
 // Voice guard for AI-written text (docs/SPROUT.md voice rule 3), shared by /api/chat and /api/plan.
-// "just" is dropped (meaning-safe); any other banned word means the caller keeps its template text.
+// "just" is dropped and prepositional "behind" ("the skills behind your goals") becomes "for" (both
+// meaning-safe, so the banned word never shows); any other banned use means the caller keeps its template.
 import type { GoalId, Plan } from "@/types";
 import { aboutTime, timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "@/lib/server/engine/defaults";
@@ -7,7 +8,11 @@ import { GOAL_LABELS } from "@/lib/server/engine/defaults";
 const BANNED_OTHER = /\b(only|behind|should have|can't afford|cannot afford|waste)\b/i;
 
 export function voiceSafe(text: string): string | null {
-  const softened = text.replace(/\bjust\s+/gi, "").replace(/\s+/g, " ").trim();
+  const softened = text
+    .replace(/\bjust\s+/gi, "")
+    .replace(/\bbehind (?=(?:your|the|both|starting|every|each|this|that|these|those|all|a|an)\b)/gi, (m) => (m[0] === "B" ? "For " : "for "))
+    .replace(/\s+/g, " ")
+    .trim();
   return BANNED_OTHER.test(softened) ? null : softened;
 }
 

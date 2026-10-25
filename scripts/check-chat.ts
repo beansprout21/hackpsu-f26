@@ -9,7 +9,7 @@ import { blockChips, followUpChips, starterChips, type BlockChips, type Chip } f
 import { buildPlanSkeleton } from "../src/lib/server/engine/plan";
 import { answerQuestion, explain } from "../src/lib/ai/chat";
 import { generatePlan, makeGuard, mergeText } from "../src/lib/ai/plan";
-import { gapClaimsConsistent, specificTimes, voiceNormalize } from "../src/lib/ai/voice";
+import { gapClaimsConsistent, specificTimes, voiceNormalize, voiceSafe } from "../src/lib/ai/voice";
 import { scenarios } from "../src/data/scenarios";
 import type { ChatIntent, ChatTurn, FinancialSnapshot, GoalProfile, Plan } from "../src/types";
 
@@ -156,6 +156,11 @@ async function voiceNormalizer() {
   ];
   for (const [input, expected] of cases) check(specificTimes(input) === expected, `specificTimes: "${input}" -> "${specificTimes(input)}"`);
   check(voiceNormalize("Emergency fund first, then your emergency fund goal.") === "Safety cushion first, then your safety cushion goal.", "voiceNormalize renames emergency fund");
+  // Cycle 7: prepositional "behind" is rewritten (meaning-safe); shaming "behind" still fails the guard.
+  check(voiceSafe("Free lessons build the know-how behind your goals.") === "Free lessons build the know-how for your goals.", "voiceSafe: \"behind your goals\" -> \"for your goals\"");
+  check(voiceSafe("A steady transfer behind both trips.") === "A steady transfer for both trips.", "voiceSafe: \"behind both\" -> \"for both\"");
+  check(voiceSafe("You're behind on savings.") === null, "voiceSafe: \"you're behind\" still rejected");
+  check(voiceSafe("Your family goal is close behind.") === null, "voiceSafe: \"close behind\" still rejected");
 
   // With AI off, /api/plan returns the engine's template text through the same normalizer.
   for (const s of scenarios) {
