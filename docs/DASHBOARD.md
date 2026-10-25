@@ -61,7 +61,12 @@ All strings live in `src/lib/client/planCopy.ts` so Ben can edit text in one pla
 - **Habits (v2):** "Credit building: costs time, not money. Start by checking your free credit report." / "Everyday banking: costs time, not money. Start by turning on low-balance alerts." No dollar amounts, never "$X a month going in".
 - **Time is always specific (v2):** under 24 months → "about N months"; 24+ months → "about N years" (whole years, rounded); over 50 years → "more than 50 years" plus the lever. Never "10+ years". Applies to goal lines, Goals tab, and Ask Sprout what-if answers ("from about 16 years to about 12 years").
 - P1, on track: "<Fund> is on track: $<monthlyAmount> a month gets you there."
-- P1, off track: "<Fund> is $<gap> a month away." Lever button (v3.1 order): turn_up_dial if offered; else more_time **only if newHorizonMonths ≤ 60**; else smaller_target; else, if the plan has the Big Win step, "Review your biggest fixed cost" → Ask Sprout "How can I lower my biggest fixed cost?"; else no button.
+- **v2.1 (#159, Ben 8:44 AM) a gap is stated only when it can be closed today:** if `turn_up_dial` is offered (the gap fits in guilt-free money with guilt-free staying ≥ 10% of income), keep "<Fund> is $<gap> a month away." with its button. Otherwise **never state the gap** (a gap bigger than everything the user has to work with reads as impossible). Instead:
+  - newHorizonMonths ≤ 60: "<Fund>: $<monthlyAmount> a month going in gets you there in <time>." Button: smaller_target if offered ("See it by your date").
+  - otherwise: "<Fund>: $<monthlyAmount> a month going in. A $<reachableAmount> target fits your timeline." Button: Big Win if the plan has it, else none.
+  - allocated $0: the existing "starts growing after <unlock>" line.
+  - The same rule applies to the Ask Sprout starter chip ("How do I close the $X gap…" only when turn_up_dial is offered; else "How can I reach my <fund> sooner?") and the gap answer (no "move $X from guilt-free" unless turn_up_dial is offered).
+- P1, off track (gap closable): "<Fund> is $<gap> a month away." Lever button (v3.1 order): turn_up_dial if offered; else more_time **only if newHorizonMonths ≤ 60**; else smaller_target; else, if the plan has the Big Win step, "Review your biggest fixed cost" → Ask Sprout "How can I lower my biggest fixed cost?"; else no button.
   - turn_up_dial: "See what moving $<move> from guilt-free does" → Ask Sprout: "What if I move $<move> a month from guilt-free to my <fund>?"
   - more_time: "See it with more time" → "What if I give my <fund> <newHorizonMonths> months?"
   - smaller_target: "See a smaller target" → "What if my <fund> target were $<reachableAmount>?"
