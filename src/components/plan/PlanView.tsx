@@ -160,7 +160,7 @@ export function PlanView({ plan, profile }: { plan: Plan; profile: GoalProfile }
               />
             </Tabs.Panel>
             <Tabs.Panel value="money" className="outline-none">
-              <SpendingPlan plan={plan} />
+              <SpendingPlan plan={plan} snapshot={snapshot} />
             </Tabs.Panel>
             <Tabs.Panel value="goals" className="outline-none">
               <GoalsProgress allocation={plan.allocation} />

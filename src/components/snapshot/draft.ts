@@ -29,6 +29,10 @@ export const optionById = (id: string) =>
   INCOME_OPTIONS.find((o) => o.id === id) ?? INCOME_OPTIONS.find((o) => o.id === "other")!;
 const optionForKind = (kind: IncomeKind) => INCOME_OPTIONS.find((o) => o.kind === kind) ?? optionById("other");
 
+// #163: shown under the income math wherever one-time or per-semester money is converted to a monthly amount.
+export const INCOME_SPREAD_NOTE =
+  "One-time money (like summer savings) is spread over the 9-month school year; per-semester money over each 4-month semester.";
+
 export const FREQUENCY_LABELS: Record<IncomeFrequency, string> = {
   monthly: "a month",
   per_semester: "a semester",
