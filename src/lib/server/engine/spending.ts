@@ -10,6 +10,11 @@ import { monthsToTarget, round2 } from "./math";
 const RANK_WEIGHT = [0.6, 0.25, 0.15];
 const HIGH_FIXED_SHARE = 0.6;
 const GUILT_FREE_FLOOR = 0.1; // turn_up_dial never takes guilt-free below 10% of income
+// SPROUT.md v3.4: guilt-free is the rest, capped at 25% of income (excess to savings); with high fixed costs the
+// surplus splits 60% savings / 40% guilt-free, each keeping at least 5% of income when the surplus allows.
+const GUILT_FREE_CAP = 0.25;
+const HIGH_FIXED_SAVINGS = 0.6;
+const HIGH_FIXED_MIN = 0.05;
 
 export interface SpendingResult {
   spendingPlan: SpendingBucket[];
@@ -84,12 +89,20 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   let earmark = 0;
   if (surplus > 0) {
     if (highFixed) {
-      savingsMonthly = Math.floor(0.5 * surplus);
-    } else if (ctx.studentRules) {
-      savingsMonthly = Math.min(Math.floor(0.2 * income), Math.floor(surplus));
+      savingsMonthly = Math.floor(HIGH_FIXED_SAVINGS * surplus);
+      const min = Math.floor(HIGH_FIXED_MIN * income);
+      if (Math.floor(surplus) >= 2 * min) {
+        savingsMonthly = Math.min(Math.max(savingsMonthly, min), Math.floor(surplus) - min);
+      }
     } else {
-      savingsMonthly = Math.min(Math.floor(0.1 * income), Math.floor(surplus));
-      earmark = Math.min(Math.floor(0.1 * income), Math.floor(surplus) - savingsMonthly);
+      if (ctx.studentRules) {
+        savingsMonthly = Math.min(Math.floor(0.2 * income), Math.floor(surplus));
+      } else {
+        savingsMonthly = Math.min(Math.floor(0.1 * income), Math.floor(surplus));
+        earmark = Math.min(Math.floor(0.1 * income), Math.floor(surplus) - savingsMonthly);
+      }
+      // v3.4: guilt-free above the cap moves to savings (not the Future You earmark).
+      savingsMonthly += Math.max(0, Math.floor(surplus) - savingsMonthly - earmark - Math.floor(GUILT_FREE_CAP * income));
     }
   }
   const guiltFreeMonthly = surplus > 0 ? Math.max(0, Math.floor(surplus - savingsMonthly - earmark)) : 0;

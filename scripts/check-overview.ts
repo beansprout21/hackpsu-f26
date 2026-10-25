@@ -169,7 +169,7 @@ console.log("\n=== Habits only (#107)");
     { hasSteadyIncome: true, incomeSources: [{ kind: "family", amount: 5885, frequency: "monthly" }], monthlyFixedCosts: 1211, monthlyDebtPayments: 0, savingsBalance: 20529, creditBand: "excellent", isFnbCustomer: true },
   );
   check(
-    met.plan.headline === "$" + met.o.month.bar.goals + " a month in savings, ready for your next goal" && met.o.month.bar.cushion === 0 && !savingsGoalText(met.plan, met.o),
+    met.plan.headline === "$" + met.o.month.bar.goals.toLocaleString("en-US") + " a month in savings, ready for your next goal" && met.o.month.bar.cushion === 0 && !savingsGoalText(met.plan, met.o),
     'habits only, cushion met: headline "' + met.plan.headline + '", no "your savings goal"',
   );
   check(run(maya.snapshot).month.goalsLabel === "Goals", 'Maya (money goals): the goals segment stays "Goals"');
