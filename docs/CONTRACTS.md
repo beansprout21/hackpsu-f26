@@ -1,4 +1,6 @@
-# Contracts v2.2
+# Contracts v2.3
+
+v2.3 (Sat 11:25 PM, contract-change): Ask Sprout **conversation memory, intents, snapshot context**; **document upload** (`POST /api/extract`). Everything else unchanged from v2.2.
 
 v2.2 (Sat 9:00 PM, contract-change): **Share with FNB** (opt-in storage), **banker dashboard**, banker role. Everything else unchanged from v2.1.
 
@@ -274,6 +276,37 @@ export interface ShareStatus {
   expiresAt?: string;
 }
 
+// ---------- Ask Sprout (v2.3) ----------
+export interface ChatTurn {     // one message of conversation memory, kept in the browser (AppState.chat)
+  role: "user" | "sprout";
+  text: string;                 // <= 600 chars
+}
+
+export type ChatIntentKind =
+  | "why_step_one" | "how_split" | "why_cushion" | "why_product" | "product_fees"
+  | "when_unlock" | "goal_gap" | "what_if" | "free";
+
+export interface ChatIntent {   // set by a chip; typed questions send none (= "free")
+  kind: ChatIntentKind;
+  productId?: string;
+  goalId?: GoalId;
+  amount?: number;              // what_if: monthly dollars (+ more, - less)
+}
+
+// ---------- Document upload (v2.3) ----------
+export type DocumentKind = "bank_statement" | "pay_stub" | "credit_card_statement" | "credit_report" | "other";
+
+export interface ExtractedSnapshot {  // what Sprout read from one uploaded file; the user reviews it before use
+  documentKind: DocumentKind;
+  incomeSources: IncomeSource[];
+  monthlyFixedCosts: number | null;
+  monthlyDebtPayments: number | null;
+  savingsBalance: number | null;
+  creditBand: CreditBand | null;      // only from a credit report
+  confidence: Confidence;
+  notes: string[];                    // <= 4 plain sentences; never account numbers or full names
+}
+
 // ---------- API envelope ----------
 export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 ```
@@ -294,9 +327,18 @@ export type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string 
 - Fallback: engine output + template text, `aiUsed: false`.
 - Mock: `src/data/mocks/plan.student.json`, `plan.family.json`
 
-### POST /api/chat (P1)
-- Request: `{ question: string, profile: GoalProfile, plan: Plan }`
-- Response data: `{ answer: string, citedProductIds: string[] }`
+### POST /api/chat (P1; v2.3)
+- Request: `{ question: string (<= 500), profile: GoalProfile, plan: Plan, snapshot?: FinancialSnapshot, history?: ChatTurn[] (<= 6, oldest first), intent?: ChatIntent }`
+- Response data: `{ answer: string, citedProductIds: string[] }` (unchanged)
+- `history` is the conversation memory. It lives in the browser (`AppState.chat`, last 6 turns) and is sent with every question; the server stores nothing. Numbers the user typed in `question`/`history` may be echoed; every other number must come from the plan/snapshot facts (number guard).
+- `intent` (from chips) routes to deterministic **explain facts** the engine computes (docs/ASK_SPROUT.md); the AI phrases them; a template answer is the fallback. `what_if` uses the existing engine math.
+
+### POST /api/extract (v2.3, P1): document upload
+- Request: `multipart/form-data`, one field `file`: `application/pdf`, `image/png`, `image/jpeg`, or `image/webp`, <= 4 MB. One file per request (UI may send up to 3 in sequence).
+- Response data: `ExtractedSnapshot`.
+- Auth0 session required (same as other APIs). The file is read in memory, sent to the Anthropic API for this request only, and **never stored or logged** (log route, ok/error, ms, size bucket only). `notes` must never contain account numbers or full names.
+- AI: `ANTHROPIC_MODEL` with the file as a document/image block, 25 s timeout. Only values visible in the document; anything not shown is `null`, never estimated. Fallback: `{ ok: false, error: "Couldn't read that file. You can type your numbers instead." }`.
+- The UI pre-fills the snapshot form from it with a "From your document" marker on each filled field; the user reviews and edits before building. A later file fills only fields still empty; `incomeSources` merge without duplicates.
 
 ### Share with FNB (v2.2, P1)
 All require an Auth0 session. Storage: Upstash Redis (`@upstash/redis`, approved by Ben). Server reads `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`, falling back to `KV_REST_API_URL` / `KV_REST_API_TOKEN` (Vercel Marketplace naming). If neither is set, share and banker routes return `{ ok: false, error: "Sharing is unavailable right now" }` and the rest of the app is unaffected.
@@ -336,6 +378,7 @@ interface AppState {
   snapshot?: FinancialSnapshot;
   profile?: GoalProfile;
   plan?: Plan;
+  chat?: ChatTurn[];   // v2.3: Ask Sprout memory, last 6 turns
 }
 ```
 
