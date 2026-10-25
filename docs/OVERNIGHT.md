@@ -54,3 +54,15 @@ Lead decisions made overnight (Ben may override):
 **API use tonight:** Auditor 200 plans / 400 chats (cap reached), Finder 0, Fixer 0. Dollar cost not measured here; check console.anthropic.com usage in the morning.
 
 **Vercel:** PR deploys still rate-limited ("more than 100 deployments in 24 h, retry in 24 hours"). Production is still the last good deploy.
+
+### 4:25 AM (lead wake 2)
+**Verified by the lead on `main` 80c14f3 (AI off):** check-engine, check-overview, check-chat, scenarios all pass; stress (seed 9707) still fails only #107 (41) and #109 (119). Maya unchanged ($91 / $22 / $118).
+
+**Merged since 3:20:** #133 (#130: no IRA for any goal, no card/loan/CardGuard for the cushion), #140 (#139: "Mortgage calculators can get you ready").
+
+**Found and fixed in the process (lead):**
+- The Fixer only takes issues assigned to it, and #105, #106, #107 were unassigned, so it idled 3:25 to 4:20. Now assigned to beansprout21 with #109 (reopened: it was closed by mistake right after #133 merged, but its rule isn't built yet) and the text/logic P1s #111 to #114. #115 (tap target sizes) stays for Ethan: styling.
+- Closed as fixed after verification: #104 (schema-valid 0), #108 (no raw month counts), #110 ("safety cushion" everywhere).
+- Rule clarified (#109): FNB Student Checking keeps a `null` deposit (FNB doesn't publish one) and is allowed `now` for no-surplus students; never "$0 to open".
+
+**For Ben:** the Fixer reports one rule slip: it force-pushed (`--force-with-lease`) its own PR branch for #133 after a rebase. Its branch only, nothing lost; it now merges instead of rebasing.
