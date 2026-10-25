@@ -128,28 +128,32 @@ export function IntakeWizard() {
         "flex flex-col gap-6",
         centered
           ? "lg:mx-auto lg:w-full lg:max-w-xl"
-          : "lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-x-12",
+          : "lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start lg:gap-x-12",
       )}
     >
       <aside className={cn("flex flex-col gap-6", !centered && "lg:sticky lg:top-24")}>
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-end gap-3 text-xs text-muted-foreground lg:justify-start">
+          <div className="flex items-center justify-end gap-3 text-xs text-muted-foreground lg:justify-start lg:text-small">
             <span className="flex items-center gap-1.5">
               Demo:
               {[maya, jordan].map((p) => (
-                <Button key={p.id} variant="outline" size="xs" onClick={() => applyPersona(p)}>
+                <Button key={p.id} variant="outline" size="xs" className="lg:h-8 lg:px-3 lg:text-small" onClick={() => applyPersona(p)}>
                   Use {p.name}
                 </Button>
               ))}
             </span>
           </div>
-          <Progress value={(stepIndex / (STEPS.length - 1)) * 100} aria-label="Intake progress" />
-          <span className="hidden text-caption font-semibold tracking-wide text-muted-foreground uppercase lg:block">
+          <Progress
+            value={(stepIndex / (STEPS.length - 1)) * 100}
+            aria-label="Intake progress"
+            className="lg:[&_[data-slot=progress-track]]:h-2"
+          />
+          <span className="hidden text-small font-semibold tracking-wide text-muted-foreground uppercase lg:block">
             Step {stepIndex + 1} of {STEPS.length}
           </span>
         </div>
         <div id="sprout-line">
-          <SproutSays>{SPROUT_LINES[step]}</SproutSays>
+          <SproutSays large>{SPROUT_LINES[step]}</SproutSays>
         </div>
       </aside>
 
