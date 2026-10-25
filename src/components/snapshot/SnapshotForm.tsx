@@ -2,7 +2,7 @@
 
 // Money snapshot form (#10): steady income or lump sums, costs, savings, credit range, FNB customer.
 import { useId } from "react";
-import { Link2, Plus, X } from "lucide-react";
+import { FileText, Link2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   optionById,
   SCOPE_LINE,
   snapshotFromDraft,
+  type DocField,
   type SnapshotDraft,
 } from "./draft";
 import { SurplusReadout } from "./SurplusReadout";
@@ -40,21 +41,35 @@ function Choice({ on, onClick, children }: { on: boolean; onClick: () => void; c
   );
 }
 
+// Marks a value Sprout filled in from an uploaded document, so the user knows to check it.
+function FromDocument() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-xs font-medium text-info">
+      <FileText aria-hidden className="size-3" /> From your document
+    </span>
+  );
+}
+
 function MoneyField({
   label,
   hint,
   value,
   onChange,
+  fromDoc,
 }: {
   label: string;
   hint?: string;
   value: string;
   onChange: (v: string) => void;
+  fromDoc?: boolean;
 }) {
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor={id}>{label}</Label>
+        {fromDoc && <FromDocument />}
+      </div>
       <div className="relative">
         <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">$</span>
         <Input
@@ -84,6 +99,8 @@ export function SnapshotForm({
   submitting: boolean;
 }) {
   const set = (patch: Partial<SnapshotDraft>) => onChange({ ...draft, ...patch });
+  // Editing a field the document filled clears its marker: the value is now the user's.
+  const edit = (field: DocField, patch: Partial<SnapshotDraft>) => set({ ...patch, fromDoc: { ...draft.fromDoc, [field]: false } });
   const missing = missingAnswers(draft);
 
   return (
@@ -119,7 +136,8 @@ export function SnapshotForm({
             label="Monthly take-home pay"
             hint="After taxes, what lands in your account each month."
             value={draft.monthlyTakeHome}
-            onChange={(v) => set({ monthlyTakeHome: v })}
+            onChange={(v) => edit("monthlyTakeHome", { monthlyTakeHome: v })}
+            fromDoc={draft.fromDoc.monthlyTakeHome}
           />
         )}
 
@@ -138,8 +156,11 @@ export function SnapshotForm({
               const hint = FREQUENCY_HINTS[row.frequency];
               return (
                 <div key={row.key} className="flex flex-col gap-2 rounded-xl border border-border p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{option.label}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex flex-wrap items-center gap-2 font-medium">
+                      {option.label}
+                      {row.fromDoc && <FromDocument />}
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -153,7 +174,7 @@ export function SnapshotForm({
                   <MoneyField
                     label="Amount"
                     value={row.amount}
-                    onChange={(v) => set({ rows: draft.rows.map((r) => (r.key === row.key ? { ...r, amount: v } : r)) })}
+                    onChange={(v) => set({ rows: draft.rows.map((r) => (r.key === row.key ? { ...r, amount: v, fromDoc: false } : r)) })}
                   />
                   {option.frequencies.length > 1 ? (
                     <div className="flex flex-wrap gap-2" role="group" aria-label={`How often for ${option.label}`}>
@@ -161,7 +182,7 @@ export function SnapshotForm({
                         <Choice
                           key={f}
                           on={row.frequency === f}
-                          onClick={() => set({ rows: draft.rows.map((r) => (r.key === row.key ? { ...r, frequency: f } : r)) })}
+                          onClick={() => set({ rows: draft.rows.map((r) => (r.key === row.key ? { ...r, frequency: f, fromDoc: false } : r)) })}
                         >
                           {FREQUENCY_LABELS[f]}
                         </Choice>
@@ -176,7 +197,7 @@ export function SnapshotForm({
             })}
             {!draft.noIncome && (
               <div className="flex flex-wrap gap-2">
-                {INCOME_OPTIONS.map((o) => (
+                {INCOME_OPTIONS.filter((o) => o.addable !== false).map((o) => (
                   <Button
                     key={o.id}
                     type="button"
@@ -199,15 +220,23 @@ export function SnapshotForm({
           label="Fixed costs a month"
           hint="Rent, utilities, phone, groceries, insurance."
           value={draft.fixedCosts}
-          onChange={(v) => set({ fixedCosts: v })}
+          onChange={(v) => edit("fixedCosts", { fixedCosts: v })}
+          fromDoc={draft.fromDoc.fixedCosts}
         />
         <MoneyField
           label="Debt payments a month"
           hint="Loan payments, card minimums."
           value={draft.debtPayments}
-          onChange={(v) => set({ debtPayments: v })}
+          onChange={(v) => edit("debtPayments", { debtPayments: v })}
+          fromDoc={draft.fromDoc.debtPayments}
         />
-        <MoneyField label="Savings today" hint="Money you can reach easily." value={draft.savings} onChange={(v) => set({ savings: v })} />
+        <MoneyField
+          label="Savings today"
+          hint="Money you can reach easily."
+          value={draft.savings}
+          onChange={(v) => edit("savings", { savings: v })}
+          fromDoc={draft.fromDoc.savings}
+        />
       </fieldset>
 
       <div className="lg:sticky lg:top-24 lg:col-start-2 lg:row-span-6 lg:row-start-1 lg:self-start">
@@ -219,9 +248,14 @@ export function SnapshotForm({
 
       <fieldset className="flex flex-col gap-3 lg:col-start-1 lg:row-start-4">
         <legend className="mb-3 text-lg font-semibold">Your credit range, as far as you know</legend>
+        {draft.fromDoc.creditBand && (
+          <div>
+            <FromDocument />
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           {CREDIT_BANDS.map((b) => (
-            <Choice key={b.id} on={draft.creditBand === b.id} onClick={() => set({ creditBand: b.id })}>
+            <Choice key={b.id} on={draft.creditBand === b.id} onClick={() => edit("creditBand", { creditBand: b.id })}>
               {b.label}
             </Choice>
           ))}

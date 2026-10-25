@@ -10,7 +10,8 @@ import { jordan, maya, mayaOpposite, type DemoPersona } from "@/data/personas";
 import { ApiError, getPlan, getProfile } from "@/lib/client/api";
 import { useAppState } from "@/lib/client/state";
 import type { GoalProfile, IntakeAnswers } from "@/types";
-import { draftFromSnapshot, EMPTY_DRAFT, validSnapshot, type SnapshotDraft } from "./draft";
+import { applyExtraction, draftFromSnapshot, EMPTY_DRAFT, validSnapshot, type SnapshotDraft } from "./draft";
+import { DocumentUpload } from "./DocumentUpload";
 import { GenerationProgress, type GenerationStage } from "./GenerationProgress";
 import { SnapshotForm } from "./SnapshotForm";
 
@@ -85,6 +86,7 @@ export function SnapshotFlow() {
           </div>
         </div>
       )}
+      <DocumentUpload onExtracted={(ex) => setDraft((d) => applyExtraction(d, ex))} />
       <SnapshotForm draft={draft} onChange={setDraft} onSubmit={() => void generate()} submitting={false} />
       <DemoPrefill onPick={prefill} />
     </div>
