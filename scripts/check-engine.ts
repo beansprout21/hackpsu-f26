@@ -71,6 +71,27 @@ const fixtures = {
   tenDollar: fixture("Row 5 with $10 (surplus $83)", maya.intake, withSnapshot({ monthlyFixedCosts: 1050 })),
   lowCost: fixture("Low-cost student (fixed $150)", maya.intake, withSnapshot({ monthlyFixedCosts: 150 })),
   cushionMet: fixture("Cushion met (savings $2,500)", maya.intake, withSnapshot({ savingsBalance: 2500 })),
+  // SPROUT.md v3.4: guilt-free capped at 25% of income; high fixed costs split 60/40 with 5%-of-income minimums.
+  capStudent: fixture(
+    "v3.4 cap, student ($600/mo, fixed $150)",
+    maya.intake,
+    withSnapshot({ incomeSources: [{ kind: "family", amount: 600, frequency: "monthly" }], monthlyFixedCosts: 150 }),
+  ),
+  capSteady: fixture(
+    "v3.4 cap, steady income ($3,800/mo, fixed $1,900)",
+    { ...maya.intake, lifeStage: "new_grad" },
+    withSnapshot({ hasSteadyIncome: true, incomeSources: [{ kind: "job", amount: 3800, frequency: "monthly" }], monthlyFixedCosts: 1900 }),
+  ),
+  highFixedMin: fixture(
+    "v3.4 high fixed, 5% minimum ($2,000/mo, fixed $1,780)",
+    { ...maya.intake, lifeStage: "new_grad" },
+    withSnapshot({ hasSteadyIncome: true, incomeSources: [{ kind: "job", amount: 2000, frequency: "monthly" }], monthlyFixedCosts: 1780 }),
+  ),
+  highFixedTiny: fixture(
+    "v3.4 high fixed, surplus under 10% ($2,000/mo, fixed $1,850)",
+    { ...maya.intake, lifeStage: "new_grad" },
+    withSnapshot({ hasSteadyIncome: true, incomeSources: [{ kind: "job", amount: 2000, frequency: "monthly" }], monthlyFixedCosts: 1850 }),
+  ),
 };
 
 const runs: { name: string; plan: Plan }[] = [
@@ -247,11 +268,44 @@ check(j.stepOne.title === "Move $20 into savings right now." && j.stepOne.detail
 
 console.log("\n=== Jordan + cross-plan checks");
 check(j.fixedShare > 0.6 && j.steps.some((s) => /Big Win/.test(s.title)), "Jordan: high-fixed branch with Big Win step");
-check(bucket(j, "emergency_fund")!.monthlyAmount + bucket(j, "goal_savings")!.monthlyAmount === 375 && bucket(j, "guilt_free")?.monthlyAmount === 375, "Jordan: savings 50% / guilt-free 50% of $750 surplus");
+check(bucket(j, "emergency_fund")!.monthlyAmount + bucket(j, "goal_savings")!.monthlyAmount === 450 && bucket(j, "guilt_free")?.monthlyAmount === 300, "Jordan: v3.4 savings 60% / guilt-free 40% of $750 surplus ($450 / $300)");
 check(
-  j.cushionTarget === 4950 && bucket(j, "emergency_fund")?.monthlyAmount === 225 && j.cushionFillsInMonths === 17,
-  "Jordan: safety cushion $4,950 (3 x $1,650), v3.1 tilt $225 of $375 (60%), full in 17 months",
+  j.cushionTarget === 4950 && bucket(j, "emergency_fund")?.monthlyAmount === 270 && j.cushionFillsInMonths === 14,
+  "Jordan: safety cushion $4,950 (3 x $1,650), v3.1 tilt $270 of $450 (60%), full in 14 months",
 );
+
+console.log("\n=== v3.4 guilt-free share");
+const parts = (p: Plan) => ({
+  saved: bucket(p, "emergency_fund")!.monthlyAmount + bucket(p, "goal_savings")!.monthlyAmount,
+  guiltFree: bucket(p, "guilt_free")!.monthlyAmount,
+  earmark: p.futureYou.earmarkMonthly ?? 0,
+});
+const cs = parts(f.capStudent.plan);
+check(cs.saved === 300 && cs.guiltFree === 150, `Student cap: surplus $450 -> savings $120 + $180 over the 25% cap = $300, guilt-free $150 (got $${cs.saved} / $${cs.guiltFree})`);
+const cy = parts(f.capSteady.plan);
+check(
+  cy.saved === 570 && cy.earmark === 380 && cy.guiltFree === 950,
+  `Steady cap: surplus $1,900 -> savings $380 + $190 = $570, Future You $380 unchanged, guilt-free $950 (got $${cy.saved} / $${cy.earmark} / $${cy.guiltFree})`,
+);
+const hm = parts(f.highFixedMin.plan);
+check(
+  f.highFixedMin.plan.fixedShare > 0.6 && hm.saved === 120 && hm.guiltFree === 100,
+  `High fixed, 5% minimum: surplus $220 -> 60% would leave guilt-free $88 < $100, so savings $120 / guilt-free $100 (got $${hm.saved} / $${hm.guiltFree})`,
+);
+const ht = parts(f.highFixedTiny.plan);
+check(
+  f.highFixedTiny.plan.fixedShare > 0.6 && ht.saved === 90 && ht.guiltFree === 60,
+  `High fixed, surplus under 10% of income: minimums can't both hold, plain 60/40 of $150 = $90 / $60 (got $${ht.saved} / $${ht.guiltFree})`,
+);
+for (const { name, plan } of runs) {
+  const income = plan.effectiveMonthlyIncome;
+  const gf = bucket(plan, "guilt_free")!.monthlyAmount;
+  const capped = plan.fixedShare > 0.6 || gf <= Math.floor(0.25 * income);
+  const dialOk = plan.allocation.every((a) =>
+    a.levers.every((l) => l.kind !== "turn_up_dial" || gf - l.moveFromGuiltFree >= 0.1 * income),
+  );
+  check(capped && dialOk, `${name}: guilt-free <= 25% of income (normal case); turn_up_dial keeps guilt-free >= 10%`);
+}
 check(j.futureYou.earmarkMonthly === null && /60%/.test(j.futureYou.unlockCondition ?? ""), "Jordan: Future You handoff until fixed costs < 60%");
 check(j.matches.filter((x) => x.stage === "later").every((x) => x.unlockTrigger?.kind !== "life_event"), "Jordan: later items use savings/credit triggers");
 check(j.notYet.some((n) => n.goalId === "first_home" && n.revisitWhen === "after your $4,950 safety cushion is full"), "Jordan: not-yet for first home until the safety cushion is full");
