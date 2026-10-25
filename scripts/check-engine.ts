@@ -617,5 +617,19 @@ console.log("\n=== Ask Sprout more-time what-if (#114): Maya's travel fund");
   );
 }
 
+// #144: with no surplus, the gap answer gives the plan's real next move instead of "needs $209 and gets $0" with nothing after.
+console.log("\n=== Ask Sprout gap answer with no surplus (#144)");
+{
+  const broke: FinancialSnapshot = { ...maya.snapshot, hasSteadyIncome: false, incomeSources: [], monthlyFixedCosts: 400, monthlyDebtPayments: 0, savingsBalance: 100 };
+  const brokePlan = buildPlanSkeleton(mayaProfile, broke, maya.intake);
+  const answer = explain({ kind: "goal_gap", goalId: "travel" }, "How do I close the $209 gap for my travel fund?", mayaProfile, brokePlan, broke)?.template ?? "";
+  check(
+    answer.startsWith("First we find your breathing room. Your next move: ") &&
+      answer.includes(brokePlan.stepOne.title.charAt(0).toLowerCase() + brokePlan.stepOne.title.slice(1).replace(/\.$/, "")) &&
+      !/gets \$0/.test(answer),
+    "no surplus: gap answer points to Step one: " + answer,
+  );
+}
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
