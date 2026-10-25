@@ -199,7 +199,7 @@ async function main() {
     "",
     `Generated ${date} by \`scripts/chat-samples.ts\` (#76). Read-only report: every starter, block, and follow-up chip from \`src/lib/client/chatCopy.ts\` for three users, sent through the same request schema and \`answerQuestion()\` that \`/api/chat\` uses.`,
     "",
-    "- **Users:** Maya and Jordan with their mock profiles (`src/data/mocks/profile.*.json`), and Maya with opposite swipes (same profile, Family First persona and flipped values, as in `scripts/check-engine.ts`). Plans come from the engine (`buildPlanSkeleton`), so match explanations are the engine's template text, not AI-written plan text.",
+    "- **Users:** Maya and Jordan with their mock profiles (`src/data/mocks/profile.*.json`), and Maya with opposite swipes (same profile, Safety Builder persona and flipped values, as in `scripts/check-engine.ts`). Plans come from the engine (`buildPlanSkeleton`), so match explanations are the engine's template text, not AI-written plan text.",
     "- **Chips:** starters and block chips are asked with no history; follow-ups are asked with the exchange that produced them as `history`, like the app does after a tap. Each question appears once per user.",
     `- **Flags:** answers over ${MAX_WORDS} words; numbers not found in that user's plan or snapshot (as stored, rounded, or floored) or in the chip's own question; banned voice words (only, just, behind, should have, can't afford, waste). Derived numbers (sums, differences, months-away) are flagged on purpose so they can be reviewed.`,
     "",
