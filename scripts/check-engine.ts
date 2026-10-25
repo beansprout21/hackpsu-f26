@@ -157,21 +157,21 @@ check(
   "Savings $226 -> cushion $113, goals $113",
 );
 check(
-  [alloc(m, "travel")?.monthlyAmount, alloc(m, "first_home")?.monthlyAmount].join() === "91,22" && !alloc(m, "credit_building"),
-  "Goals -> Japan $91, home $22; credit building is a habit with no allocation (v3.2)",
+  [alloc(m, "travel")?.monthlyAmount, alloc(m, "first_home")?.monthlyAmount].join() === "80,33" && !alloc(m, "credit_building"),
+  "Goals -> Japan $80, home $33 (rank weights, #106); credit building is a habit with no allocation (v3.2)",
 );
 check(bucket(m, "guilt_free")?.monthlyAmount === 257 && Math.round(bucket(m, "guilt_free")?.percent ?? 0) === 23, "Guilt-free $257 (23%)");
-check(japan?.requiredMonthly === 209 && japan.onTrack === false, "Japan needs $209/mo, has $91 -> off track");
+check(japan?.requiredMonthly === 209 && japan.onTrack === false, "Japan needs $209/mo, has $80 -> off track");
 check(
   JSON.stringify(japan?.levers) ===
     JSON.stringify([
-      { kind: "turn_up_dial", moveFromGuiltFree: 118 },
-      { kind: "more_time", newHorizonMonths: 28 },
-      { kind: "smaller_target", reachableAmount: 1092 },
+      { kind: "turn_up_dial", moveFromGuiltFree: 129 },
+      { kind: "more_time", newHorizonMonths: 32 },
+      { kind: "smaller_target", reachableAmount: 960 },
     ]),
-  "Levers: turn_up_dial $118 first, more_time 28 months, smaller_target $1,092",
+  "Levers: turn_up_dial $129 first, more_time 32 months, smaller_target $960",
 );
-check((257 - 118) / m.effectiveMonthlyIncome >= 0.1, "turn_up_dial keeps guilt-free at $139 (>= 10% of income)");
+check((257 - 129) / m.effectiveMonthlyIncome >= 0.1, "turn_up_dial keeps guilt-free at $128 (>= 10% of income)");
 check(
   m.cushionTarget === 1950 && m.emergencyFundTarget === 1950 && m.cushionFillsInMonths === 14,
   `Safety cushion: target $1,950 (3 x $650), $400 counted, $113/mo, full in 14 months (got ${m.cushionTarget}, ${m.cushionFillsInMonths})`,
@@ -180,7 +180,7 @@ check(monthsToTarget(650, 400, 113) === 3 && /in 3 months/.test(m.sproutSays), '
 check(
   m.stepOne.kind === "save" &&
     m.stepOne.title === "Move $20 into your travel fund right now." &&
-    m.stepOne.detail === "You'll put $91 a month toward it. This starts it.",
+    m.stepOne.detail === "You'll put $80 a month toward it. This starts it.",
   `Step one (rule D5): "${m.stepOne.title}" / "${m.stepOne.detail}"`,
 );
 check(m.matches.find((x) => x.stage === "now")?.productId === "student-checking", "FNB fit: Student Checking is the top now match");
@@ -218,7 +218,7 @@ check(
 );
 check(m.futureYou.earmarkMonthly === null && /first full-time paycheck/.test(m.futureYou.unlockCondition ?? ""), "Future You: handoff only, unlocks with first full-time paycheck");
 check(m.notYet.some((n) => n.revisitWhen === "after a steady income and 3 months saved"), "Not yet: mortgage pre-approval after steady income and 3 months saved");
-check(/\$118 a month away/.test(m.sproutSays), "sproutSays leads with the P1 goal's dial lever ($118)");
+check(/\$129 a month away/.test(m.sproutSays), "sproutSays leads with the P1 goal's dial lever ($129)");
 check(m.steps.some((s) => s.kind === "learn" && s.title === "Check your free credit report" && s.stage === "now"), 'v3.2: credit building habit step "Check your free credit report" (learn, now)');
 check(/credit building \(habit, P2\)/.test(m.bankerSummary) && !/credit building \(\$/.test(m.bankerSummary), "v3.2: banker summary lists credit building as a habit (no target or $)");
 check(m.allocation.every((a) => a.goalId !== "credit_building" && a.goalId !== "everyday_banking"), "v3.2: no Allocation row for any habit");
@@ -526,6 +526,29 @@ console.log("\n=== Duplicate goal ids (#105): Maya with travel twice");
   );
   check(dupPlan.matches.filter((m) => m.goalId === "travel").length <= 2, "duplicate travel: max 2 travel matches");
   check((dupPlan.bankerSummary.match(/\btravel \(/g) ?? []).length === 1, "duplicate travel: banker summary lists the travel goal once");
+}
+
+// #106 (lead 2:15 AM): goal weights go by rank among money goals, so the persona fixture (credit P2, home P3) and the
+// intake path (money goals first: home P2, credit P3) give Maya the same numbers.
+console.log("\n=== Goal weights by rank (#106): both Maya entry paths");
+{
+  const byId = (id: GoalId) => maya.intake.goals.find((g) => g.id === id)!;
+  const intakePath: IntakeAnswers = {
+    ...maya.intake,
+    goals: [
+      { ...byId("travel"), priority: 1 },
+      { ...byId("first_home"), priority: 2 },
+      { ...byId("credit_building"), priority: 3 },
+    ],
+  };
+  const viaIntake = buildPlanSkeleton(fallbackProfile(intakePath), maya.snapshot, intakePath);
+  const viaFixture = buildPlanSkeleton(fallbackProfile(maya.intake), maya.snapshot, maya.intake);
+  const amounts = (p: Plan) => p.allocation.map((a) => a.goalId + " $" + a.monthlyAmount).join(", ");
+  check(amounts(viaIntake) !== "" && amounts(viaIntake) === amounts(viaFixture), "Maya, intake path vs fixture: same allocation (" + amounts(viaIntake) + " / " + amounts(viaFixture) + ")");
+  check(
+    [alloc(viaIntake, "travel")?.monthlyAmount, alloc(viaIntake, "first_home")?.monthlyAmount].join() === "80,33" && viaIntake.sproutSays === viaFixture.sproutSays,
+    "Maya, intake path: travel $80, home $33, same sproutSays as the fixture",
+  );
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");

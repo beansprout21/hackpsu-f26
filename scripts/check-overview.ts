@@ -40,7 +40,7 @@ const m = run(maya.snapshot);
 print("Maya", m);
 console.log("\n=== Maya check (docs/DASHBOARD.md v2, #94)");
 check(m.persona.label === "Experience Collector" && m.persona.tagline === "You'd rather have stories than stuff, so let's fund the stories.", "Persona chip: Experience Collector + taxonomy tagline");
-check(m.nextMove.title === "Move $20 into your travel fund right now." && m.nextMove.detail === "You'll put $91 a month toward it. This starts it." && !m.nextMove.link, "Next move: rule D5 templates ($91), no link");
+check(m.nextMove.title === "Move $20 into your travel fund right now." && m.nextMove.detail === "You'll put $80 a month toward it. This starts it." && !m.nextMove.link, "Next move: rule D5 templates ($80), no link");
 check(m.month.sentence === "Your $1,133 a month: $650 for fixed costs, $483 to work with.", `Month: "${m.month.sentence}"`);
 check(m.month.income === 1133 && m.month.fixed === 650 && m.month.toWorkWith === 483, "Month numbers: $1,133 / $650 / $483");
 check(JSON.stringify(m.month.bar) === JSON.stringify({ fixed: 650, cushion: 113, goals: 113, guiltFree: 257 }), "Month bar (4 parts): $650 / $113 / $113 / $257");
@@ -49,12 +49,12 @@ check(m.cushion.progressLine === "$400 of $1,950 · 1 month covered in 3 months 
 check(m.cushion.saved === 400 && m.cushion.target === 1950 && m.cushion.milestone === 650 && m.cushion.milestoneInMonths === 3 && m.cushion.fullInMonths === 14 && !m.cushion.met && m.cushion.pct === 21, "Cushion numbers: $400 / $1,950, milestone $650 in 3, full in 14, 21%");
 check(m.cushion.reason === "If money stops coming in for up to 3 months, your rent and bills are still covered." && m.cushion.note === "Already have savings set aside? It counts.", "Cushion reason + note");
 const travel = m.goals.find((g) => g.goalId === "travel");
-check(travel?.line === "Travel fund is $118 a month away." && travel.tone === "gap", `Goals: "${travel?.line}"`);
-check(travel?.lever?.label === "See what moving $118 from guilt-free does" && travel.lever.askSprout === "What if I move $118 a month from guilt-free to my travel fund?", `P1 lever: "${travel?.lever?.label}"`);
+check(travel?.line === "Travel fund is $129 a month away." && travel.tone === "gap", `Goals: "${travel?.line}"`);
+check(travel?.lever?.label === "See what moving $129 from guilt-free does" && travel.lever.askSprout === "What if I move $129 a month from guilt-free to my travel fund?", `P1 lever: "${travel?.lever?.label}"`);
 const credit = m.goals.find((g) => g.goalId === "credit_building");
 check(credit?.line === "Credit building: costs time, not money. Start by checking your free credit report." && !credit.lever, `Credit line (habit): "${credit?.line}"`);
 const home = m.goals.find((g) => g.goalId === "first_home");
-check(home?.line === "Home fund: $22 a month going in." && home.tone === "on_path" && !home.lever, `Home line: "${home?.line}"`);
+check(home?.line === "Home fund: $33 a month going in." && home.tone === "on_path" && !home.lever, `Home line: "${home?.line}"`);
 check(m.goals.filter((g) => g.lever).length === 1, "Exactly one lever button (P1)");
 
 const four = overviewSteps(m);

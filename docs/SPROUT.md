@@ -107,6 +107,8 @@ Sprout does not recommend investments, funds, or amounts per product. It shows o
 ## Golden test: Maya (must match exactly)
 
 > v3.2 (regenerated from the engine in #94): credit building is a habit with no allocation, so Maya's goal money splits travel/home only: travel $91, home $22, Japan gap $118.
+>
+> **v3.3 (#106, lead 2:15 AM, regenerated from the engine):** goal weights 60/25/15 go by **rank among money goals** (1st, 2nd, 3rd after habits are removed), not raw priority, so the persona fixture (credit P2, home P3) and the intake path (home P2, credit P3) compute the same plan. Maya: travel $80, home $33, Japan gap $129 (was $91 / $22 / $118).
 
 Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester; family $300 monthly; fixed $650; debt $0; savings $400; credit building; not an FNB customer; values [experiences, freedom] → **Experience Collector**. Goals: travel P1 $2,500 in 12 months ("study abroad in Japan"); credit_building P2 12 months; first_home P3 84 months.
 
@@ -114,12 +116,12 @@ Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester
 |---|---|
 | Effective income | $1,133 (300 + 500 + 333) |
 | Fixed share | 57% (normal case) |
-| Savings 20% | $226 → cushion $113, goals $113 → Japan $91, home $22 (credit building is a habit: no allocation) |
+| Savings 20% | $226 → cushion $113, goals $113 → Japan $80, home $33 (rank weights 60/25 renormalized; credit building is a habit: no allocation) |
 | Guilt-free | $257 (23%) |
-| Japan | needs $209/mo, has $91 → off track ($118 a month away) |
-| Levers | turn_up_dial: move $118 (guilt-free stays $139 = 12.3%); more_time: 28 months; smaller_target: $1,092 |
+| Japan | needs $209/mo, has $80 → off track ($129 a month away) |
+| Levers | turn_up_dial: move $129 (guilt-free stays $128 = 11.3%); more_time: 32 months; smaller_target: $960 |
 | Safety cushion | target $1,950 (3 × $650), $400 counted, $113/mo, full in 14 months; milestone "1 month covered" ($650) in 3 months |
-| Step one | "Move $20 into your travel fund right now." / "You'll put $91 a month toward it. This starts it." (rule D5) |
+| Step one | "Move $20 into your travel fund right now." / "You'll put $80 a month toward it. This starts it." (rule D5) |
 | Habit steps | credit building → "Check your free credit report" (learn, now); SmartSecured stays its `later` match |
 | FNB fit | FNB Student Checking (top `now` match; HUB branch), fee line first |
 | Now | Student Checking, Learning Center modules, FNB scholarship entry if in catalog |
@@ -130,7 +132,7 @@ Inputs (Maya v3): summer_savings $3,000 one_time; aid_refund $2,000 per_semester
 
 ## Sprout's voice
 
-1. **Possibility first.** Bad: "You can't afford Japan." Good: "Japan is $140 a month away."
+1. **Possibility first.** Bad: "You can't afford Japan." Good: "Japan is $129 a month away."
 2. **A number and a date.** Bad: "Save more." Good: "$113 a month covers your first month in 3 months."
 3. **Never shame.** Banned: only, just, behind, should have, can't afford, waste.
 4. **Plain and short.** Under 20 words per sentence; jargon gets a 5-word explanation ("APY, the interest you earn").

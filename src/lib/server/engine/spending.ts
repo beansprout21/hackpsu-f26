@@ -6,7 +6,8 @@ import { timeSpan } from "@/lib/client/time";
 import { GOAL_LABELS } from "./defaults";
 import { monthsToTarget, round2 } from "./math";
 
-const PRIORITY_WEIGHT: Record<1 | 2 | 3, number> = { 1: 0.6, 2: 0.25, 3: 0.15 };
+// #106 (lead 2:15 AM): weights go by rank among money goals (1st, 2nd, 3rd after habits are removed), not raw priority.
+const RANK_WEIGHT = [0.6, 0.25, 0.15];
 const HIGH_FIXED_SHARE = 0.6;
 const GUILT_FREE_FLOOR = 0.1; // turn_up_dial never takes guilt-free below 10% of income
 
@@ -24,14 +25,15 @@ export interface SpendingResult {
   milestoneInMonths: number | null;
 }
 
-// Split whole dollars by priority weight (renormalized); leftover dollars go to the first goal.
-function splitByPriority(total: number, goals: ProfiledGoal[]): Map<GoalId, number> {
+// Split whole dollars by rank weight among the money goals (renormalized); leftover dollars go to the first goal.
+function splitByPriority(total: number, goals: ProfiledGoal[], moneyGoals: ProfiledGoal[]): Map<GoalId, number> {
   const out = new Map<GoalId, number>();
   if (!goals.length || total <= 0) return out;
-  const weightSum = goals.reduce((s, g) => s + PRIORITY_WEIGHT[g.priority], 0);
+  const weight = (g: ProfiledGoal) => RANK_WEIGHT[moneyGoals.indexOf(g)] ?? RANK_WEIGHT[RANK_WEIGHT.length - 1];
+  const weightSum = goals.reduce((s, g) => s + weight(g), 0);
   let given = 0;
   for (const g of goals) {
-    const amount = Math.floor((total * PRIORITY_WEIGHT[g.priority]) / weightSum);
+    const amount = Math.floor((total * weight(g)) / weightSum);
     out.set(g.id, amount);
     given += amount;
   }
@@ -107,7 +109,7 @@ export function buildSpending(ctx: EngineContext): SpendingResult {
   // v3.2: habits (everyday banking, credit building) cost time, not money: no allocation row.
   const goals = ctx.moneyGoals;
   const otherGoals = goals.filter((g) => g.id !== "emergency_fund");
-  const split = splitByPriority(otherGoals.length ? goalMonthly : 0, otherGoals);
+  const split = splitByPriority(otherGoals.length ? goalMonthly : 0, otherGoals, goals);
 
   const allocation: Allocation[] = goals.map((g) => {
     // The emergency-fund goal is the cushion: funded by the emergency bucket, sized by the engine.
